@@ -9,9 +9,11 @@ const STATUS_VALUES = [
   "aguardando_analise",
   "em_analise",
   "em_investigacao",
-  "concluida",
+  "ag_decurso_prazo",
   "arquivada",
 ] as const;
+// "transito_julgado" NÃO é selecionável manualmente — só via decurso automático.
+// "concluida" foi removido do fluxo — permanece no enum apenas para compatibilidade histórica.
 
 const UNIDADES = [
   "DEIC",

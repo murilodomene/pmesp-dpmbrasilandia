@@ -136,6 +136,8 @@ function DocumentosPage() {
 
   const selected = visibleDocs.find((d) => d.id === selectedId) ?? null;
   const isHierarquia = selected?.id === "hierarquia";
+
+  const rendered = useMemo(() => {
     if (!selected) return { html: "", toc: [] as { id: string; label: string }[], count: 0 };
     const html = mdToHtml(selected.conteudo);
     const withAnchors = anchorize(html);

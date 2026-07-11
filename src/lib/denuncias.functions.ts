@@ -120,10 +120,13 @@ export const consultarPublica = createServerFn({ method: "GET" })
 export const listDenuncias = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    // Salvaguarda: aplica transição de decurso de prazo antes de listar,
+    // caso o cron não tenha rodado.
+    await context.supabase.rpc("transitar_pendentes" as never).then(() => undefined, () => undefined);
     const { data, error } = await context.supabase
       .from("denuncias")
       .select(
-        "id, numero_protocolo, status, unidade, ocorrencia_tipo, termo_inicial, acrescimos_dias, interrupcoes_count, created_at, denunciante_nome, denuncia_policiais(nome, unidade)",
+        "id, numero_protocolo, status, unidade, ocorrencia_tipo, termo_inicial, acrescimos_dias, interrupcoes_count, concluido_em, certidao_gerada, created_at, denunciante_nome, denuncia_policiais(nome, unidade)",
       )
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);

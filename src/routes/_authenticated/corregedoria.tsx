@@ -380,11 +380,18 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="tabular text-xs text-muted-foreground">{denuncia.numero_protocolo}</div>
-            <div className="mt-1 flex items-center gap-2">
+            <div className="mt-1 flex flex-wrap items-center gap-2">
               <StatusBadge status={status} />
               <span className="text-sm text-muted-foreground">
                 {denuncia.ocorrencia_tipo || "Sem natureza"}
               </span>
+              {decurso && (
+                <span className="inline-flex items-center gap-1 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs text-amber-200">
+                  {decurso.vencido
+                    ? "Prazo de recurso vencido"
+                    : `Recurso: ${decurso.diasRestantes === 1 ? "1 dia restante" : `${decurso.diasRestantes} dias restantes`}`}
+                </span>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -394,6 +401,15 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
             >
               Movimentar status
             </button>
+            {podeRegistrarRecurso && (
+              <button
+                onClick={() => setDialog({ kind: "recurso" })}
+                title="Certificar e juntar recurso administrativo aos autos"
+                className="inline-flex items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-100 hover:bg-amber-500/20"
+              >
+                Registrar recurso
+              </button>
+            )}
             {(cargo === "delegado_geral" || cargo === "delegado_corregedor") && (
               <ExportarProcessoBtn
                 denuncia={denuncia}

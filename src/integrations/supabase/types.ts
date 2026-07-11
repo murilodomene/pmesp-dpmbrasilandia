@@ -317,7 +317,11 @@ export type Database = {
       is_delegado: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "delegado_geral" | "delegado_corregedor" | "corregedor"
+      app_role:
+        | "delegado_geral"
+        | "delegado_corregedor"
+        | "corregedor"
+        | "cidadao"
       denuncia_status:
         | "recebida"
         | "aguardando_analise"
@@ -470,7 +474,12 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["delegado_geral", "delegado_corregedor", "corregedor"],
+      app_role: [
+        "delegado_geral",
+        "delegado_corregedor",
+        "corregedor",
+        "cidadao",
+      ],
       denuncia_status: [
         "recebida",
         "aguardando_analise",

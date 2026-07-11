@@ -214,21 +214,20 @@ function coverPage(d: ExportDenuncia, policiais: ExportPolicial[]): string {
 }
 
 function separatorPage(eventoNo: number, m: ExportMovimento): string {
+  const nn = String(eventoNo).padStart(2, "0");
   return pageWrap(`
-    <div style="text-align:center;font-size:10.5px;color:#6b7280;text-transform:uppercase;letter-spacing:.15em">
-      Página de separação (gerada automaticamente pelo sistema)
+    <div style="text-align:center">
+      <div style="font-size:16px;font-weight:bold;letter-spacing:.02em">Evento nº ${nn}</div>
+      <div style="margin-top:6px;font-size:10.5px;color:#6b7280;font-style:italic">
+        Página de separação — gerada automaticamente pelo sistema
+      </div>
     </div>
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:780px;text-align:center">
-      <div style="font-size:16px;color:#6b7280;text-transform:uppercase;letter-spacing:.3em">Evento</div>
-      <div style="font-size:96px;font-weight:bold;letter-spacing:.05em;line-height:1;margin-top:6px">
-        nº ${String(eventoNo).padStart(2, "0")}
-      </div>
-      <div style="margin-top:44px;font-size:14px;line-height:1.9">
-        <div><strong>Espécie:</strong> ${esc(labelEspecie(m.especie))}</div>
-        <div><strong>Data e hora:</strong> ${fmtDateTime(m.criado_em)}</div>
-        <div><strong>Responsável:</strong> ${esc(m.prolator_nome)} — ${esc(cargoLabel(m.prolator_cargo))}</div>
-        <div><strong>Sequência do Evento:</strong> ${String(eventoNo).padStart(2, "0")}</div>
-      </div>
+    <hr style="margin:20px 0;border:0;border-top:1px solid #d1d5db" />
+    <div style="font-size:13px;line-height:1.7;text-align:left">
+      <div style="margin-bottom:12px"><div style="font-weight:bold">Espécie:</div><div>${esc(labelEspecie(m.especie))}</div></div>
+      <div style="margin-bottom:12px"><div style="font-weight:bold">Data e hora:</div><div>${fmtDateTime(m.criado_em)}</div></div>
+      <div style="margin-bottom:12px"><div style="font-weight:bold">Responsável:</div><div>${esc(m.prolator_nome)} — ${esc(cargoLabel(m.prolator_cargo))}</div></div>
+      <div style="margin-bottom:12px"><div style="font-weight:bold">Sequência do Evento:</div><div>${nn}</div></div>
     </div>
   `);
 }

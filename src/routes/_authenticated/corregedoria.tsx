@@ -648,7 +648,6 @@ function Autuacao({ id, cargo }: { id: string; cargo: string | null }) {
       {dialog?.kind === "portaria" && (
         <PortariaDialog
           id={id}
-          session={session}
           policiais={policiais}
           onClose={() => setDialog(null)}
         />

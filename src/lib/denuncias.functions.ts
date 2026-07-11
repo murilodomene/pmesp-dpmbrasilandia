@@ -395,3 +395,61 @@ export const atualizarUnidade = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+export const retificarDenunciado = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        policial_id: z.string().uuid(),
+        nome: z.string().trim().min(1).max(200),
+        rg_funcional: z.string().trim().max(50).optional().nullable(),
+        motivo: z.string().trim().max(2000).optional().nullable(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const p = await getProlator(context);
+    if (p.prolator_cargo !== "delegado_geral" && p.prolator_cargo !== "delegado_corregedor") {
+      throw new Error("Apenas Delegado Geral ou Delegado Corregedor podem retificar o denunciado.");
+    }
+
+    const { data: pol, error: polErr } = await context.supabase
+      .from("denuncia_policiais")
+      .select("*")
+      .eq("id", data.policial_id)
+      .single();
+    if (polErr || !pol) throw new Error("Denunciado não encontrado.");
+
+    const novoNome = data.nome.trim();
+    const novaMat = (data.rg_funcional ?? "").trim() || null;
+    const antigoNome = pol.nome;
+    const antigaMat = pol.rg_funcional ?? null;
+
+    if (novoNome === antigoNome && novaMat === antigaMat) {
+      return { changed: false };
+    }
+
+    const { error: updErr } = await context.supabase
+      .from("denuncia_policiais")
+      .update({ nome: novoNome, rg_funcional: novaMat })
+      .eq("id", data.policial_id);
+    if (updErr) throw new Error(updErr.message);
+
+    const fmt = (n: string, m: string | null) => `"${n} (${m ?? "sem matrícula"})"`;
+    const motivoTxt = data.motivo?.trim() ? ` Motivo: ${data.motivo.trim()}.` : "";
+    const teor =
+      `Denunciado retificado de ${fmt(antigoNome, antigaMat)} para ${fmt(novoNome, novaMat)}.` +
+      motivoTxt;
+
+    const { error: movErr } = await context.supabase.from("movimentos").insert({
+      denuncia_id: pol.denuncia_id,
+      especie: "retificacao",
+      teor,
+      ...p,
+    });
+    if (movErr) throw new Error(movErr.message);
+
+    return { changed: true };
+  });
+

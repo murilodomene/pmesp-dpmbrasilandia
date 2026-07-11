@@ -255,7 +255,18 @@ function Autuacao({ id, cargo }: { id: string; cargo: string | null }) {
   const unidadeFn = useServerFn(atualizarUnidade);
 
   const mLancar = useMutation({
-    mutationFn: () => lancarFn({ data: { denuncia_id: id, especie, teor } }),
+    mutationFn: () => {
+      const teorFinal = especie === "ipc" ? montarTeorIpc({
+        unidade: (data?.denuncia.unidade as string | null) ?? null,
+        protocolo: data?.denuncia.numero_protocolo ?? "",
+        policiais: (data?.policiais ?? []).map((p) => ({
+          nome: p.nome,
+          rg_funcional: p.rg_funcional ?? null,
+        })),
+        relato: teor,
+      }) : teor;
+      return lancarFn({ data: { denuncia_id: id, especie, teor: teorFinal } });
+    },
     onSuccess: () => {
       setTeor("");
       qc.invalidateQueries({ queryKey: ["denuncia", id] });
@@ -549,13 +560,46 @@ function Autuacao({ id, cargo }: { id: string; cargo: string | null }) {
             </button>
           ))}
         </div>
-        <textarea
-          rows={5}
-          className="input mt-3"
-          placeholder="Teor do ato..."
-          value={teor}
-          onChange={(e) => setTeor(e.target.value)}
-        />
+        {especie === "ipc" ? (
+          <div className="mt-3 space-y-2">
+            <IpcCampoAuto label="Unidade" valor={denuncia.unidade || "—"} />
+            <IpcCampoAuto label="1º Processo número" valor={denuncia.numero_protocolo} />
+            <IpcCampoAuto
+              label="2º Identificação do policial"
+              valor={
+                policiais.length
+                  ? policiais
+                      .map((p) => `${p.nome}${p.rg_funcional ? ` — ${p.rg_funcional}` : ""}`)
+                      .join("; ")
+                  : "Não identificado"
+              }
+            />
+            <label className="block">
+              <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                3º Relato do fato
+              </span>
+              <textarea
+                rows={5}
+                className="input mt-1"
+                placeholder="Descreva o fato..."
+                value={teor}
+                onChange={(e) => setTeor(e.target.value)}
+              />
+            </label>
+            <IpcCampoAuto
+              label="4º Ciente dos fatos"
+              valor="Corregedoria Geral da Polícia Civil"
+            />
+          </div>
+        ) : (
+          <textarea
+            rows={5}
+            className="input mt-3"
+            placeholder="Teor do ato..."
+            value={teor}
+            onChange={(e) => setTeor(e.target.value)}
+          />
+        )}
         <div className="mt-3 flex justify-end">
           <button
             onClick={() => mLancar.mutate()}
@@ -687,6 +731,42 @@ function Row({ k, children }: { k: string; children: React.ReactNode }) {
     </div>
   );
 }
+
+function IpcCampoAuto({ label, valor }: { label: string; valor: string }) {
+  return (
+    <div className="rounded-md border border-border/60 bg-surface-2 px-3 py-2">
+      <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="mt-0.5 whitespace-pre-wrap text-sm">{valor}</div>
+    </div>
+  );
+}
+
+function montarTeorIpc(params: {
+  unidade: string | null;
+  protocolo: string;
+  policiais: Array<{ nome: string; rg_funcional: string | null }>;
+  relato: string;
+}): string {
+  const ident = params.policiais.length
+    ? params.policiais
+        .map((p) => `${p.nome}${p.rg_funcional ? ` — ${p.rg_funcional}` : ""}`)
+        .join("; ")
+    : "";
+  return [
+    `| UNIDADE: ${params.unidade || "—"}`,
+    ``,
+    `| 1º PROCESSO NÚMERO: ${params.protocolo}`,
+    ``,
+    `| 2º IDENTIFICAÇÃO DO POLICIAL: ${ident}`,
+    ``,
+    `| 3º RELATO DO FATO:`,
+    params.relato.trim(),
+    ``,
+    `| 4º CIENTE DOS FATOS:`,
+    `Corregedoria Geral da Polícia Civil`,
+  ].join("\n");
+}
+
 
 function labelEspecie(e: string): string {
   return e === "despacho"

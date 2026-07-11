@@ -6,7 +6,11 @@ import { toast } from "sonner";
 import { Header } from "@/components/Header";
 import { StatusBadge, STATUS_LABEL } from "@/components/StatusBadge";
 import { RelogioPrescricao } from "@/components/RelogioPrescricao";
-import { calcularPrescricao, type DenunciaStatus } from "@/lib/prescricao";
+import {
+  calcularPrescricao,
+  calcularDecursoPrazo,
+  type DenunciaStatus,
+} from "@/lib/prescricao";
 import {
   listDenuncias,
   alterarStatus,
@@ -14,21 +18,35 @@ import {
   instaurarOficio,
 } from "@/lib/denuncias.functions";
 import { getSessionInfo } from "@/lib/usuarios.functions";
-import { Plus, Trash2, X } from "lucide-react";
+import { Plus, Trash2, X, Clock } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/painel")({
   component: PainelInterno,
 });
 
-
-const STATUS_LIST: DenunciaStatus[] = [
+// "transito_julgado" NÃO aparece — só é atingido automaticamente.
+const STATUS_LIST_MANUAL: DenunciaStatus[] = [
   "recebida",
   "aguardando_analise",
   "em_analise",
   "em_investigacao",
-  "concluida",
+  "ag_decurso_prazo",
   "arquivada",
 ];
+
+type TabKey = "em_andamento" | "ag_decurso" | "transitado" | "arquivado";
+const TAB_STATUS: Record<TabKey, DenunciaStatus[]> = {
+  em_andamento: ["recebida", "aguardando_analise", "em_analise", "em_investigacao"],
+  ag_decurso: ["ag_decurso_prazo"],
+  transitado: ["transito_julgado", "concluida"],
+  arquivado: ["arquivada"],
+};
+const TAB_LABEL: Record<TabKey, string> = {
+  em_andamento: "Em andamento",
+  ag_decurso: "Ag. Decurso do Prazo",
+  transitado: "Trânsito em Julgado",
+  arquivado: "Arquivados",
+};
 
 function PainelInterno() {
   const sessionFn = useServerFn(getSessionInfo);
@@ -37,7 +55,7 @@ function PainelInterno() {
   const { data: denuncias } = useQuery({ queryKey: ["denuncias"], queryFn: () => listFn() });
 
   const [busca, setBusca] = useState("");
-  const [filtro, setFiltro] = useState<DenunciaStatus | "">("");
+  const [aba, setAba] = useState<TabKey>("em_andamento");
   const [aberta, setAberta] = useState<string | null>(null);
   const [oficioAberto, setOficioAberto] = useState(false);
 
@@ -49,25 +67,60 @@ function PainelInterno() {
     return <RedirectPendente />;
   }
 
+  const contagens = useMemo(() => {
+    const acc: Record<TabKey, number> = {
+      em_andamento: 0,
+      ag_decurso: 0,
+      transitado: 0,
+      arquivado: 0,
+    };
+    if (!denuncias) return acc;
+    for (const d of denuncias) {
+      const s = d.status as DenunciaStatus;
+      (Object.keys(TAB_STATUS) as TabKey[]).forEach((k) => {
+        if (TAB_STATUS[k].includes(s)) acc[k] += 1;
+      });
+    }
+    return acc;
+  }, [denuncias]);
 
   const lista = useMemo(() => {
     if (!denuncias) return [];
     const q = busca.toLowerCase().trim();
-    return denuncias.filter((d) => {
-      if (filtro && d.status !== filtro) return false;
-      if (!q) return true;
-      const alvo = [
-        d.numero_protocolo,
-        d.denunciante_nome,
-        d.unidade,
-        ...(d.denuncia_policiais ?? []).map((p) => `${p.nome} ${p.unidade ?? ""}`),
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      return alvo.includes(q);
-    });
-  }, [denuncias, busca, filtro]);
+    const statusPermitidos = TAB_STATUS[aba];
+    let filtrada = denuncias.filter((d) => statusPermitidos.includes(d.status as DenunciaStatus));
+    if (q) {
+      filtrada = filtrada.filter((d) => {
+        const alvo = [
+          d.numero_protocolo,
+          d.denunciante_nome,
+          d.unidade,
+          ...(d.denuncia_policiais ?? []).map((p) => `${p.nome} ${p.unidade ?? ""}`),
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return alvo.includes(q);
+      });
+    }
+    if (aba === "em_andamento") {
+      // ordenar por prazo prescricional crescente (o que prescreve primeiro no topo)
+      filtrada = [...filtrada].sort((a, b) => {
+        const pa = calcularPrescricao({
+          termo_inicial: a.termo_inicial,
+          acrescimos_dias: a.acrescimos_dias,
+          status: a.status as DenunciaStatus,
+        });
+        const pb = calcularPrescricao({
+          termo_inicial: b.termo_inicial,
+          acrescimos_dias: b.acrescimos_dias,
+          status: b.status as DenunciaStatus,
+        });
+        return pa.diasRestantes - pb.diasRestantes;
+      });
+    }
+    return filtrada;
+  }, [denuncias, busca, aba]);
 
   return (
     <div className="min-h-screen">
@@ -114,24 +167,39 @@ function PainelInterno() {
             onChange={(e) => setBusca(e.target.value)}
             className="min-w-64 flex-1 rounded-md border border-border bg-input px-3 py-2 text-sm"
           />
-          <select
-            value={filtro}
-            onChange={(e) => setFiltro(e.target.value as DenunciaStatus | "")}
-            className="rounded-md border border-border bg-input px-3 py-2 text-sm"
-          >
-            <option value="">Todos os status</option>
-            {STATUS_LIST.map((s) => (
-              <option key={s} value={s}>
-                {STATUS_LABEL[s]}
-              </option>
-            ))}
-          </select>
+        </div>
+
+        <div
+          role="tablist"
+          className="mt-4 flex flex-wrap gap-1 border-b border-border"
+        >
+          {(Object.keys(TAB_LABEL) as TabKey[]).map((k) => {
+            const active = aba === k;
+            return (
+              <button
+                key={k}
+                role="tab"
+                aria-selected={active}
+                onClick={() => setAba(k)}
+                className={`inline-flex items-center gap-2 border-b-2 px-3 py-2 text-sm transition ${
+                  active
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {TAB_LABEL[k]}
+                <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs tabular">
+                  {contagens[k]}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         <div className="mt-4 space-y-2">
           {lista.length === 0 && (
             <div className="surface p-8 text-center text-sm text-muted-foreground">
-              Nenhuma denúncia registrada ainda.
+              Nenhum procedimento nesta aba.
             </div>
           )}
           {lista.map((d) => {
@@ -140,6 +208,10 @@ function PainelInterno() {
               acrescimos_dias: d.acrescimos_dias,
               status: d.status as DenunciaStatus,
             });
+            const decurso =
+              aba === "ag_decurso"
+                ? calcularDecursoPrazo(d.concluido_em ?? null)
+                : null;
             return (
               <button
                 key={d.id}
@@ -149,11 +221,22 @@ function PainelInterno() {
                 <div className="flex flex-wrap items-center gap-3">
                   <span className="tabular text-xs text-muted-foreground">{d.numero_protocolo}</span>
                   <StatusBadge status={d.status as DenunciaStatus} />
-                  <RelogioPrescricao
-                    termo_inicial={d.termo_inicial}
-                    acrescimos_dias={d.acrescimos_dias}
-                    status={d.status as DenunciaStatus}
-                  />
+                  {decurso ? (
+                    <span className="inline-flex items-center gap-1 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs text-amber-200">
+                      <Clock className="h-3 w-3" />
+                      {decurso.vencido
+                        ? "Prazo vencido"
+                        : decurso.diasRestantes === 1
+                          ? "1 dia restante"
+                          : `${decurso.diasRestantes} dias restantes`}
+                    </span>
+                  ) : (
+                    <RelogioPrescricao
+                      termo_inicial={d.termo_inicial}
+                      acrescimos_dias={d.acrescimos_dias}
+                      status={d.status as DenunciaStatus}
+                    />
+                  )}
                   <span className="ml-auto text-xs text-muted-foreground">
                     {new Date(d.created_at).toLocaleDateString("pt-BR")}
                   </span>
@@ -168,6 +251,7 @@ function PainelInterno() {
             );
           })}
         </div>
+
       </div>
 
       {aberta && <TriagemModal id={aberta} onClose={() => setAberta(null)} />}
@@ -254,7 +338,7 @@ function TriagemModal({ id, onClose }: { id: string; onClose: () => void }) {
               onChange={(e) => setNovoStatus(e.target.value as DenunciaStatus)}
             >
               <option value="">Selecionar...</option>
-              {STATUS_LIST.map((s) => (
+              {STATUS_LIST_MANUAL.map((s) => (
                 <option key={s} value={s} disabled={s === d.status}>
                   {STATUS_LABEL[s]}
                 </option>

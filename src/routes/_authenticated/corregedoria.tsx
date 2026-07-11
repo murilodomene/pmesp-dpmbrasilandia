@@ -6,7 +6,12 @@ import { useServerFn } from "@tanstack/react-start";
 import { Header } from "@/components/Header";
 import { StatusBadge, STATUS_LABEL } from "@/components/StatusBadge";
 import { RelogioPrescricao } from "@/components/RelogioPrescricao";
-import { calcularPrescricao, type DenunciaStatus } from "@/lib/prescricao";
+import {
+  calcularPrescricao,
+  calcularDecursoPrazo,
+  isEncerrado,
+  type DenunciaStatus,
+} from "@/lib/prescricao";
 import {
   listDenuncias,
   getDenuncia,
@@ -26,12 +31,13 @@ import {
   revogarAcessoMp,
   excluirDenuncia,
   cancelarMovimento,
+  registrarRecurso,
 } from "@/lib/denuncias.functions";
 
 
 
 import { getSessionInfo } from "@/lib/usuarios.functions";
-import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2, Download } from "lucide-react";
+import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2, Download, ShieldCheck, Bell } from "lucide-react";
 import { DocumentTemplate, exportDocumentToPdf, useDocumentRef } from "@/components/DocumentTemplate";
 import { RichTextEditor, isHtmlAto, sanitizeAtoHtml } from "@/components/RichTextEditor";
 import { exportProcessoCompleto } from "@/lib/exportProcesso";
@@ -57,7 +63,18 @@ const STATUS_LIST: DenunciaStatus[] = [
   "aguardando_analise",
   "em_analise",
   "em_investigacao",
-  "concluida",
+  "ag_decurso_prazo",
+  "transito_julgado",
+  "arquivada",
+];
+// Opções selecionáveis manualmente em "Movimentar status".
+// "Trânsito em Julgado" NÃO aparece — só é atingido automaticamente pelo decurso.
+const STATUS_LIST_MANUAL: DenunciaStatus[] = [
+  "recebida",
+  "aguardando_analise",
+  "em_analise",
+  "em_investigacao",
+  "ag_decurso_prazo",
   "arquivada",
 ];
 const UNIDADES = ["DEIC", "CORREGEPOL", "DECAP", "DHPP", "CERCO", "GARRA", "DENARC", "GER", "SAT"] as const;
@@ -268,6 +285,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     | { kind: "retificar"; policial: { id: string; nome: string; rg_funcional: string | null } }
     | { kind: "excluir" }
     | { kind: "cancelarMov"; movimento_id: string; resumo: string }
+    | { kind: "recurso" }
     | null
   >(null);
 
@@ -347,7 +365,13 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
 
   const { denuncia, policiais, movimentos, oitivas } = data;
   const status = denuncia.status as DenunciaStatus;
-  const suspenso = status === "concluida" || status === "arquivada";
+  const suspenso = isEncerrado(status);
+  const decurso =
+    status === "ag_decurso_prazo" ? calcularDecursoPrazo(denuncia.concluido_em ?? null) : null;
+  const podeRegistrarRecurso =
+    status === "ag_decurso_prazo" &&
+    !denuncia.certidao_gerada &&
+    (cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor");
 
   return (
     <div className="space-y-4">
@@ -356,11 +380,18 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="tabular text-xs text-muted-foreground">{denuncia.numero_protocolo}</div>
-            <div className="mt-1 flex items-center gap-2">
+            <div className="mt-1 flex flex-wrap items-center gap-2">
               <StatusBadge status={status} />
               <span className="text-sm text-muted-foreground">
                 {denuncia.ocorrencia_tipo || "Sem natureza"}
               </span>
+              {decurso && (
+                <span className="inline-flex items-center gap-1 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs text-amber-200">
+                  {decurso.vencido
+                    ? "Prazo de recurso vencido"
+                    : `Recurso: ${decurso.diasRestantes === 1 ? "1 dia restante" : `${decurso.diasRestantes} dias restantes`}`}
+                </span>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -370,6 +401,15 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
             >
               Movimentar status
             </button>
+            {podeRegistrarRecurso && (
+              <button
+                onClick={() => setDialog({ kind: "recurso" })}
+                title="Certificar e juntar recurso administrativo aos autos"
+                className="inline-flex items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-100 hover:bg-amber-500/20"
+              >
+                Registrar recurso
+              </button>
+            )}
             {(cargo === "delegado_geral" || cargo === "delegado_corregedor") && (
               <ExportarProcessoBtn
                 denuncia={denuncia}
@@ -1017,6 +1057,9 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
           onClose={() => setDialog(null)}
         />
       )}
+      {dialog?.kind === "recurso" && (
+        <RecursoDialog id={id} onClose={() => setDialog(null)} />
+      )}
 
 
 
@@ -1128,6 +1171,9 @@ function MovMarker({ especie }: { especie: string }) {
     status: "bg-status-aguardando text-status-aguardando-fg",
     retificacao: "bg-status-aguardando text-status-aguardando-fg",
     portaria: "bg-primary text-primary-foreground",
+    certidao: "bg-emerald-600 text-white",
+    evento: "bg-amber-500 text-black",
+    cancelamento: "bg-muted text-muted-foreground",
   };
   const Icon =
     especie === "decisao"
@@ -1138,10 +1184,14 @@ function MovMarker({ especie }: { especie: string }) {
           ? Pencil
           : especie === "portaria"
             ? Stamp
-            : FileText;
+            : especie === "certidao"
+              ? ShieldCheck
+              : especie === "evento"
+                ? Bell
+                : FileText;
 
   return (
-    <div className={`grid h-8 w-8 flex-shrink-0 place-items-center rounded-full ${style[especie]}`}>
+    <div className={`grid h-8 w-8 flex-shrink-0 place-items-center rounded-full ${style[especie] ?? "bg-surface-2 text-foreground"}`}>
       <Icon className="h-4 w-4" />
     </div>
   );
@@ -1211,7 +1261,7 @@ function StatusDialog({
           className="input"
         >
           <option value="">Selecionar...</option>
-          {STATUS_LIST.map((s) => (
+          {STATUS_LIST_MANUAL.map((s) => (
             <option key={s} value={s} disabled={s === statusAtual}>
               {STATUS_LABEL[s]}
             </option>
@@ -1234,6 +1284,69 @@ function StatusDialog({
           className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
           Aplicar
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+function RecursoDialog({ id, onClose }: { id: string; onClose: () => void }) {
+  const qc = useQueryClient();
+  const fn = useServerFn(registrarRecurso);
+  const [certificacao, setCertificacao] = useState(
+    "Certifico e dou fé que, dentro do prazo legal, foi interposto recurso administrativo em face da decisão proferida nos autos.",
+  );
+  const [link, setLink] = useState("");
+  const m = useMutation({
+    mutationFn: () =>
+      fn({ data: { denuncia_id: id, certificacao, recurso_link: link || null } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["denuncia", id] });
+      qc.invalidateQueries({ queryKey: ["denuncias"] });
+      onClose();
+    },
+  });
+  return (
+    <Modal title="Registrar recurso administrativo" onClose={onClose}>
+      <p className="text-xs text-muted-foreground">
+        Ao confirmar, o decurso automático é interrompido, o procedimento retorna
+        para "Em análise" e a certificação é juntada aos autos como Evento.
+      </p>
+      <label className="mt-3 grid gap-1.5">
+        <span className="text-xs uppercase tracking-wider text-muted-foreground">
+          Certificação (obrigatória)
+        </span>
+        <textarea
+          rows={4}
+          className="input"
+          value={certificacao}
+          onChange={(e) => setCertificacao(e.target.value)}
+        />
+      </label>
+      <label className="mt-3 grid gap-1.5">
+        <span className="text-xs uppercase tracking-wider text-muted-foreground">
+          Link / referência do recurso juntado (opcional)
+        </span>
+        <input
+          className="input"
+          value={link}
+          onChange={(e) => setLink(e.target.value)}
+          placeholder="https://... ou nº do documento anexado"
+        />
+      </label>
+      {m.error instanceof Error && (
+        <p className="mt-2 text-xs text-destructive">{m.error.message}</p>
+      )}
+      <div className="mt-4 flex justify-end gap-2">
+        <button onClick={onClose} className="rounded-md border border-border px-4 py-2 text-sm">
+          Cancelar
+        </button>
+        <button
+          onClick={() => m.mutate()}
+          disabled={certificacao.trim().length < 10 || m.isPending}
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+        >
+          {m.isPending ? "Registrando..." : "Registrar recurso"}
         </button>
       </div>
     </Modal>

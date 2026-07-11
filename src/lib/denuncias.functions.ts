@@ -9,9 +9,11 @@ const STATUS_VALUES = [
   "aguardando_analise",
   "em_analise",
   "em_investigacao",
-  "concluida",
+  "ag_decurso_prazo",
   "arquivada",
 ] as const;
+// "transito_julgado" NÃO é selecionável manualmente — só via decurso automático.
+// "concluida" foi removido do fluxo — permanece no enum apenas para compatibilidade histórica.
 
 const UNIDADES = [
   "DEIC",
@@ -118,10 +120,13 @@ export const consultarPublica = createServerFn({ method: "GET" })
 export const listDenuncias = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    // Salvaguarda: aplica transição de decurso de prazo antes de listar,
+    // caso o cron não tenha rodado.
+    await context.supabase.rpc("transitar_pendentes" as never).then(() => undefined, () => undefined);
     const { data, error } = await context.supabase
       .from("denuncias")
       .select(
-        "id, numero_protocolo, status, unidade, ocorrencia_tipo, termo_inicial, acrescimos_dias, interrupcoes_count, created_at, denunciante_nome, denuncia_policiais(nome, unidade)",
+        "id, numero_protocolo, status, unidade, ocorrencia_tipo, termo_inicial, acrescimos_dias, interrupcoes_count, concluido_em, certidao_gerada, created_at, denunciante_nome, denuncia_policiais(nome, unidade)",
       )
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
@@ -132,10 +137,12 @@ export const getDenuncia = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
-    // Projeta explicitamente as colunas (evita SELECT * porque obs_internas
-    // tem GRANT revogado por segurança).
     const cols =
-      "id, numero_protocolo, denunciante_nome, denunciante_identificador, denunciante_contato, denunciante_anonimo, ocorrencia_tipo, ocorrencia_local, ocorrencia_data, ocorrencia_hora, relato, info_adicional, anexos, links, status, unidade, obs_denunciante, termo_inicial, acrescimos_dias, interrupcoes_count, created_at, instaurada_em, owner_id";
+      "id, numero_protocolo, denunciante_nome, denunciante_identificador, denunciante_contato, denunciante_anonimo, ocorrencia_tipo, ocorrencia_local, ocorrencia_data, ocorrencia_hora, relato, info_adicional, anexos, links, status, unidade, obs_denunciante, termo_inicial, acrescimos_dias, interrupcoes_count, concluido_em, certidao_gerada, created_at, instaurada_em, owner_id";
+    // Salvaguarda: se o prazo de 7 dias já venceu, transita antes de ler.
+    await context.supabase
+      .rpc("transitar_denuncia" as never, { _denuncia_id: data.id } as never)
+      .then(() => undefined, () => undefined);
     const { data: den, error } = await context.supabase
       .from("denuncias")
       .select(cols)
@@ -218,9 +225,19 @@ export const alterarStatus = createServerFn({ method: "POST" })
       .single();
     if (!atual) throw new Error("Denúncia não encontrada.");
 
+    const patch: {
+      status: typeof data.novo_status;
+      concluido_em: string | null;
+      certidao_gerada?: boolean;
+    } = { status: data.novo_status, concluido_em: null };
+    if (data.novo_status === "ag_decurso_prazo") {
+      patch.concluido_em = new Date().toISOString();
+      patch.certidao_gerada = false;
+    }
+
     const { error: updErr } = await context.supabase
       .from("denuncias")
-      .update({ status: data.novo_status })
+      .update(patch)
       .eq("id", data.denuncia_id);
     if (updErr) throw new Error(updErr.message);
 
@@ -230,6 +247,27 @@ export const alterarStatus = createServerFn({ method: "POST" })
       teor: `Status alterado de ${atual.status} para ${data.novo_status}. Motivação: ${data.motivo}`,
       ...p,
     });
+    return { ok: true };
+  });
+
+export const registrarRecurso = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        denuncia_id: z.string().uuid(),
+        certificacao: z.string().trim().min(10, "Descreva a certificação com no mínimo 10 caracteres.").max(4000),
+        recurso_link: z.string().trim().max(1000).optional().nullable(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.rpc("registrar_recurso" as never, {
+      _denuncia_id: data.denuncia_id,
+      _certificacao: data.certificacao,
+      _recurso_link: data.recurso_link ?? "",
+    } as never);
+    if (error) throw new Error(error.message);
     return { ok: true };
   });
 

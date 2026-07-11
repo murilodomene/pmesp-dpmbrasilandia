@@ -6,11 +6,14 @@
  *
  * - Interrupção: redefine termo_inicial e zera acréscimos (feito no servidor).
  * - Prorrogação: soma 30 dias aos acréscimos (feito no servidor).
- * - Suspensão: status Concluída ou Arquivada param o relógio.
+ * - Suspensão: status "Aguardando Decurso do Prazo", "Trânsito em Julgado" e
+ *   "Arquivada" param o relógio de 15 dias. O prazo de 7 dias de recurso
+ *   é um timer separado (ver `calcularDecursoPrazo`).
  */
 
 export const PRAZO_BASE = 15;
 export const PRORROGACAO_DIAS = 30;
+export const PRAZO_DECURSO_DIAS = 7;
 
 const MS_DIA = 24 * 60 * 60 * 1000;
 
@@ -19,8 +22,11 @@ export type DenunciaStatus =
   | "aguardando_analise"
   | "em_analise"
   | "em_investigacao"
-  | "concluida"
-  | "arquivada";
+  | "ag_decurso_prazo"
+  | "transito_julgado"
+  | "arquivada"
+  // legado — mantido apenas para compatibilidade de tipos; nenhum registro novo é criado com este valor.
+  | "concluida";
 
 export interface PrescricaoInput {
   termo_inicial: string | Date;
@@ -38,6 +44,17 @@ export interface PrescricaoOut {
   nivel: "safe" | "warn" | "danger" | "expired";
 }
 
+const STATUS_SUSPENSOS: DenunciaStatus[] = [
+  "ag_decurso_prazo",
+  "transito_julgado",
+  "arquivada",
+  "concluida",
+];
+
+export function isEncerrado(status: DenunciaStatus): boolean {
+  return STATUS_SUSPENSOS.includes(status);
+}
+
 export function calcularPrescricao(input: PrescricaoInput): PrescricaoOut {
   const agora = input.agora ?? new Date();
   const termo =
@@ -45,7 +62,7 @@ export function calcularPrescricao(input: PrescricaoInput): PrescricaoOut {
       ? input.termo_inicial
       : new Date(input.termo_inicial);
 
-  const suspenso = input.status === "concluida" || input.status === "arquivada";
+  const suspenso = isEncerrado(input.status);
   const totalPrazo = PRAZO_BASE + (input.acrescimos_dias || 0);
   const diasCorridos = Math.floor((agora.getTime() - termo.getTime()) / MS_DIA);
   const diasRestantes = totalPrazo - diasCorridos;
@@ -67,4 +84,19 @@ export function formatarDiasRestantes(p: PrescricaoOut): string {
   if (p.diasRestantes === 0) return "Prescreve hoje";
   if (p.diasRestantes === 1) return "1 dia restante";
   return `${p.diasRestantes} dias restantes`;
+}
+
+/**
+ * Timer separado do prazo prescricional. Só corre em "Aguardando Decurso do Prazo".
+ * Retorna dias restantes do prazo de 7 dias corridos para recurso administrativo.
+ */
+export function calcularDecursoPrazo(
+  concluidoEm: string | Date | null | undefined,
+  agora: Date = new Date(),
+): { diasRestantes: number; vencido: boolean } | null {
+  if (!concluidoEm) return null;
+  const inicio = concluidoEm instanceof Date ? concluidoEm : new Date(concluidoEm);
+  const diasCorridos = Math.floor((agora.getTime() - inicio.getTime()) / MS_DIA);
+  const diasRestantes = PRAZO_DECURSO_DIAS - diasCorridos;
+  return { diasRestantes, vencido: diasRestantes <= 0 };
 }

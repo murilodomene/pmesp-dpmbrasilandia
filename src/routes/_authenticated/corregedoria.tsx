@@ -869,6 +869,14 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
           onClose={() => setDialog(null)}
         />
       )}
+      {dialog?.kind === "cancelarMov" && (
+        <CancelarMovDialog
+          movimentoId={dialog.movimento_id}
+          resumo={dialog.resumo}
+          denunciaId={id}
+          onClose={() => setDialog(null)}
+        />
+      )}
 
 
 

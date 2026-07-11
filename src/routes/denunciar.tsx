@@ -59,7 +59,9 @@ function DenunciarPage() {
 
   const mut = useMutation({
     mutationFn: (payload: Record<string, unknown>) =>
-      submitFn({ data: payload as never }),
+      logado
+        ? submitCidadaoFn({ data: payload as never })
+        : submitFn({ data: payload as never }),
     onSuccess: (r) => setProtocolo(r.protocolo),
   });
 

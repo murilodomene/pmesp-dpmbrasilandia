@@ -603,6 +603,14 @@ function Autuacao({ id, cargo }: { id: string; cargo: string | null }) {
       {dialog?.kind === "receber" && <ReceberDialog id={id} onClose={() => setDialog(null)} />}
       {dialog?.kind === "prorrogar" && <ProrrogarDialog id={id} onClose={() => setDialog(null)} />}
       {dialog?.kind === "oitiva" && <OitivaDialog id={id} onClose={() => setDialog(null)} />}
+      {dialog?.kind === "retificar" && (
+        <RetificarDialog
+          denunciaId={id}
+          policial={dialog.policial}
+          onClose={() => setDialog(null)}
+        />
+      )}
+
 
       <style>{`.input{background:var(--input);border:1px solid var(--border);border-radius:6px;padding:.55rem .7rem;font-size:.9rem;color:var(--foreground);width:100%}`}</style>
     </div>

@@ -106,6 +106,12 @@ function DocumentosPage() {
         (a, b) => DOC_ORDER.indexOf(a.id) - DOC_ORDER.indexOf(b.id),
       );
       setDocs(list);
+      // ?open=<docId> deep-link
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        const open = params.get("open");
+        if (open && list.some((d) => d.id === open)) setSelectedId(open);
+      }
     });
   }, []);
 

@@ -1,0 +1,1 @@
+ALTER TYPE public.movimento_especie ADD VALUE IF NOT EXISTS 'portaria';

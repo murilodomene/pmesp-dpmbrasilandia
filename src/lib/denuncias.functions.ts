@@ -26,6 +26,7 @@ const UNIDADES = [
 ] as const;
 
 const ESPECIES = ["despacho", "decisao", "ipc"] as const;
+const ESPECIES_PORTARIA = "portaria" as const;
 
 function publicClient() {
   return createClient<Database>(
@@ -452,4 +453,49 @@ export const retificarDenunciado = createServerFn({ method: "POST" })
 
     return { changed: true };
   });
+
+export const lavrarPortaria = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        denuncia_id: z.string().uuid(),
+        corpo: z.string().trim().min(50).max(30000),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const p = await getProlator(context);
+    const agora = new Date().toISOString();
+
+    const { data: atual } = await context.supabase
+      .from("denuncias")
+      .select("interrupcoes_count")
+      .eq("id", data.denuncia_id)
+      .single();
+    if (!atual) throw new Error("Denúncia não encontrada.");
+
+    const { error: updErr } = await context.supabase
+      .from("denuncias")
+      .update({
+        termo_inicial: agora,
+        acrescimos_dias: 0,
+        interrupcoes_count: (atual.interrupcoes_count ?? 0) + 1,
+        instaurada_em: agora,
+      })
+      .eq("id", data.denuncia_id);
+    if (updErr) throw new Error(updErr.message);
+
+    const { error: movErr } = await context.supabase.from("movimentos").insert({
+      denuncia_id: data.denuncia_id,
+      especie: ESPECIES_PORTARIA,
+      teor: data.corpo,
+      interrompe: true,
+      ...p,
+    });
+    if (movErr) throw new Error(movErr.message);
+
+    return { ok: true };
+  });
+
 

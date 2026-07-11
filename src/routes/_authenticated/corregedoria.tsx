@@ -12,17 +12,17 @@ import {
   getDenuncia,
   lancarMovimento,
   alterarStatus,
-  receberDenuncia,
   prorrogar,
   juntarOitiva,
   desentranharOitiva,
   atualizarObservacoes,
   atualizarUnidade,
   retificarDenunciado,
+  lavrarPortaria,
 } from "@/lib/denuncias.functions";
 
 import { getSessionInfo } from "@/lib/usuarios.functions";
-import { Gavel, FileText, Scale, Clock, ExternalLink, X, Users, Pencil } from "lucide-react";
+import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/corregedoria")({
   validateSearch: z.object({ id: z.string().uuid().optional() }),
@@ -229,7 +229,8 @@ function Autuacao({ id, cargo }: { id: string; cargo: string | null }) {
 
   const [dialog, setDialog] = useState<
     | { kind: "status" }
-    | { kind: "receber" }
+    | { kind: "portaria" }
+    | { kind: "verPortaria"; teor: string; quando: string; prolator: string; cargo: string }
     | { kind: "prorrogar" }
     | { kind: "oitiva" }
     | { kind: "retificar"; policial: { id: string; nome: string; rg_funcional: string | null } }
@@ -418,14 +419,56 @@ function Autuacao({ id, cargo }: { id: string; cargo: string | null }) {
             interrupcoes_count={denuncia.interrupcoes_count}
             variant="block"
           />
-          <button
-            onClick={() => setDialog({ kind: "receber" })}
-            disabled={suspenso}
-            className="w-full rounded-md border border-border px-3 py-2 text-xs hover:bg-surface-2 disabled:opacity-40"
-          >
-            <Clock className="mr-1 inline h-3.5 w-3.5" /> Despacho de recebimento
-            <div className="text-[10px] text-muted-foreground">interrompe a prescrição</div>
-          </button>
+          {(() => {
+            const portariaMov = movimentos.find((m) => m.especie === "portaria");
+            return (
+              <div className="rounded-md border border-border p-3">
+                <div className="flex items-center gap-2 text-xs font-medium">
+                  <Stamp className="h-3.5 w-3.5" /> Portaria Inaugural
+                </div>
+                <div className="mt-0.5 text-[10px] text-muted-foreground">
+                  {portariaMov
+                    ? "Já lavrada — interrompe a prescrição"
+                    : "Instaura o PAD e interrompe a prescrição"}
+                </div>
+                <div className="mt-2 flex flex-col gap-1.5">
+                  {portariaMov && (
+                    <button
+                      onClick={() =>
+                        setDialog({
+                          kind: "verPortaria",
+                          teor: portariaMov.teor,
+                          quando: portariaMov.criado_em,
+                          prolator: portariaMov.prolator_nome,
+                          cargo: portariaMov.prolator_cargo as string,
+                        })
+                      }
+                      className="flex items-center justify-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
+                    >
+                      <Eye className="h-3.5 w-3.5" /> Ver portaria
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      if (portariaMov) {
+                        if (
+                          !window.confirm(
+                            "Já existe uma portaria lavrada. Lavrar outra irá interromper o prazo novamente. Deseja prosseguir?",
+                          )
+                        )
+                          return;
+                      }
+                      setDialog({ kind: "portaria" });
+                    }}
+                    disabled={suspenso}
+                    className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-40"
+                  >
+                    {portariaMov ? "Lavrar nova portaria" : "Lavrar portaria"}
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
           <button
             onClick={() => setDialog({ kind: "prorrogar" })}
             disabled={suspenso}
@@ -553,7 +596,9 @@ function Autuacao({ id, cargo }: { id: string; cargo: string | null }) {
                     {new Date(m.criado_em).toLocaleString("pt-BR")}
                   </span>
                 </div>
-                <p className="mt-2 whitespace-pre-wrap text-sm">{m.teor}</p>
+                <p className="mt-2 whitespace-pre-wrap text-sm">
+                  {m.especie === "portaria" ? renderTeorComLinks(m.teor) : m.teor}
+                </p>
                 <div className="mt-2 text-[11px] text-muted-foreground">
                   {m.prolator_nome} · {cargoLabel(m.prolator_cargo as string)}
                 </div>
@@ -602,7 +647,22 @@ function Autuacao({ id, cargo }: { id: string; cargo: string | null }) {
       {dialog?.kind === "status" && (
         <StatusDialog id={id} statusAtual={status} onClose={() => setDialog(null)} />
       )}
-      {dialog?.kind === "receber" && <ReceberDialog id={id} onClose={() => setDialog(null)} />}
+      {dialog?.kind === "portaria" && (
+        <PortariaDialog
+          id={id}
+          policiais={policiais}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {dialog?.kind === "verPortaria" && (
+        <VerPortariaDialog
+          teor={dialog.teor}
+          quando={dialog.quando}
+          prolator={dialog.prolator}
+          cargo={dialog.cargo}
+          onClose={() => setDialog(null)}
+        />
+      )}
       {dialog?.kind === "prorrogar" && <ProrrogarDialog id={id} onClose={() => setDialog(null)} />}
       {dialog?.kind === "oitiva" && <OitivaDialog id={id} onClose={() => setDialog(null)} />}
       {dialog?.kind === "retificar" && (
@@ -637,7 +697,36 @@ function labelEspecie(e: string): string {
         ? "IPC"
         : e === "retificacao"
           ? "Retificação"
-          : "Status";
+          : e === "portaria"
+            ? "Portaria Inaugural"
+            : "Status";
+}
+
+// Converte "art. 78", "arts. 80", "artigo 12" em links para o Manual.
+function renderTeorComLinks(teor: string): React.ReactNode {
+  const parts: React.ReactNode[] = [];
+  const re = /(art(?:s|igos?)?\.?)\s*(\d+)/gi;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  let key = 0;
+  while ((m = re.exec(teor)) !== null) {
+    if (m.index > last) parts.push(teor.slice(last, m.index));
+    const num = m[2];
+    parts.push(
+      <a
+        key={key++}
+        href={`/documentos?open=manual#art-${num}`}
+        target="_blank"
+        rel="noreferrer"
+        className="text-primary underline decoration-dotted underline-offset-2 hover:decoration-solid"
+      >
+        {m[0]}
+      </a>,
+    );
+    last = m.index + m[0].length;
+  }
+  if (last < teor.length) parts.push(teor.slice(last));
+  return parts;
 }
 
 function cargoLabel(c: string): string {
@@ -655,9 +744,18 @@ function MovMarker({ especie }: { especie: string }) {
     ipc: "bg-status-investigacao text-status-investigacao-fg",
     status: "bg-status-aguardando text-status-aguardando-fg",
     retificacao: "bg-status-aguardando text-status-aguardando-fg",
+    portaria: "bg-primary text-primary-foreground",
   };
   const Icon =
-    especie === "decisao" ? Scale : especie === "ipc" ? Gavel : especie === "retificacao" ? Pencil : FileText;
+    especie === "decisao"
+      ? Scale
+      : especie === "ipc"
+        ? Gavel
+        : especie === "retificacao"
+          ? Pencil
+          : especie === "portaria"
+            ? Stamp
+            : FileText;
 
   return (
     <div className={`grid h-8 w-8 flex-shrink-0 place-items-center rounded-full ${style[especie]}`}>
@@ -759,35 +857,221 @@ function StatusDialog({
   );
 }
 
-function ReceberDialog({ id, onClose }: { id: string; onClose: () => void }) {
+function cargoLabelFull(c: string | null | undefined): string {
+  if (!c) return "";
+  return c === "delegado_geral"
+    ? "Delegado Geral"
+    : c === "delegado_corregedor"
+      ? "Delegado Corregedor"
+      : "Corregedor";
+}
+
+const PROVIDENCIAS_PADRAO = `I - Juntar aos autos a apuração preliminar;
+II - Deliberar a Cúpula da Corregedoria pela existência de elementos de justa causa da presente denúncia, caso necessário;
+III - A seguir, tornem os autos conclusos.`;
+
+function montarModeloPortaria(params: {
+  cargoProlator: string;
+  nomeProlator: string;
+  matriculaProlator: string;
+  nomeDenunciado: string;
+  matriculaDenunciado: string;
+  cargoDenunciado: string;
+  artigos: string;
+  providencias: string;
+}): string {
+  const cargoDen = params.cargoDenunciado.trim() || "[CARGO_DENUNCIADO]";
+  const artigos = params.artigos.trim() || "[ARTIGOS_ENQUADRADOS]";
+  return `A Corregedoria Geral da Polícia Civil do Estado de São Paulo, por intermédio do ${params.cargoProlator}, ${params.nomeProlator}, ${params.matriculaProlator}, com fundamento nos arts. 78, inciso I c/c 79 do Manual de Procedimentos, instaura o presente PROCESSO ADMINISTRATIVO DISCIPLINAR com a finalidade de apurar a conduta do policial civil ${params.nomeDenunciado}, ${params.matriculaDenunciado}, ${cargoDen}, em face do suposto cometimento da(s) infração administrativas relatadas.
+
+Com efeito, a partir dos fatos constantes da presente denúncia, os comportamentos supramencionados, configuram, em tese, infração aos dispositivos ${artigos}.
+
+Pelo exposto, para que o denunciado venha se defender das imputações acima descritas segundo os princípios do contraditório e da ampla defesa, de acordo com o rito estabelecido nos arts. 80 e seguintes, deverá a CORREGEPOL, logo após esta Portaria, tomar as seguintes providências:
+
+${params.providencias.trim() || PROVIDENCIAS_PADRAO}
+
+Cumpra-se.
+
+Datado e assinado digitalmente em ${new Date().toLocaleDateString("pt-BR")}.
+
+${params.nomeProlator}
+${params.cargoProlator}`;
+}
+
+function PortariaDialog({
+  id,
+  policiais,
+  onClose,
+}: {
+  id: string;
+  policiais: Array<{ id: string; nome: string; rg_funcional: string | null; unidade: string | null }>;
+  onClose: () => void;
+}) {
   const qc = useQueryClient();
-  const fn = useServerFn(receberDenuncia);
-  const [teor, setTeor] = useState("Despacho de recebimento da denúncia.");
+  const fn = useServerFn(lavrarPortaria);
+  const sessionFn = useServerFn(getSessionInfo);
+  const { data: session } = useQuery({ queryKey: ["session-info"], queryFn: () => sessionFn() });
+
+  const primeiro = policiais[0];
+  const [denNome, setDenNome] = useState(primeiro?.nome ?? "");
+  const [denMat, setDenMat] = useState(primeiro?.rg_funcional ?? "");
+  const [cargoDen, setCargoDen] = useState("");
+  const [artigos, setArtigos] = useState("");
+  const [providencias, setProvidencias] = useState(PROVIDENCIAS_PADRAO);
+  const [corpo, setCorpo] = useState("");
+  const [modeloAplicado, setModeloAplicado] = useState(false);
+
+  function aplicarModelo() {
+    if (!session?.profile || !session.cargo) return;
+    const texto = montarModeloPortaria({
+      cargoProlator: cargoLabelFull(session.cargo),
+      nomeProlator: session.profile.nome,
+      matriculaProlator: session.profile.matricula || "matrícula não informada",
+      nomeDenunciado: denNome || "[NOME_DENUNCIADO]",
+      matriculaDenunciado: denMat || "matrícula não informada",
+      cargoDenunciado: cargoDen,
+      artigos,
+      providencias,
+    });
+    setCorpo(texto);
+    setModeloAplicado(true);
+  }
+
   const m = useMutation({
-    mutationFn: () => fn({ data: { denuncia_id: id, teor } }),
+    mutationFn: () => fn({ data: { denuncia_id: id, corpo } }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["denuncia", id] });
       qc.invalidateQueries({ queryKey: ["denuncias"] });
       onClose();
     },
   });
+
   return (
-    <Modal title="Despacho de recebimento" onClose={onClose}>
+    <Modal title="Portaria Inaugural" onClose={onClose}>
       <div className="mb-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs">
-        Esta ação <strong>interrompe</strong> a prescrição: o prazo reinicia do zero (15 dias) e os
-        acréscimos anteriores são descartados.
+        Ao confirmar, a portaria é lançada na linha do tempo, a data de instauração é
+        preenchida e a <strong>prescrição é interrompida</strong> (relógio reinicia em 15 dias).
       </div>
-      <textarea rows={4} className="input" value={teor} onChange={(e) => setTeor(e.target.value)} />
+
+      <div className="grid gap-3 rounded-md border border-border/60 p-3">
+        <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+          Variáveis do modelo
+        </div>
+        <div className="grid gap-2 md:grid-cols-2">
+          <label className="grid gap-1 text-xs">
+            <span className="text-muted-foreground">Nome do denunciado</span>
+            <input className="input" value={denNome} onChange={(e) => setDenNome(e.target.value)} />
+          </label>
+          <label className="grid gap-1 text-xs">
+            <span className="text-muted-foreground">Matrícula do denunciado</span>
+            <input className="input" value={denMat} onChange={(e) => setDenMat(e.target.value)} />
+          </label>
+          <label className="grid gap-1 text-xs md:col-span-2">
+            <span className="text-muted-foreground">
+              Cargo do denunciado (opcional — deixe em branco se desconhecido)
+            </span>
+            <input
+              className="input"
+              value={cargoDen}
+              onChange={(e) => setCargoDen(e.target.value)}
+              placeholder="ex.: Investigador de Polícia"
+            />
+          </label>
+          <label className="grid gap-1 text-xs md:col-span-2">
+            <span className="text-muted-foreground">
+              Artigos enquadrados (ex.: art. 12, inciso III)
+            </span>
+            <input
+              className="input"
+              value={artigos}
+              onChange={(e) => setArtigos(e.target.value)}
+              placeholder="art. 12, inciso III"
+            />
+          </label>
+          <label className="grid gap-1 text-xs md:col-span-2">
+            <span className="text-muted-foreground">Providências</span>
+            <textarea
+              rows={4}
+              className="input"
+              value={providencias}
+              onChange={(e) => setProvidencias(e.target.value)}
+            />
+          </label>
+        </div>
+        <button
+          type="button"
+          onClick={aplicarModelo}
+          disabled={!session?.profile || !session.cargo}
+          className="rounded-md border border-primary/60 bg-primary/10 px-3 py-2 text-xs font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
+        >
+          Usar modelo pré-formatado
+        </button>
+      </div>
+
+      <label className="mt-3 grid gap-1">
+        <span className="text-xs uppercase tracking-wider text-muted-foreground">
+          Corpo da portaria (editável)
+        </span>
+        <textarea
+          rows={14}
+          className="input font-mono text-xs"
+          value={corpo}
+          onChange={(e) => setCorpo(e.target.value)}
+          placeholder={
+            modeloAplicado
+              ? ""
+              : "Clique em «Usar modelo pré-formatado» ou digite a portaria livremente."
+          }
+        />
+      </label>
+
+      {m.isError && (
+        <div className="mt-3 rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive-foreground">
+          {(m.error as Error)?.message || "Não foi possível lavrar a portaria."}
+        </div>
+      )}
+
       <div className="mt-4 flex justify-end gap-2">
         <button onClick={onClose} className="rounded-md border border-border px-4 py-2 text-sm">
           Cancelar
         </button>
         <button
           onClick={() => m.mutate()}
-          disabled={m.isPending}
+          disabled={corpo.trim().length < 50 || m.isPending}
           className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
-          Confirmar recebimento
+          {m.isPending ? "Lavrando..." : "Confirmar e lavrar portaria"}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+function VerPortariaDialog({
+  teor,
+  quando,
+  prolator,
+  cargo,
+  onClose,
+}: {
+  teor: string;
+  quando: string;
+  prolator: string;
+  cargo: string;
+  onClose: () => void;
+}) {
+  return (
+    <Modal title="Portaria Inaugural" onClose={onClose}>
+      <div className="text-xs text-muted-foreground">
+        Lavrada por {prolator} · {cargoLabelFull(cargo)} ·{" "}
+        <span className="tabular">{new Date(quando).toLocaleString("pt-BR")}</span>
+      </div>
+      <div className="mt-3 max-h-[60vh] overflow-y-auto whitespace-pre-wrap rounded-md border border-border/60 bg-surface-2 p-4 text-sm leading-relaxed">
+        {renderTeorComLinks(teor)}
+      </div>
+      <div className="mt-4 flex justify-end">
+        <button onClick={onClose} className="rounded-md border border-border px-4 py-2 text-sm">
+          Fechar
         </button>
       </div>
     </Modal>

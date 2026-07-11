@@ -329,6 +329,7 @@ export type Database = {
         | "delegado_corregedor"
         | "corregedor"
         | "cidadao"
+        | "mp"
       denuncia_status:
         | "recebida"
         | "aguardando_analise"
@@ -486,6 +487,7 @@ export const Constants = {
         "delegado_corregedor",
         "corregedor",
         "cidadao",
+        "mp",
       ],
       denuncia_status: [
         "recebida",

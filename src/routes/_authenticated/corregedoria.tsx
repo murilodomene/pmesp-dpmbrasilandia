@@ -1908,3 +1908,77 @@ function ExcluirDenunciaDialog({
 
 
 
+
+function CancelarMovDialog({
+  movimentoId,
+  resumo,
+  denunciaId,
+  onClose,
+}: {
+  movimentoId: string;
+  resumo: string;
+  denunciaId: string;
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const fn = useServerFn(cancelarMovimento);
+  const [motivo, setMotivo] = useState("");
+
+  const m = useMutation({
+    mutationFn: () => fn({ data: { movimento_id: movimentoId, motivo } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["denuncia", denunciaId] });
+      qc.invalidateQueries({ queryKey: ["denuncias"] });
+      toast.success("Movimentação cancelada com sucesso.");
+      onClose();
+    },
+    onError: (e) => {
+      toast.error(
+        e instanceof Error && e.message
+          ? e.message
+          : "Falha ao cancelar movimentação. Tente novamente.",
+      );
+    },
+  });
+
+  return (
+    <AlertDialog open onOpenChange={(o) => !o && !m.isPending && onClose()}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Cancelar movimentação</AlertDialogTitle>
+          <AlertDialogDescription>
+            A movimentação <strong>{resumo}</strong> permanecerá no histórico marcada como
+            cancelada, e um novo lançamento de auditoria será criado. A ação é irreversível.
+            Informe a justificativa.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="mt-2 grid gap-1">
+          <label className="text-[11px] uppercase tracking-wider text-muted-foreground">
+            Justificativa
+          </label>
+          <textarea
+            rows={4}
+            className="input"
+            autoFocus
+            value={motivo}
+            onChange={(e) => setMotivo(e.target.value)}
+            placeholder="Explique o motivo do cancelamento..."
+          />
+        </div>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={m.isPending}>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={motivo.trim().length < 3 || m.isPending}
+            onClick={(e) => {
+              e.preventDefault();
+              m.mutate();
+            }}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {m.isPending ? "Cancelando..." : "Confirmar cancelamento"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}

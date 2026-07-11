@@ -128,9 +128,14 @@ function DocumentosPage() {
     }, 100);
   }, [selectedId]);
 
-  const selected = docs.find((d) => d.id === selectedId) ?? null;
+  const podeVerHierarquia = cargo !== null && HIERARQUIA_ROLES.has(cargo);
+  const visibleDocs = useMemo(
+    () => docs.filter((d) => d.id !== "hierarquia" || podeVerHierarquia),
+    [docs, podeVerHierarquia],
+  );
 
-  const rendered = useMemo(() => {
+  const selected = visibleDocs.find((d) => d.id === selectedId) ?? null;
+  const isHierarquia = selected?.id === "hierarquia";
     if (!selected) return { html: "", toc: [] as { id: string; label: string }[], count: 0 };
     const html = mdToHtml(selected.conteudo);
     const withAnchors = anchorize(html);

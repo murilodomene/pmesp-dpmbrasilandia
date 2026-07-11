@@ -560,13 +560,46 @@ function Autuacao({ id, cargo }: { id: string; cargo: string | null }) {
             </button>
           ))}
         </div>
-        <textarea
-          rows={5}
-          className="input mt-3"
-          placeholder="Teor do ato..."
-          value={teor}
-          onChange={(e) => setTeor(e.target.value)}
-        />
+        {especie === "ipc" ? (
+          <div className="mt-3 space-y-2">
+            <IpcCampoAuto label="Unidade" valor={denuncia.unidade || "—"} />
+            <IpcCampoAuto label="1º Processo número" valor={denuncia.numero_protocolo} />
+            <IpcCampoAuto
+              label="2º Identificação do policial"
+              valor={
+                policiais.length
+                  ? policiais
+                      .map((p) => `${p.nome}${p.rg_funcional ? ` — ${p.rg_funcional}` : ""}`)
+                      .join("; ")
+                  : "Não identificado"
+              }
+            />
+            <label className="block">
+              <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                3º Relato do fato
+              </span>
+              <textarea
+                rows={5}
+                className="input mt-1"
+                placeholder="Descreva o fato..."
+                value={teor}
+                onChange={(e) => setTeor(e.target.value)}
+              />
+            </label>
+            <IpcCampoAuto
+              label="4º Ciente dos fatos"
+              valor="Corregedoria Geral da Polícia Civil"
+            />
+          </div>
+        ) : (
+          <textarea
+            rows={5}
+            className="input mt-3"
+            placeholder="Teor do ato..."
+            value={teor}
+            onChange={(e) => setTeor(e.target.value)}
+          />
+        )}
         <div className="mt-3 flex justify-end">
           <button
             onClick={() => mLancar.mutate()}

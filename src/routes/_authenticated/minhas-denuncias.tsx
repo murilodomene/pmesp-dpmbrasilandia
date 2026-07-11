@@ -55,7 +55,7 @@ function MinhasDenunciasPage() {
   }
 
   const denuncia = data?.denuncias.find((d) => d.id === selected) ?? null;
-  const ipcs = denuncia ? ((ipcsPorDenuncia.get(denuncia.id) ?? []) as typeof data.ipcs) : [];
+  const ipcs = denuncia && data ? ((ipcsPorDenuncia.get(denuncia.id) ?? []) as typeof data.ipcs) : [];
 
   return (
     <div className="min-h-screen">

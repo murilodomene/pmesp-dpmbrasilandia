@@ -19,6 +19,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedPendenteRouteImport } from './routes/_authenticated/pendente'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
+import { Route as AuthenticatedMinhasDenunciasRouteImport } from './routes/_authenticated/minhas-denuncias'
 import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated/documentos'
 import { Route as AuthenticatedCorregedoriaRouteImport } from './routes/_authenticated/corregedoria'
 
@@ -71,6 +72,12 @@ const AuthenticatedPainelRoute = AuthenticatedPainelRouteImport.update({
   path: '/painel',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMinhasDenunciasRoute =
+  AuthenticatedMinhasDenunciasRouteImport.update({
+    id: '/minhas-denuncias',
+    path: '/minhas-denuncias',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDocumentosRoute = AuthenticatedDocumentosRouteImport.update({
   id: '/documentos',
   path: '/documentos',
@@ -92,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/corregedoria': typeof AuthenticatedCorregedoriaRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
+  '/minhas-denuncias': typeof AuthenticatedMinhasDenunciasRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/pendente': typeof AuthenticatedPendenteRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
@@ -105,6 +113,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/corregedoria': typeof AuthenticatedCorregedoriaRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
+  '/minhas-denuncias': typeof AuthenticatedMinhasDenunciasRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/pendente': typeof AuthenticatedPendenteRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
@@ -120,6 +129,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/corregedoria': typeof AuthenticatedCorregedoriaRoute
   '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
+  '/_authenticated/minhas-denuncias': typeof AuthenticatedMinhasDenunciasRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
   '/_authenticated/pendente': typeof AuthenticatedPendenteRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
@@ -135,6 +145,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/corregedoria'
     | '/documentos'
+    | '/minhas-denuncias'
     | '/painel'
     | '/pendente'
     | '/usuarios'
@@ -148,6 +159,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/corregedoria'
     | '/documentos'
+    | '/minhas-denuncias'
     | '/painel'
     | '/pendente'
     | '/usuarios'
@@ -162,6 +174,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/_authenticated/corregedoria'
     | '/_authenticated/documentos'
+    | '/_authenticated/minhas-denuncias'
     | '/_authenticated/painel'
     | '/_authenticated/pendente'
     | '/_authenticated/usuarios'
@@ -249,6 +262,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPainelRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/minhas-denuncias': {
+      id: '/_authenticated/minhas-denuncias'
+      path: '/minhas-denuncias'
+      fullPath: '/minhas-denuncias'
+      preLoaderRoute: typeof AuthenticatedMinhasDenunciasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/documentos': {
       id: '/_authenticated/documentos'
       path: '/documentos'
@@ -269,6 +289,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedCorregedoriaRoute: typeof AuthenticatedCorregedoriaRoute
   AuthenticatedDocumentosRoute: typeof AuthenticatedDocumentosRoute
+  AuthenticatedMinhasDenunciasRoute: typeof AuthenticatedMinhasDenunciasRoute
   AuthenticatedPainelRoute: typeof AuthenticatedPainelRoute
   AuthenticatedPendenteRoute: typeof AuthenticatedPendenteRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
@@ -277,6 +298,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCorregedoriaRoute: AuthenticatedCorregedoriaRoute,
   AuthenticatedDocumentosRoute: AuthenticatedDocumentosRoute,
+  AuthenticatedMinhasDenunciasRoute: AuthenticatedMinhasDenunciasRoute,
   AuthenticatedPainelRoute: AuthenticatedPainelRoute,
   AuthenticatedPendenteRoute: AuthenticatedPendenteRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,

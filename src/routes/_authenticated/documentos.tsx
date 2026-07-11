@@ -122,12 +122,22 @@ function DocumentosPage() {
   const selected = docs.find((d) => d.id === selectedId) ?? null;
 
   const rendered = useMemo(() => {
-    if (!selected) return { html: "", toc: [] as { id: string; label: string }[] };
+    if (!selected) return { html: "", toc: [] as { id: string; label: string }[], count: 0 };
     const html = mdToHtml(selected.conteudo);
     const withAnchors = anchorize(html);
     const finalHtml = highlight(withAnchors.html, buscaAtiva);
-    return { html: finalHtml, toc: withAnchors.toc };
+    const count = buscaAtiva.trim() ? (finalHtml.match(/<mark\b/g)?.length ?? 0) : 0;
+    return { html: finalHtml, toc: withAnchors.toc, count };
   }, [selected, buscaAtiva]);
+
+  // Auto-scroll to first match when searching inside a document
+  useEffect(() => {
+    if (!selectedId || !buscaAtiva.trim()) return;
+    const t = setTimeout(() => {
+      contentRef.current?.querySelector("mark")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 120);
+    return () => clearTimeout(t);
+  }, [buscaAtiva, selectedId, rendered.html]);
 
   const searchResults = useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -193,23 +203,44 @@ function DocumentosPage() {
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
                 placeholder="Buscar em todos os documentos…"
-                className="w-full rounded-md border border-border bg-surface pl-9 pr-3 py-2 text-sm outline-none focus:border-primary"
+                className="w-full rounded-lg border border-border bg-surface pl-9 pr-9 py-2 text-sm shadow-sm outline-none transition focus:ring-2 focus:ring-primary focus:border-transparent"
               />
+              {busca && (
+                <button
+                  onClick={() => setBusca("")}
+                  aria-label="Limpar busca"
+                  className="absolute right-2 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
           )}
         </div>
 
         {!selectedId && busca.trim() && (
-          <div className="mb-8 rounded-lg border border-border bg-surface">
+          <div className="mb-8 animate-fade-in rounded-lg border border-border bg-surface shadow-sm">
             <div className="border-b border-border px-4 py-2 text-xs uppercase tracking-widest text-muted-foreground">
-              {searchResults.length} resultado(s)
+              {searchResults.length === 0
+                ? "Nenhum resultado"
+                : `${searchResults.length} resultado${searchResults.length > 1 ? "s" : ""} encontrado${searchResults.length > 1 ? "s" : ""}`}
             </div>
             {searchResults.length === 0 ? (
-              <div className="px-4 py-6 text-sm text-muted-foreground">Nada encontrado.</div>
+              <div className="flex flex-col items-center gap-3 px-4 py-10 text-center">
+                <p className="text-sm text-muted-foreground">
+                  Nenhum resultado encontrado para <span className="font-medium text-foreground">"{busca}"</span>
+                </p>
+                <button
+                  onClick={() => setBusca("")}
+                  className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
+                >
+                  <X className="h-3.5 w-3.5" /> Limpar busca
+                </button>
+              </div>
             ) : (
               <ul>
                 {searchResults.map(({ doc, trecho }, i) => (
-                  <li key={i}>
+                  <li key={i} className="animate-fade-in">
                     <button
                       onClick={() => abrir(doc.id, busca)}
                       className="block w-full border-b border-border/60 px-4 py-3 text-left hover:bg-surface-2"
@@ -227,10 +258,10 @@ function DocumentosPage() {
         {!selectedId && !busca.trim() && (
           <ul className="grid gap-4 sm:grid-cols-2">
             {docs.map((d) => (
-              <li key={d.id}>
+              <li key={d.id} className="animate-fade-in">
                 <button
                   onClick={() => abrir(d.id)}
-                  className="group flex w-full items-start gap-4 rounded-lg border border-border bg-surface p-5 text-left transition hover:border-primary hover:bg-surface-2"
+                  className="group flex w-full items-start gap-4 rounded-lg border border-border bg-surface p-5 text-left shadow-sm transition hover:border-primary hover:bg-surface-2"
                 >
                   <div className="grid h-10 w-10 place-items-center rounded-md bg-primary/10 text-primary">
                     <FileText className="h-5 w-5" />
@@ -298,35 +329,80 @@ function DocumentosPage() {
                 />
               </div>
             ) : (
-              <div className="grid gap-6 p-6 md:grid-cols-[220px_1fr]">
-                {rendered.toc.length > 0 && (
-                  <nav className="md:sticky md:top-6 md:self-start rounded-md border border-border bg-background/50 p-3">
-                    <div className="mb-2 text-xs uppercase tracking-widest text-muted-foreground">Sumário</div>
-                    <ul className="space-y-1 text-sm">
-                      {rendered.toc.map((t) => (
-                        <li key={t.id}>
-                          <a
-                            href={`#${t.id}`}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              document.getElementById(t.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-                              history.replaceState(null, "", `#${t.id}`);
-                            }}
-                            className="block rounded px-2 py-1 text-muted-foreground hover:bg-surface-2 hover:text-foreground"
-                          >
-                            {t.label}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  </nav>
+              <>
+                <div className="sticky top-0 z-10 border-b border-border bg-surface/95 px-6 py-3 backdrop-blur">
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <input
+                      value={buscaAtiva}
+                      onChange={(e) => setBuscaAtiva(e.target.value)}
+                      placeholder="Buscar neste documento…"
+                      className="w-full rounded-lg border border-border bg-background pl-9 pr-9 py-2 text-sm shadow-sm outline-none transition focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
+                    {buscaAtiva && (
+                      <button
+                        onClick={() => setBuscaAtiva("")}
+                        aria-label="Limpar busca"
+                        className="absolute right-2 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  {buscaAtiva.trim() && (
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      {rendered.count === 0
+                        ? "Nenhum resultado"
+                        : `${rendered.count} resultado${rendered.count > 1 ? "s" : ""} encontrado${rendered.count > 1 ? "s" : ""}`}
+                    </div>
+                  )}
+                </div>
+
+                {buscaAtiva.trim() && rendered.count === 0 ? (
+                  <div className="flex flex-col items-center gap-3 px-6 py-16 text-center animate-fade-in">
+                    <p className="text-sm text-muted-foreground">
+                      Nenhum resultado encontrado para <span className="font-medium text-foreground">"{buscaAtiva}"</span>
+                    </p>
+                    <button
+                      onClick={() => setBuscaAtiva("")}
+                      className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
+                    >
+                      <X className="h-3.5 w-3.5" /> Limpar busca
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid gap-6 p-6 md:grid-cols-[220px_1fr]">
+                    {rendered.toc.length > 0 && (
+                      <nav className="md:sticky md:top-24 md:self-start rounded-md border border-border bg-background/50 p-3">
+                        <div className="mb-2 text-xs uppercase tracking-widest text-muted-foreground">Sumário</div>
+                        <ul className="space-y-1 text-sm">
+                          {rendered.toc.map((t) => (
+                            <li key={t.id}>
+                              <a
+                                href={`#${t.id}`}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  document.getElementById(t.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                                  history.replaceState(null, "", `#${t.id}`);
+                                }}
+                                className="block rounded px-2 py-1 text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+                              >
+                                {t.label}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      </nav>
+                    )}
+                    <div
+                      key={buscaAtiva}
+                      ref={contentRef}
+                      className="prose prose-invert max-w-none animate-fade-in prose-headings:font-serif prose-h1:text-2xl prose-h2:text-xl prose-p:leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: rendered.html }}
+                    />
+                  </div>
                 )}
-                <div
-                  ref={contentRef}
-                  className="prose prose-invert max-w-none prose-headings:font-serif prose-h1:text-2xl prose-h2:text-xl prose-p:leading-relaxed"
-                  dangerouslySetInnerHTML={{ __html: rendered.html }}
-                />
-              </div>
+              </>
             )}
           </article>
         )}

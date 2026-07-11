@@ -254,12 +254,23 @@ function DetalheProcesso({ id }: { id: string }) {
               <li key={o.id} className="rounded-md border border-border/60 p-3">
                 <div className="text-xs text-muted-foreground">
                   {new Date(o.created_at).toLocaleString("pt-BR")}
+                  {o.data && ` · realizada em ${new Date(o.data).toLocaleDateString("pt-BR")}`}
                 </div>
-                <div className="mt-1 text-sm font-medium">{o.depoente_nome}</div>
-                <pre className="mt-1 whitespace-pre-wrap font-sans text-sm">{o.teor}</pre>
+                <div className="mt-1 text-sm font-medium">{o.identificacao}</div>
+                {o.url && (
+                  <a
+                    href={o.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    <ExternalLink className="h-3 w-3" /> abrir gravação
+                  </a>
+                )}
               </li>
             ))}
           </ul>
+
         )}
       </div>
 

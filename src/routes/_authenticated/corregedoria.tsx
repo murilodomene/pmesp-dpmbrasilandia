@@ -314,14 +314,35 @@ function Autuacao({ id, cargo }: { id: string; cargo: string | null }) {
                 : denuncia.denunciante_nome || "Não informado"}
             </Row>
             <Row k="Policiais">
-              {policiais.map((p) => (
-                <span key={p.id} className="mr-3">
-                  {p.nome}
-                  {p.rg_funcional && <span className="text-muted-foreground"> · {p.rg_funcional}</span>}
-                  {p.unidade && <span className="text-muted-foreground"> · {p.unidade}</span>}
-                </span>
-              ))}
+              <div className="flex flex-col gap-1">
+                {policiais.map((p) => (
+                  <div key={p.id} className="flex items-center gap-2">
+                    <span>
+                      {p.nome}
+                      {p.rg_funcional && <span className="text-muted-foreground"> · {p.rg_funcional}</span>}
+                      {p.unidade && <span className="text-muted-foreground"> · {p.unidade}</span>}
+                    </span>
+                    {podeRetificar && (
+                      <button
+                        type="button"
+                        title="Retificar denunciado"
+                        aria-label={`Retificar ${p.nome}`}
+                        onClick={() =>
+                          setDialog({
+                            kind: "retificar",
+                            policial: { id: p.id, nome: p.nome, rg_funcional: p.rg_funcional ?? null },
+                          })
+                        }
+                        className="rounded-md border border-border p-1 text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
             </Row>
+
             <Row k="Unidade">
               <select
                 value={denuncia.unidade ?? ""}

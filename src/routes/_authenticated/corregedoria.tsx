@@ -636,6 +636,17 @@ function Autuacao({ id, cargo }: { id: string; cargo: string | null }) {
                       +30 dias
                     </span>
                   )}
+                  {m.especie === "ipc" && (
+                    <span
+                      className={`rounded-full px-2 py-0.5 ${
+                        m.ipc_publicado
+                          ? "bg-primary/20 text-primary"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {m.ipc_publicado ? "Publicado ao denunciante" : "Não publicado"}
+                    </span>
+                  )}
                   <span className="ml-auto text-muted-foreground tabular">
                     {new Date(m.criado_em).toLocaleString("pt-BR")}
                   </span>
@@ -643,8 +654,17 @@ function Autuacao({ id, cargo }: { id: string; cargo: string | null }) {
                 <p className="mt-2 whitespace-pre-wrap text-sm">
                   {m.especie === "portaria" ? renderTeorComLinks(m.teor) : m.teor}
                 </p>
-                <div className="mt-2 text-[11px] text-muted-foreground">
-                  {m.prolator_nome} · {cargoLabel(m.prolator_cargo as string)}
+                <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                  <span>{m.prolator_nome} · {cargoLabel(m.prolator_cargo as string)}</span>
+                  {m.especie === "ipc" && (
+                    <button
+                      onClick={() => mPublicar.mutate({ id: m.id, publicado: !m.ipc_publicado })}
+                      disabled={mPublicar.isPending}
+                      className="rounded-md border border-border px-2 py-1 hover:bg-surface-2 disabled:opacity-50"
+                    >
+                      {m.ipc_publicado ? "Despublicar" : "Publicar para o denunciante"}
+                    </button>
+                  )}
                 </div>
               </div>
             </li>

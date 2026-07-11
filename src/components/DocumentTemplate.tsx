@@ -46,6 +46,7 @@ export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps
       procedimento,
       denunciado,
       tipo,
+      subtitulo,
       assunto,
       prolatorNome,
       prolatorCargo,
@@ -54,9 +55,11 @@ export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps
       children,
       variant = "screen",
       markerClass,
+      campos,
     },
     ref,
   ) {
+
     const dataFmt = new Date(data).toLocaleDateString("pt-BR", {
       day: "2-digit",
       month: "long",

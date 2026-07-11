@@ -167,24 +167,39 @@ function PainelInterno() {
             onChange={(e) => setBusca(e.target.value)}
             className="min-w-64 flex-1 rounded-md border border-border bg-input px-3 py-2 text-sm"
           />
-          <select
-            value={filtro}
-            onChange={(e) => setFiltro(e.target.value as DenunciaStatus | "")}
-            className="rounded-md border border-border bg-input px-3 py-2 text-sm"
-          >
-            <option value="">Todos os status</option>
-            {STATUS_LIST.map((s) => (
-              <option key={s} value={s}>
-                {STATUS_LABEL[s]}
-              </option>
-            ))}
-          </select>
+        </div>
+
+        <div
+          role="tablist"
+          className="mt-4 flex flex-wrap gap-1 border-b border-border"
+        >
+          {(Object.keys(TAB_LABEL) as TabKey[]).map((k) => {
+            const active = aba === k;
+            return (
+              <button
+                key={k}
+                role="tab"
+                aria-selected={active}
+                onClick={() => setAba(k)}
+                className={`inline-flex items-center gap-2 border-b-2 px-3 py-2 text-sm transition ${
+                  active
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {TAB_LABEL[k]}
+                <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs tabular">
+                  {contagens[k]}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         <div className="mt-4 space-y-2">
           {lista.length === 0 && (
             <div className="surface p-8 text-center text-sm text-muted-foreground">
-              Nenhuma denúncia registrada ainda.
+              Nenhum procedimento nesta aba.
             </div>
           )}
           {lista.map((d) => {
@@ -193,6 +208,10 @@ function PainelInterno() {
               acrescimos_dias: d.acrescimos_dias,
               status: d.status as DenunciaStatus,
             });
+            const decurso =
+              aba === "ag_decurso"
+                ? calcularDecursoPrazo(d.concluido_em ?? null)
+                : null;
             return (
               <button
                 key={d.id}
@@ -202,11 +221,22 @@ function PainelInterno() {
                 <div className="flex flex-wrap items-center gap-3">
                   <span className="tabular text-xs text-muted-foreground">{d.numero_protocolo}</span>
                   <StatusBadge status={d.status as DenunciaStatus} />
-                  <RelogioPrescricao
-                    termo_inicial={d.termo_inicial}
-                    acrescimos_dias={d.acrescimos_dias}
-                    status={d.status as DenunciaStatus}
-                  />
+                  {decurso ? (
+                    <span className="inline-flex items-center gap-1 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs text-amber-200">
+                      <Clock className="h-3 w-3" />
+                      {decurso.vencido
+                        ? "Prazo vencido"
+                        : decurso.diasRestantes === 1
+                          ? "1 dia restante"
+                          : `${decurso.diasRestantes} dias restantes`}
+                    </span>
+                  ) : (
+                    <RelogioPrescricao
+                      termo_inicial={d.termo_inicial}
+                      acrescimos_dias={d.acrescimos_dias}
+                      status={d.status as DenunciaStatus}
+                    />
+                  )}
                   <span className="ml-auto text-xs text-muted-foreground">
                     {new Date(d.created_at).toLocaleDateString("pt-BR")}
                   </span>
@@ -221,6 +251,7 @@ function PainelInterno() {
             );
           })}
         </div>
+
       </div>
 
       {aberta && <TriagemModal id={aberta} onClose={() => setAberta(null)} />}

@@ -123,13 +123,6 @@ function DetalheProcesso({ id }: { id: string }) {
   if (!data) return null;
 
   const d = data.denuncia;
-  const pres = calcularPrescricao({
-    created_at: d.created_at,
-    termo_inicial: d.termo_inicial,
-    acrescimos_dias: d.acrescimos_dias ?? 0,
-    status: d.status as DenunciaStatus,
-    instaurada_em: d.instaurada_em,
-  });
 
   return (
     <div className="space-y-4">
@@ -149,9 +142,15 @@ function DetalheProcesso({ id }: { id: string }) {
               )}
             </div>
           </div>
-          <RelogioPrescricao dias={pres.dias_restantes} suspensa={pres.suspensa} />
+          <RelogioPrescricao
+            termo_inicial={d.termo_inicial ?? d.created_at}
+            acrescimos_dias={d.acrescimos_dias ?? 0}
+            status={d.status as DenunciaStatus}
+            interrupcoes_count={d.interrupcoes_count ?? 0}
+          />
         </div>
       </div>
+
 
       <div className="surface p-5">
         <h2 className="font-serif text-lg">Ficha</h2>

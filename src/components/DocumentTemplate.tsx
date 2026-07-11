@@ -130,7 +130,7 @@ export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps
                 c.block ? (
                   <div key={c.label}>
                     <div className="font-bold">{c.label.toUpperCase()}:</div>
-                    <div className="mt-1 ato-body-pdf">{c.valor}</div>
+                    <div className="mt-2 text-[13px] leading-relaxed ato-body-pdf">{c.valor}</div>
                   </div>
                 ) : (
                   <div key={c.label}>

@@ -1274,7 +1274,7 @@ function PortariaDialog({
         </button>
         <button
           onClick={() => m.mutate()}
-          disabled={corpo.trim().length < 50 || m.isPending}
+          disabled={corpo.replace(/<[^>]+>/g, "").trim().length < 50 || m.isPending}
           className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
           {m.isPending ? "Lavrando..." : "Confirmar e lavrar portaria"}

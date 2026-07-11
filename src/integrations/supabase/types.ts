@@ -53,6 +53,8 @@ export type Database = {
         Row: {
           acrescimos_dias: number
           anexos: Json
+          certidao_gerada: boolean
+          concluido_em: string | null
           created_at: string
           denunciante_anonimo: boolean
           denunciante_contato: string | null
@@ -79,6 +81,8 @@ export type Database = {
         Insert: {
           acrescimos_dias?: number
           anexos?: Json
+          certidao_gerada?: boolean
+          concluido_em?: string | null
           created_at?: string
           denunciante_anonimo?: boolean
           denunciante_contato?: string | null
@@ -105,6 +109,8 @@ export type Database = {
         Update: {
           acrescimos_dias?: number
           anexos?: Json
+          certidao_gerada?: boolean
+          concluido_em?: string | null
           created_at?: string
           denunciante_anonimo?: boolean
           denunciante_contato?: string | null
@@ -469,6 +475,16 @@ export type Database = {
       }
       pode_conceder_mp: { Args: { _user_id: string }; Returns: boolean }
       pode_excluir_denuncia: { Args: { _user_id: string }; Returns: boolean }
+      registrar_recurso: {
+        Args: {
+          _certificacao: string
+          _denuncia_id: string
+          _recurso_link: string
+        }
+        Returns: undefined
+      }
+      transitar_denuncia: { Args: { _denuncia_id: string }; Returns: boolean }
+      transitar_pendentes: { Args: never; Returns: number }
     }
     Enums: {
       app_role:

@@ -703,3 +703,34 @@ export const listMeusProcessosMp = createServerFn({ method: "GET" })
     return data ?? [];
   });
 
+// Exclusão definitiva de denúncia (Delegado Geral / Delegado Corregedor).
+// A permissão real é aplicada pela RLS (policy "Delegados excluem denuncias").
+// FKs em movimentos, oitivas, denuncia_policiais e mp_acessos são ON DELETE CASCADE.
+export const excluirDenuncia = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        confirmar_protocolo: z.string().trim().min(1),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as unknown as ReturnType<typeof publicClient>;
+    const { data: den, error: e1 } = await sb
+      .from("denuncias")
+      .select("id, numero_protocolo")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (e1) throw new Error(e1.message);
+    if (!den) throw new Error("Denúncia não encontrada.");
+    if (den.numero_protocolo !== data.confirmar_protocolo) {
+      throw new Error("Número do procedimento não confere.");
+    }
+    const { error } = await sb.from("denuncias").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+

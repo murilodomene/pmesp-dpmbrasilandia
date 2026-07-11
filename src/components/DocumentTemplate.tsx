@@ -2,13 +2,20 @@ import { forwardRef, useRef } from "react";
 import { ShieldCheck } from "lucide-react";
 import { isHtmlAto, sanitizeAtoHtml } from "./RichTextEditor";
 
-export type AtoTipo = "DESPACHO" | "DECISÃO" | "PORTARIA";
+export type AtoTipo = "DESPACHO" | "DECISÃO" | "PORTARIA" | "IPC";
+
+export interface DocumentTemplateCampo {
+  label: string;
+  valor: React.ReactNode;
+}
 
 export interface DocumentTemplateProps {
   procedimento: string;
   denunciado: string;
-  /** Rótulo central em destaque (DESPACHO/DECISÃO/PORTARIA). */
+  /** Rótulo central em destaque (DESPACHO/DECISÃO/PORTARIA/IPC). */
   tipo?: AtoTipo;
+  /** Subtítulo discreto abaixo do tipo (ex.: "Resolução final do inquérito"). */
+  subtitulo?: string;
   /** Compatibilidade legada — usado apenas no PDF quando `tipo` não é definido. */
   assunto?: string;
   prolatorNome: string;
@@ -20,9 +27,12 @@ export interface DocumentTemplateProps {
   children?: React.ReactNode;
   /** "screen" = tema escuro integrado; "pdf" = papel branco A4. */
   variant?: "screen" | "pdf";
-  /** Cor do marcador lateral esquerdo (Despacho / Decisão / Portaria). */
+  /** Cor do marcador lateral esquerdo. */
   markerClass?: string;
+  /** Campos estruturados. Se ausente, exibe apenas Procedimento + Denunciado. */
+  campos?: DocumentTemplateCampo[];
 }
+
 
 /**
  * Envelopa Despacho, Decisão e Portaria. Duas apresentações:

@@ -660,7 +660,11 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
         <div className="mt-3 flex justify-end">
           <button
             onClick={() => mLancar.mutate()}
-            disabled={teor.trim().length < 3 || mLancar.isPending}
+            disabled={
+              (especie === "ipc"
+                ? teor.trim().length < 3
+                : teor.replace(/<[^>]+>/g, "").trim().length < 3) || mLancar.isPending
+            }
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
           >
             {mLancar.isPending ? "Lançando..." : "Lançar"}

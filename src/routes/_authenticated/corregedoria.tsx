@@ -18,7 +18,9 @@ import {
   desentranharOitiva,
   atualizarObservacoes,
   atualizarUnidade,
+  retificarDenunciado,
 } from "@/lib/denuncias.functions";
+
 import { getSessionInfo } from "@/lib/usuarios.functions";
 import { Gavel, FileText, Scale, Clock, ExternalLink, X, Users, Pencil } from "lucide-react";
 

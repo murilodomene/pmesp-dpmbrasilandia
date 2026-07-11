@@ -5,8 +5,10 @@ const LABELS: Record<DenunciaStatus, string> = {
   aguardando_analise: "Aguardando análise",
   em_analise: "Em análise",
   em_investigacao: "Em investigação",
-  concluida: "Concluída",
+  ag_decurso_prazo: "Aguardando Decurso do Prazo",
+  transito_julgado: "Trânsito em Julgado",
   arquivada: "Arquivada",
+  concluida: "Concluída",
 };
 
 const CLASSES: Record<DenunciaStatus, string> = {
@@ -14,8 +16,10 @@ const CLASSES: Record<DenunciaStatus, string> = {
   aguardando_analise: "bg-status-aguardando text-status-aguardando-fg",
   em_analise: "bg-status-analise text-status-analise-fg",
   em_investigacao: "bg-status-investigacao text-status-investigacao-fg",
-  concluida: "bg-status-concluida text-status-concluida-fg",
+  ag_decurso_prazo: "bg-amber-500/15 text-amber-300 border border-amber-500/30",
+  transito_julgado: "bg-emerald-600/15 text-emerald-300 border border-emerald-600/30",
   arquivada: "bg-status-arquivada text-status-arquivada-fg",
+  concluida: "bg-status-concluida text-status-concluida-fg",
 };
 
 export function StatusBadge({ status }: { status: DenunciaStatus }) {

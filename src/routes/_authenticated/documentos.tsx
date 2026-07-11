@@ -122,12 +122,22 @@ function DocumentosPage() {
   const selected = docs.find((d) => d.id === selectedId) ?? null;
 
   const rendered = useMemo(() => {
-    if (!selected) return { html: "", toc: [] as { id: string; label: string }[] };
+    if (!selected) return { html: "", toc: [] as { id: string; label: string }[], count: 0 };
     const html = mdToHtml(selected.conteudo);
     const withAnchors = anchorize(html);
     const finalHtml = highlight(withAnchors.html, buscaAtiva);
-    return { html: finalHtml, toc: withAnchors.toc };
+    const count = buscaAtiva.trim() ? (finalHtml.match(/<mark\b/g)?.length ?? 0) : 0;
+    return { html: finalHtml, toc: withAnchors.toc, count };
   }, [selected, buscaAtiva]);
+
+  // Auto-scroll to first match when searching inside a document
+  useEffect(() => {
+    if (!selectedId || !buscaAtiva.trim()) return;
+    const t = setTimeout(() => {
+      contentRef.current?.querySelector("mark")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 120);
+    return () => clearTimeout(t);
+  }, [buscaAtiva, selectedId, rendered.html]);
 
   const searchResults = useMemo(() => {
     const q = busca.trim().toLowerCase();

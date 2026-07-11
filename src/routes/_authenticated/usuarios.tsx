@@ -23,8 +23,7 @@ const CARGOS = [
 function UsuariosPage() {
   const sessionFn = useServerFn(getSessionInfo);
   const { data: session } = useQuery({ queryKey: ["session-info"], queryFn: () => sessionFn() });
-  const isDelegado =
-    session?.cargo === "delegado_geral" || session?.cargo === "delegado_corregedor";
+  const isDelegado = session?.cargo === "delegado_corregedor";
 
   const listFn = useServerFn(listUsuarios);
   const { data: usuarios, error } = useQuery({
@@ -40,7 +39,7 @@ function UsuariosPage() {
       <div className="min-h-screen">
         <Header />
         <div className="mx-auto max-w-md px-4 py-24 text-center text-sm text-muted-foreground">
-          Apenas Delegado Geral ou Delegado Corregedor pode gerenciar usuários.
+          Apenas o Delegado Corregedor pode gerenciar usuários.
         </div>
       </div>
     );
@@ -124,49 +123,58 @@ function UsuarioRow({ u }: { u: Usuario }) {
           {u.cargo && ` · ${cargoLabel(u.cargo)}`}
         </div>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <select
-          value={cargo}
-          onChange={(e) => setCargo(e.target.value)}
-          className="rounded-md border border-border bg-input px-2 py-1 text-xs"
-        >
-          {CARGOS.map((c) => (
-            <option key={c.v} value={c.v}>
-              {c.l}
-            </option>
-          ))}
-        </select>
-        <button
-          onClick={() => mAprovar.mutate()}
-          disabled={mAprovar.isPending}
-          className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
-        >
-          {u.status === "pendente" ? "Aprovar" : "Atualizar cargo"}
-        </button>
-        {u.status !== "inativo" ? (
-          <button
-            onClick={() => mStatus.mutate("inativo")}
-            className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
+      {u.cargo === "cidadao" || u.cargo === "mp" ? (
+        <div className="text-xs text-muted-foreground">
+          Cadastro público — cargo não editável.
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={cargo}
+            onChange={(e) => setCargo(e.target.value)}
+            className="rounded-md border border-border bg-input px-2 py-1 text-xs"
           >
-            Inativar
-          </button>
-        ) : (
+            {CARGOS.map((c) => (
+              <option key={c.v} value={c.v}>
+                {c.l}
+              </option>
+            ))}
+          </select>
           <button
-            onClick={() => mStatus.mutate("ativo")}
-            className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
+            onClick={() => mAprovar.mutate()}
+            disabled={mAprovar.isPending}
+            className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
           >
-            Reativar
+            {u.status === "pendente" ? "Aprovar" : "Atualizar cargo"}
           </button>
-        )}
-      </div>
+          {u.status !== "inativo" ? (
+            <button
+              onClick={() => mStatus.mutate("inativo")}
+              className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
+            >
+              Inativar
+            </button>
+          ) : (
+            <button
+              onClick={() => mStatus.mutate("ativo")}
+              className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
+            >
+              Reativar
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
 function cargoLabel(c: string): string {
-  return c === "delegado_geral"
-    ? "Delegado Geral"
-    : c === "delegado_corregedor"
-      ? "Delegado Corregedor"
-      : "Corregedor";
+  switch (c) {
+    case "delegado_geral": return "Delegado Geral";
+    case "delegado_corregedor": return "Delegado Corregedor";
+    case "corregedor": return "Corregedor";
+    case "cidadao": return "Cidadão";
+    case "mp": return "Ministério Público";
+    default: return c;
+  }
 }

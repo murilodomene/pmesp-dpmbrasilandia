@@ -56,10 +56,15 @@ function MpPage() {
           },
         });
         if (error) throw error;
-        setInfo(
-          "Cadastro concluído. Faça login. O acesso a cada processo é liberado pela Corregedoria.",
-        );
-        setMode("login");
+        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+        if (signInError) {
+          setInfo(
+            "Cadastro concluído. Faça login. O acesso a cada processo é liberado pela Corregedoria.",
+          );
+          setMode("login");
+        } else {
+          navigate({ to: "/mp-processos" });
+        }
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erro.";

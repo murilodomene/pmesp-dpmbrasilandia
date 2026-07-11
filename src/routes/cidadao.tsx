@@ -55,8 +55,13 @@ function CidadaoPage() {
           },
         });
         if (error) throw error;
-        setInfo("Cadastro concluído. Faça login para acessar sua área.");
-        setMode("login");
+        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+        if (signInError) {
+          setInfo("Cadastro concluído. Faça login para acessar sua área.");
+          setMode("login");
+        } else {
+          navigate({ to: "/minhas-denuncias" });
+        }
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erro.";

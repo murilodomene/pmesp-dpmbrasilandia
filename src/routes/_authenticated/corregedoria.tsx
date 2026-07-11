@@ -57,7 +57,18 @@ const STATUS_LIST: DenunciaStatus[] = [
   "aguardando_analise",
   "em_analise",
   "em_investigacao",
-  "concluida",
+  "ag_decurso_prazo",
+  "transito_julgado",
+  "arquivada",
+];
+// Opções selecionáveis manualmente em "Movimentar status".
+// "Trânsito em Julgado" NÃO aparece — só é atingido automaticamente pelo decurso.
+const STATUS_LIST_MANUAL: DenunciaStatus[] = [
+  "recebida",
+  "aguardando_analise",
+  "em_analise",
+  "em_investigacao",
+  "ag_decurso_prazo",
   "arquivada",
 ];
 const UNIDADES = ["DEIC", "CORREGEPOL", "DECAP", "DHPP", "CERCO", "GARRA", "DENARC", "GER", "SAT"] as const;

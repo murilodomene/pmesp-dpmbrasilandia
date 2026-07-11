@@ -7,7 +7,10 @@ export type AtoTipo = "DESPACHO" | "DECISÃO" | "PORTARIA" | "IPC";
 export interface DocumentTemplateCampo {
   label: string;
   valor: React.ReactNode;
+  /** Renderiza rótulo em linha própria e valor abaixo, na largura total. */
+  block?: boolean;
 }
+
 
 export interface DocumentTemplateProps {
   procedimento: string;
@@ -123,12 +126,20 @@ export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps
 
           <section className="mt-4 grid gap-2 text-[12px] sm:text-[13px]">
             {campos ? (
-              campos.map((c) => (
-                <div key={c.label}>
-                  <span className="font-bold">{c.label.toUpperCase()}:</span>{" "}
-                  <span>{c.valor}</span>
-                </div>
-              ))
+              campos.map((c) =>
+                c.block ? (
+                  <div key={c.label}>
+                    <div className="font-bold">{c.label.toUpperCase()}:</div>
+                    <div className="mt-1 ato-body-pdf">{c.valor}</div>
+                  </div>
+                ) : (
+                  <div key={c.label}>
+                    <span className="font-bold">{c.label.toUpperCase()}:</span>{" "}
+                    <span>{c.valor}</span>
+                  </div>
+                ),
+              )
+
             ) : (
               <>
                 <div><span className="font-bold">PROCEDIMENTO:</span> {procedimento}</div>
@@ -207,14 +218,24 @@ export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps
         {/* Bloco de identificação */}
         <dl className="grid gap-1.5 py-3 text-xs sm:text-sm">
           {campos ? (
-            campos.map((c) => (
-              <div key={c.label} className="flex flex-wrap gap-x-2">
-                <dt className="font-semibold uppercase tracking-wider text-primary">
-                  {c.label}:
-                </dt>
-                <dd className="min-w-0 flex-1 text-foreground">{c.valor}</dd>
-              </div>
-            ))
+            campos.map((c) =>
+              c.block ? (
+                <div key={c.label}>
+                  <dt className="font-semibold uppercase tracking-wider text-primary">
+                    {c.label}:
+                  </dt>
+                  <dd className="mt-1 text-foreground ato-body">{c.valor}</dd>
+                </div>
+              ) : (
+                <div key={c.label} className="flex flex-wrap gap-x-2">
+                  <dt className="font-semibold uppercase tracking-wider text-primary">
+                    {c.label}:
+                  </dt>
+                  <dd className="min-w-0 flex-1 text-foreground">{c.valor}</dd>
+                </div>
+              ),
+            )
+
           ) : (
             <>
               <div className="flex flex-wrap gap-x-2">

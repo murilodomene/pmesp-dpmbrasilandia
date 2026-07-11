@@ -203,23 +203,44 @@ function DocumentosPage() {
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
                 placeholder="Buscar em todos os documentos…"
-                className="w-full rounded-md border border-border bg-surface pl-9 pr-3 py-2 text-sm outline-none focus:border-primary"
+                className="w-full rounded-lg border border-border bg-surface pl-9 pr-9 py-2 text-sm shadow-sm outline-none transition focus:ring-2 focus:ring-primary focus:border-transparent"
               />
+              {busca && (
+                <button
+                  onClick={() => setBusca("")}
+                  aria-label="Limpar busca"
+                  className="absolute right-2 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
           )}
         </div>
 
         {!selectedId && busca.trim() && (
-          <div className="mb-8 rounded-lg border border-border bg-surface">
+          <div className="mb-8 animate-fade-in rounded-lg border border-border bg-surface shadow-sm">
             <div className="border-b border-border px-4 py-2 text-xs uppercase tracking-widest text-muted-foreground">
-              {searchResults.length} resultado(s)
+              {searchResults.length === 0
+                ? "Nenhum resultado"
+                : `${searchResults.length} resultado${searchResults.length > 1 ? "s" : ""} encontrado${searchResults.length > 1 ? "s" : ""}`}
             </div>
             {searchResults.length === 0 ? (
-              <div className="px-4 py-6 text-sm text-muted-foreground">Nada encontrado.</div>
+              <div className="flex flex-col items-center gap-3 px-4 py-10 text-center">
+                <p className="text-sm text-muted-foreground">
+                  Nenhum resultado encontrado para <span className="font-medium text-foreground">"{busca}"</span>
+                </p>
+                <button
+                  onClick={() => setBusca("")}
+                  className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
+                >
+                  <X className="h-3.5 w-3.5" /> Limpar busca
+                </button>
+              </div>
             ) : (
               <ul>
                 {searchResults.map(({ doc, trecho }, i) => (
-                  <li key={i}>
+                  <li key={i} className="animate-fade-in">
                     <button
                       onClick={() => abrir(doc.id, busca)}
                       className="block w-full border-b border-border/60 px-4 py-3 text-left hover:bg-surface-2"
@@ -237,10 +258,10 @@ function DocumentosPage() {
         {!selectedId && !busca.trim() && (
           <ul className="grid gap-4 sm:grid-cols-2">
             {docs.map((d) => (
-              <li key={d.id}>
+              <li key={d.id} className="animate-fade-in">
                 <button
                   onClick={() => abrir(d.id)}
-                  className="group flex w-full items-start gap-4 rounded-lg border border-border bg-surface p-5 text-left transition hover:border-primary hover:bg-surface-2"
+                  className="group flex w-full items-start gap-4 rounded-lg border border-border bg-surface p-5 text-left shadow-sm transition hover:border-primary hover:bg-surface-2"
                 >
                   <div className="grid h-10 w-10 place-items-center rounded-md bg-primary/10 text-primary">
                     <FileText className="h-5 w-5" />

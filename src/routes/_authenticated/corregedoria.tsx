@@ -1057,6 +1057,9 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
           onClose={() => setDialog(null)}
         />
       )}
+      {dialog?.kind === "recurso" && (
+        <RecursoDialog id={id} onClose={() => setDialog(null)} />
+      )}
 
 
 

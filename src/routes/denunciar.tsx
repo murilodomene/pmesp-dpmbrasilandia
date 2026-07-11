@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Header } from "@/components/Header";
-import { submitDenuncia } from "@/lib/denuncias.functions";
+import { submitDenuncia, submitDenunciaCidadao } from "@/lib/denuncias.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { Trash2, Plus } from "lucide-react";
 
 export const Route = createFileRoute("/denunciar")({
@@ -35,6 +36,11 @@ interface Policial {
 
 function DenunciarPage() {
   const submitFn = useServerFn(submitDenuncia);
+  const submitCidadaoFn = useServerFn(submitDenunciaCidadao);
+  const [logado, setLogado] = useState(false);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setLogado(!!data.user));
+  }, []);
   const [anonimo, setAnonimo] = useState(false);
   const [form, setForm] = useState({
     denunciante_nome: "",
@@ -53,7 +59,9 @@ function DenunciarPage() {
 
   const mut = useMutation({
     mutationFn: (payload: Record<string, unknown>) =>
-      submitFn({ data: payload as never }),
+      logado
+        ? submitCidadaoFn({ data: payload as never })
+        : submitFn({ data: payload as never }),
     onSuccess: (r) => setProtocolo(r.protocolo),
   });
 

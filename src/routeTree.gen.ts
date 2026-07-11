@@ -12,12 +12,14 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as DenunciarRouteImport } from './routes/denunciar'
 import { Route as ConsultarRouteImport } from './routes/consultar'
+import { Route as CidadaoRouteImport } from './routes/cidadao'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedPendenteRouteImport } from './routes/_authenticated/pendente'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
+import { Route as AuthenticatedMinhasDenunciasRouteImport } from './routes/_authenticated/minhas-denuncias'
 import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated/documentos'
 import { Route as AuthenticatedCorregedoriaRouteImport } from './routes/_authenticated/corregedoria'
 
@@ -34,6 +36,11 @@ const DenunciarRoute = DenunciarRouteImport.update({
 const ConsultarRoute = ConsultarRouteImport.update({
   id: '/consultar',
   path: '/consultar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CidadaoRoute = CidadaoRouteImport.update({
+  id: '/cidadao',
+  path: '/cidadao',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -65,6 +72,12 @@ const AuthenticatedPainelRoute = AuthenticatedPainelRouteImport.update({
   path: '/painel',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMinhasDenunciasRoute =
+  AuthenticatedMinhasDenunciasRouteImport.update({
+    id: '/minhas-denuncias',
+    path: '/minhas-denuncias',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDocumentosRoute = AuthenticatedDocumentosRouteImport.update({
   id: '/documentos',
   path: '/documentos',
@@ -80,11 +93,13 @@ const AuthenticatedCorregedoriaRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/cidadao': typeof CidadaoRoute
   '/consultar': typeof ConsultarRoute
   '/denunciar': typeof DenunciarRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/corregedoria': typeof AuthenticatedCorregedoriaRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
+  '/minhas-denuncias': typeof AuthenticatedMinhasDenunciasRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/pendente': typeof AuthenticatedPendenteRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
@@ -92,11 +107,13 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/cidadao': typeof CidadaoRoute
   '/consultar': typeof ConsultarRoute
   '/denunciar': typeof DenunciarRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/corregedoria': typeof AuthenticatedCorregedoriaRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
+  '/minhas-denuncias': typeof AuthenticatedMinhasDenunciasRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/pendente': typeof AuthenticatedPendenteRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
@@ -106,11 +123,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/cidadao': typeof CidadaoRoute
   '/consultar': typeof ConsultarRoute
   '/denunciar': typeof DenunciarRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/corregedoria': typeof AuthenticatedCorregedoriaRoute
   '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
+  '/_authenticated/minhas-denuncias': typeof AuthenticatedMinhasDenunciasRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
   '/_authenticated/pendente': typeof AuthenticatedPendenteRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
@@ -120,11 +139,13 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/cidadao'
     | '/consultar'
     | '/denunciar'
     | '/sitemap.xml'
     | '/corregedoria'
     | '/documentos'
+    | '/minhas-denuncias'
     | '/painel'
     | '/pendente'
     | '/usuarios'
@@ -132,11 +153,13 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/cidadao'
     | '/consultar'
     | '/denunciar'
     | '/sitemap.xml'
     | '/corregedoria'
     | '/documentos'
+    | '/minhas-denuncias'
     | '/painel'
     | '/pendente'
     | '/usuarios'
@@ -145,11 +168,13 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/cidadao'
     | '/consultar'
     | '/denunciar'
     | '/sitemap.xml'
     | '/_authenticated/corregedoria'
     | '/_authenticated/documentos'
+    | '/_authenticated/minhas-denuncias'
     | '/_authenticated/painel'
     | '/_authenticated/pendente'
     | '/_authenticated/usuarios'
@@ -159,6 +184,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  CidadaoRoute: typeof CidadaoRoute
   ConsultarRoute: typeof ConsultarRoute
   DenunciarRoute: typeof DenunciarRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -185,6 +211,13 @@ declare module '@tanstack/react-router' {
       path: '/consultar'
       fullPath: '/consultar'
       preLoaderRoute: typeof ConsultarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cidadao': {
+      id: '/cidadao'
+      path: '/cidadao'
+      fullPath: '/cidadao'
+      preLoaderRoute: typeof CidadaoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -229,6 +262,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPainelRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/minhas-denuncias': {
+      id: '/_authenticated/minhas-denuncias'
+      path: '/minhas-denuncias'
+      fullPath: '/minhas-denuncias'
+      preLoaderRoute: typeof AuthenticatedMinhasDenunciasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/documentos': {
       id: '/_authenticated/documentos'
       path: '/documentos'
@@ -249,6 +289,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedCorregedoriaRoute: typeof AuthenticatedCorregedoriaRoute
   AuthenticatedDocumentosRoute: typeof AuthenticatedDocumentosRoute
+  AuthenticatedMinhasDenunciasRoute: typeof AuthenticatedMinhasDenunciasRoute
   AuthenticatedPainelRoute: typeof AuthenticatedPainelRoute
   AuthenticatedPendenteRoute: typeof AuthenticatedPendenteRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
@@ -257,6 +298,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCorregedoriaRoute: AuthenticatedCorregedoriaRoute,
   AuthenticatedDocumentosRoute: AuthenticatedDocumentosRoute,
+  AuthenticatedMinhasDenunciasRoute: AuthenticatedMinhasDenunciasRoute,
   AuthenticatedPainelRoute: AuthenticatedPainelRoute,
   AuthenticatedPendenteRoute: AuthenticatedPendenteRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
@@ -269,6 +311,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  CidadaoRoute: CidadaoRoute,
   ConsultarRoute: ConsultarRoute,
   DenunciarRoute: DenunciarRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,

@@ -19,6 +19,7 @@ import {
   atualizarUnidade,
   retificarDenunciado,
   lavrarPortaria,
+  alternarPublicacaoIpc,
 } from "@/lib/denuncias.functions";
 
 import { getSessionInfo } from "@/lib/usuarios.functions";

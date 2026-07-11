@@ -239,6 +239,21 @@ export type Database = {
         }
         Relationships: []
       }
+      protocolo_contador: {
+        Row: {
+          ano: number
+          ultimo: number
+        }
+        Insert: {
+          ano: number
+          ultimo?: number
+        }
+        Update: {
+          ano?: number
+          ultimo?: number
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

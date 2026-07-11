@@ -771,12 +771,21 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
           onClose={() => setDialog(null)}
         />
       )}
-      {dialog?.kind === "verPortaria" && (
-        <VerPortariaDialog
+      {dialog?.kind === "verAto" && (
+        <VerAtoDialog
+          especie={dialog.especie}
           teor={dialog.teor}
           quando={dialog.quando}
           prolator={dialog.prolator}
           cargo={dialog.cargo}
+          procedimento={denuncia.numero_protocolo}
+          denunciado={
+            policiais.length
+              ? policiais
+                  .map((p) => `${p.nome}${p.rg_funcional ? ` — ${p.rg_funcional}` : ""}`)
+                  .join("; ")
+              : "Não identificado"
+          }
           onClose={() => setDialog(null)}
         />
       )}

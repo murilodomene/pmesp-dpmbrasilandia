@@ -350,7 +350,17 @@ function DocumentosPage() {
                     <input
                       value={buscaAtiva}
                       onChange={(e) => setBuscaAtiva(e.target.value)}
-                      placeholder="Buscar neste documento…"
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") { setBuscaAtiva(""); return; }
+                        if (e.key === "Enter" || e.key === "ArrowDown") {
+                          e.preventDefault();
+                          if (e.shiftKey && e.key === "Enter") goPrev(); else goNext();
+                        } else if (e.key === "ArrowUp") {
+                          e.preventDefault();
+                          goPrev();
+                        }
+                      }}
+                      placeholder="Buscar neste documento… (Enter próximo, Shift+Enter anterior, Esc limpa)"
                       className="w-full rounded-lg border border-border bg-background pl-9 pr-9 py-2 text-sm shadow-sm outline-none transition focus:ring-2 focus:ring-primary focus:border-transparent"
                     />
                     {buscaAtiva && (

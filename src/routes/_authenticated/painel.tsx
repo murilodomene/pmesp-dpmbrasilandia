@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 import { Header } from "@/components/Header";
 import { StatusBadge, STATUS_LABEL } from "@/components/StatusBadge";
 import { RelogioPrescricao } from "@/components/RelogioPrescricao";
@@ -10,13 +11,15 @@ import {
   listDenuncias,
   alterarStatus,
   atualizarObservacoes,
+  instaurarOficio,
 } from "@/lib/denuncias.functions";
 import { getSessionInfo } from "@/lib/usuarios.functions";
-import { X } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/painel")({
   component: PainelInterno,
 });
+
 
 const STATUS_LIST: DenunciaStatus[] = [
   "recebida",

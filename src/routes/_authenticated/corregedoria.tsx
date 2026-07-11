@@ -241,7 +241,14 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
   const [dialog, setDialog] = useState<
     | { kind: "status" }
     | { kind: "portaria" }
-    | { kind: "verPortaria"; teor: string; quando: string; prolator: string; cargo: string }
+    | {
+        kind: "verAto";
+        especie: "despacho" | "decisao" | "portaria";
+        teor: string;
+        quando: string;
+        prolator: string;
+        cargo: string;
+      }
     | { kind: "prorrogar" }
     | { kind: "oitiva" }
     | { kind: "retificar"; policial: { id: string; nome: string; rg_funcional: string | null } }

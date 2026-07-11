@@ -125,6 +125,8 @@ function statusLabel(s: string): string {
     aguardando_analise: "Aguardando análise",
     em_analise: "Em análise",
     em_investigacao: "Em investigação",
+    ag_decurso_prazo: "Aguardando Decurso do Prazo",
+    transito_julgado: "Trânsito em Julgado",
     concluida: "Concluída",
     arquivada: "Arquivada",
   };

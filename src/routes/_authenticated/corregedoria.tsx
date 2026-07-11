@@ -1246,22 +1246,21 @@ function PortariaDialog({
         </button>
       </div>
 
-      <label className="mt-3 grid gap-1">
+      <div className="mt-3 grid gap-1">
         <span className="text-xs uppercase tracking-wider text-muted-foreground">
-          Corpo da portaria (editável)
+          Corpo da portaria (editável — formatação disponível)
         </span>
-        <textarea
-          rows={14}
-          className="input font-mono text-xs"
+        <RichTextEditor
           value={corpo}
-          onChange={(e) => setCorpo(e.target.value)}
+          onChange={setCorpo}
           placeholder={
             modeloAplicado
               ? ""
               : "Clique em «Usar modelo pré-formatado» ou digite a portaria livremente."
           }
+          minHeight={280}
         />
-      </label>
+      </div>
 
       {m.isError && (
         <div className="mt-3 rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive-foreground">

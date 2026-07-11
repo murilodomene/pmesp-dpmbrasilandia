@@ -645,7 +645,23 @@ function Autuacao({ id, cargo }: { id: string; cargo: string | null }) {
       {dialog?.kind === "status" && (
         <StatusDialog id={id} statusAtual={status} onClose={() => setDialog(null)} />
       )}
-      {dialog?.kind === "receber" && <ReceberDialog id={id} onClose={() => setDialog(null)} />}
+      {dialog?.kind === "portaria" && (
+        <PortariaDialog
+          id={id}
+          session={session}
+          policiais={policiais}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {dialog?.kind === "verPortaria" && (
+        <VerPortariaDialog
+          teor={dialog.teor}
+          quando={dialog.quando}
+          prolator={dialog.prolator}
+          cargo={dialog.cargo}
+          onClose={() => setDialog(null)}
+        />
+      )}
       {dialog?.kind === "prorrogar" && <ProrrogarDialog id={id} onClose={() => setDialog(null)} />}
       {dialog?.kind === "oitiva" && <OitivaDialog id={id} onClose={() => setDialog(null)} />}
       {dialog?.kind === "retificar" && (

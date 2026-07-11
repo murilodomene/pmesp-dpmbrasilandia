@@ -172,7 +172,7 @@ function DocumentosPage() {
   const searchResults = useMemo(() => {
     const q = busca.trim().toLowerCase();
     if (!q || selectedId) return [];
-    return docs
+    return visibleDocs
       .map((d) => {
         const hay = (d.titulo + "\n" + d.conteudo).toLowerCase();
         const idx = hay.indexOf(q);
@@ -183,7 +183,7 @@ function DocumentosPage() {
         return { doc: d, trecho };
       })
       .filter(Boolean) as { doc: Doc; trecho: string }[];
-  }, [busca, docs, selectedId]);
+  }, [busca, visibleDocs, selectedId]);
 
   function abrir(id: string, termo?: string) {
     setSelectedId(id);

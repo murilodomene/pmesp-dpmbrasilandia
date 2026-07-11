@@ -2,33 +2,20 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const ROLES = ["delegado_geral", "delegado_corregedor", "corregedor"] as const;
+const ROLES = ["delegado_geral", "delegado_corregedor", "corregedor", "cidadao", "mp"] as const;
+const EDITABLE_ROLES = ["cidadao", "mp"] as const;
 const STATUS = ["pendente", "ativo", "inativo"] as const;
+const DELEGADO_ROLES = ["delegado_geral", "delegado_corregedor"] as const;
 
-async function assertDelegado(context: {
-  supabase: {
-    from: (t: string) => {
-      select: (c: string) => {
-        eq: (k: string, v: string) => { in: (k: string, v: readonly string[]) => Promise<{ data: unknown }> };
-      };
-    };
-  };
-  userId: string;
-}) {
-  // simpler: just call user_roles with in-clause
-  const { data } = await (
-    context.supabase.from("user_roles") as unknown as {
-      select: (c: string) => {
-        eq: (k: string, v: string) => {
-          in: (k: string, v: readonly string[]) => Promise<{ data: Array<{ role: string }> | null }>;
-        };
-      };
-    }
-  )
+async function assertDelegado(context: { supabase: any; userId: string }) {
+  const { data } = await context.supabase
+    .from("user_roles")
     .select("role")
     .eq("user_id", context.userId)
-    .in("role", ["delegado_corregedor"] as const);
-  if (!data || data.length === 0) throw new Error("Apenas o Delegado Corregedor pode gerenciar usuários.");
+    .in("role", DELEGADO_ROLES as unknown as string[]);
+  if (!data || data.length === 0) {
+    throw new Error("403: Acesso Negado. Apenas Delegado Geral ou Delegado Corregedor.");
+  }
 }
 
 export const getSessionInfo = createServerFn({ method: "GET" })
@@ -56,8 +43,26 @@ export const listUsuarios = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     const { data: roles } = await context.supabase.from("user_roles").select("user_id, role");
     const roleMap = new Map<string, string>();
-    (roles ?? []).forEach((r) => roleMap.set(r.user_id, r.role));
-    return (profs ?? []).map((p) => ({ ...p, cargo: roleMap.get(p.id) ?? null }));
+    (roles ?? []).forEach((r: { user_id: string; role: string }) => roleMap.set(r.user_id, r.role));
+
+    // fetch emails via admin
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const emailMap = new Map<string, string>();
+    let page = 1;
+    while (true) {
+      const { data, error: adminErr } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 200 });
+      if (adminErr) break;
+      data.users.forEach((u) => u.email && emailMap.set(u.id, u.email));
+      if (!data.users.length || data.users.length < 200) break;
+      page += 1;
+      if (page > 20) break;
+    }
+
+    return (profs ?? []).map((p) => ({
+      ...p,
+      cargo: roleMap.get(p.id) ?? null,
+      email: emailMap.get(p.id) ?? null,
+    }));
   });
 
 export const aprovarUsuario = createServerFn({ method: "POST" })
@@ -72,7 +77,6 @@ export const aprovarUsuario = createServerFn({ method: "POST" })
       .update({ status: "ativo" })
       .eq("id", data.user_id);
     if (e1) throw new Error(e1.message);
-    // remove eventual cargo existente e insere o novo
     await context.supabase.from("user_roles").delete().eq("user_id", data.user_id);
     const { error: e2 } = await context.supabase
       .from("user_roles")
@@ -88,11 +92,68 @@ export const alterarStatusUsuario = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertDelegado(context as never);
+    // Verifica se alvo é editável (cidadão/mp) — delegados não alteram delegados
+    const { data: alvo } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", data.user_id)
+      .maybeSingle();
+    if (alvo && (DELEGADO_ROLES as readonly string[]).includes(alvo.role)) {
+      throw new Error("Delegados não podem alterar o status de outros Delegados.");
+    }
     const { error } = await context.supabase
       .from("profiles")
       .update({ status: data.status })
       .eq("id", data.user_id);
     if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const editarUsuarioPublico = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        user_id: z.string().uuid(),
+        nome: z.string().trim().min(2).max(200),
+        email: z.string().trim().email().max(200),
+        cargo: z.enum(EDITABLE_ROLES),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    await assertDelegado(context as never);
+
+    // Garante que o alvo é cidadão/mp — nunca delegado
+    const { data: alvo } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", data.user_id)
+      .maybeSingle();
+    if (!alvo || !(EDITABLE_ROLES as readonly string[]).includes(alvo.role)) {
+      throw new Error("Apenas usuários Cidadão ou Ministério Público podem ser editados.");
+    }
+
+    const { error: e1 } = await context.supabase
+      .from("profiles")
+      .update({ nome: data.nome })
+      .eq("id", data.user_id);
+    if (e1) throw new Error(e1.message);
+
+    if (alvo.role !== data.cargo) {
+      await context.supabase.from("user_roles").delete().eq("user_id", data.user_id);
+      const { error: e2 } = await context.supabase
+        .from("user_roles")
+        .insert({ user_id: data.user_id, role: data.cargo });
+      if (e2) throw new Error(e2.message);
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error: e3 } = await supabaseAdmin.auth.admin.updateUserById(data.user_id, {
+      email: data.email,
+    });
+    if (e3) throw new Error(e3.message);
+
     return { ok: true };
   });
 

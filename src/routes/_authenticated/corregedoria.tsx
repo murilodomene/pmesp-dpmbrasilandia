@@ -1171,6 +1171,9 @@ function MovMarker({ especie }: { especie: string }) {
     status: "bg-status-aguardando text-status-aguardando-fg",
     retificacao: "bg-status-aguardando text-status-aguardando-fg",
     portaria: "bg-primary text-primary-foreground",
+    certidao: "bg-emerald-600 text-white",
+    evento: "bg-amber-500 text-black",
+    cancelamento: "bg-muted text-muted-foreground",
   };
   const Icon =
     especie === "decisao"
@@ -1181,10 +1184,14 @@ function MovMarker({ especie }: { especie: string }) {
           ? Pencil
           : especie === "portaria"
             ? Stamp
-            : FileText;
+            : especie === "certidao"
+              ? ShieldCheck
+              : especie === "evento"
+                ? Bell
+                : FileText;
 
   return (
-    <div className={`grid h-8 w-8 flex-shrink-0 place-items-center rounded-full ${style[especie]}`}>
+    <div className={`grid h-8 w-8 flex-shrink-0 place-items-center rounded-full ${style[especie] ?? "bg-surface-2 text-foreground"}`}>
       <Icon className="h-4 w-4" />
     </div>
   );

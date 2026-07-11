@@ -4,6 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { Header } from "@/components/Header";
 import { Search, Save, Pencil, X, FileText, ChevronUp, ChevronDown } from "lucide-react";
+import { HierarquiaQuadro } from "@/components/HierarquiaQuadro";
+
+const HIERARQUIA_ROLES = new Set(["delegado_geral", "delegado_corregedor", "corregedor"]);
 
 export const Route = createFileRoute("/_authenticated/documentos")({
   component: DocumentosPage,

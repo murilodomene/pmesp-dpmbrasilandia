@@ -443,6 +443,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancelar_movimento: {
+        Args: { _motivo: string; _movimento_id: string }
+        Returns: undefined
+      }
       gerar_numero_pdo: { Args: never; Returns: string }
       gerar_protocolo: { Args: never; Returns: string }
       get_obs_internas: { Args: { _denuncia_id: string }; Returns: string }

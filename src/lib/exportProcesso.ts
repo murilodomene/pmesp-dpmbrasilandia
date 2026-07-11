@@ -330,10 +330,22 @@ export async function exportProcessoCompleto(data: ExportProcessoData): Promise<
     (a, b) => new Date(a.criado_em).getTime() - new Date(b.criado_em).getTime(),
   );
 
-  // Container off-screen com todas as páginas
-  const container = document.createElement("div");
-  container.style.cssText =
-    "position:fixed;left:-10000px;top:0;width:794px;background:#ffffff;z-index:-1;";
+  // Renderiza dentro de um iframe isolado, sem herdar as folhas de estilo do app
+  // (o design system usa oklch(), que o html2canvas ainda não parseia).
+  const iframe = document.createElement("iframe");
+  iframe.style.cssText =
+    "position:fixed;left:-10000px;top:0;width:794px;height:1200px;border:0;background:#ffffff;";
+  document.body.appendChild(iframe);
+  await new Promise<void>((r) => {
+    iframe.addEventListener("load", () => r(), { once: true });
+    iframe.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><style>
+      html,body{margin:0;padding:0;background:#ffffff;color:#111827;font-family:Georgia,'Times New Roman',serif}
+      *{box-sizing:border-box}
+      img{max-width:100%}
+    </style></head><body></body></html>`;
+  });
+
+  const doc = iframe.contentDocument!;
   const pages: string[] = [];
   pages.push(coverPage(data.denuncia, data.policiais));
   movsAsc.forEach((m, i) => {
@@ -346,12 +358,10 @@ export async function exportProcessoCompleto(data: ExportProcessoData): Promise<
       m.especie === "ipc";
     pages.push(isAto ? atoContentPage(m, data.denuncia, data.policiais) : genericContentPage(m));
   });
-  container.innerHTML = pages.join("");
-  document.body.appendChild(container);
+  doc.body.innerHTML = pages.join("");
 
   try {
-    // Aguarda o brasão carregar em todas as instâncias
-    const imgs = Array.from(container.querySelectorAll("img"));
+    const imgs = Array.from(doc.querySelectorAll("img"));
     await Promise.all(
       imgs.map(
         (img) =>
@@ -369,7 +379,7 @@ export async function exportProcessoCompleto(data: ExportProcessoData): Promise<
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
 
-    const pageEls = Array.from(container.querySelectorAll<HTMLElement>(".pdf-page"));
+    const pageEls = Array.from(doc.querySelectorAll<HTMLElement>(".pdf-page"));
     for (let i = 0; i < pageEls.length; i++) {
       const canvas = await html2canvas(pageEls[i], {
         scale: 2,
@@ -383,7 +393,6 @@ export async function exportProcessoCompleto(data: ExportProcessoData): Promise<
       pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, pageW, Math.min(imgH, pageH));
     }
 
-    // Rodapé com paginação
     const total = pdf.getNumberOfPages();
     for (let i = 1; i <= total; i++) {
       pdf.setPage(i);
@@ -395,6 +404,7 @@ export async function exportProcessoCompleto(data: ExportProcessoData): Promise<
     const nomeArquivo = `PAD-${data.denuncia.numero_protocolo.replace(/[^\w-]+/g, "-")}.pdf`;
     pdf.save(nomeArquivo);
   } finally {
-    container.remove();
+    iframe.remove();
   }
 }
+

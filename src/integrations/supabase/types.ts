@@ -70,6 +70,7 @@ export type Database = {
           ocorrencia_hora: string | null
           ocorrencia_local: string | null
           ocorrencia_tipo: string | null
+          owner_id: string | null
           relato: string
           status: Database["public"]["Enums"]["denuncia_status"]
           termo_inicial: string
@@ -95,6 +96,7 @@ export type Database = {
           ocorrencia_hora?: string | null
           ocorrencia_local?: string | null
           ocorrencia_tipo?: string | null
+          owner_id?: string | null
           relato: string
           status?: Database["public"]["Enums"]["denuncia_status"]
           termo_inicial?: string
@@ -120,6 +122,7 @@ export type Database = {
           ocorrencia_hora?: string | null
           ocorrencia_local?: string | null
           ocorrencia_tipo?: string | null
+          owner_id?: string | null
           relato?: string
           status?: Database["public"]["Enums"]["denuncia_status"]
           termo_inicial?: string
@@ -155,6 +158,7 @@ export type Database = {
           especie: Database["public"]["Enums"]["movimento_especie"]
           id: string
           interrompe: boolean
+          ipc_publicado: boolean
           prolator_cargo: Database["public"]["Enums"]["app_role"]
           prolator_id: string | null
           prolator_nome: string
@@ -167,6 +171,7 @@ export type Database = {
           especie: Database["public"]["Enums"]["movimento_especie"]
           id?: string
           interrompe?: boolean
+          ipc_publicado?: boolean
           prolator_cargo: Database["public"]["Enums"]["app_role"]
           prolator_id?: string | null
           prolator_nome: string
@@ -179,6 +184,7 @@ export type Database = {
           especie?: Database["public"]["Enums"]["movimento_especie"]
           id?: string
           interrompe?: boolean
+          ipc_publicado?: boolean
           prolator_cargo?: Database["public"]["Enums"]["app_role"]
           prolator_id?: string | null
           prolator_nome?: string

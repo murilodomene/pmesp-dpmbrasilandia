@@ -271,6 +271,95 @@ export type Database = {
           },
         ]
       }
+      pdo_contador: {
+        Row: {
+          ano: number
+          ultimo: number
+        }
+        Insert: {
+          ano: number
+          ultimo?: number
+        }
+        Update: {
+          ano?: number
+          ultimo?: number
+        }
+        Relationships: []
+      }
+      pdos: {
+        Row: {
+          abordados: Json
+          abordagem_em: string
+          assinado_em: string
+          created_at: string
+          desfecho: string
+          equipe: Json
+          id: string
+          itens: Json
+          lavrado_por: string
+          lavrado_por_cargo: string
+          lavrado_por_nome: string
+          local: string
+          numero: string
+          procedimento_id: string | null
+          procedimento_numero: string | null
+          relato: string | null
+          vtr_placa: string | null
+          vtr_prefixo: string | null
+          vtr_unidade: string | null
+        }
+        Insert: {
+          abordados?: Json
+          abordagem_em: string
+          assinado_em?: string
+          created_at?: string
+          desfecho: string
+          equipe?: Json
+          id?: string
+          itens?: Json
+          lavrado_por: string
+          lavrado_por_cargo: string
+          lavrado_por_nome: string
+          local: string
+          numero: string
+          procedimento_id?: string | null
+          procedimento_numero?: string | null
+          relato?: string | null
+          vtr_placa?: string | null
+          vtr_prefixo?: string | null
+          vtr_unidade?: string | null
+        }
+        Update: {
+          abordados?: Json
+          abordagem_em?: string
+          assinado_em?: string
+          created_at?: string
+          desfecho?: string
+          equipe?: Json
+          id?: string
+          itens?: Json
+          lavrado_por?: string
+          lavrado_por_cargo?: string
+          lavrado_por_nome?: string
+          local?: string
+          numero?: string
+          procedimento_id?: string | null
+          procedimento_numero?: string | null
+          relato?: string | null
+          vtr_placa?: string | null
+          vtr_prefixo?: string | null
+          vtr_unidade?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pdos_procedimento_id_fkey"
+            columns: ["procedimento_id"]
+            isOneToOne: false
+            referencedRelation: "denuncias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -339,6 +428,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      gerar_numero_pdo: { Args: never; Returns: string }
       gerar_protocolo: { Args: never; Returns: string }
       get_obs_internas: { Args: { _denuncia_id: string }; Returns: string }
       get_user_cargo: {

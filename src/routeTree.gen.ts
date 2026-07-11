@@ -19,6 +19,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedPendenteRouteImport } from './routes/_authenticated/pendente'
+import { Route as AuthenticatedPdoRouteImport } from './routes/_authenticated/pdo'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
 import { Route as AuthenticatedMpProcessosRouteImport } from './routes/_authenticated/mp-processos'
 import { Route as AuthenticatedMinhasDenunciasRouteImport } from './routes/_authenticated/minhas-denuncias'
@@ -74,6 +75,11 @@ const AuthenticatedPendenteRoute = AuthenticatedPendenteRouteImport.update({
   path: '/pendente',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPdoRoute = AuthenticatedPdoRouteImport.update({
+  id: '/pdo',
+  path: '/pdo',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPainelRoute = AuthenticatedPainelRouteImport.update({
   id: '/painel',
   path: '/painel',
@@ -116,6 +122,7 @@ export interface FileRoutesByFullPath {
   '/minhas-denuncias': typeof AuthenticatedMinhasDenunciasRoute
   '/mp-processos': typeof AuthenticatedMpProcessosRoute
   '/painel': typeof AuthenticatedPainelRoute
+  '/pdo': typeof AuthenticatedPdoRoute
   '/pendente': typeof AuthenticatedPendenteRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
 }
@@ -132,6 +139,7 @@ export interface FileRoutesByTo {
   '/minhas-denuncias': typeof AuthenticatedMinhasDenunciasRoute
   '/mp-processos': typeof AuthenticatedMpProcessosRoute
   '/painel': typeof AuthenticatedPainelRoute
+  '/pdo': typeof AuthenticatedPdoRoute
   '/pendente': typeof AuthenticatedPendenteRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
 }
@@ -150,6 +158,7 @@ export interface FileRoutesById {
   '/_authenticated/minhas-denuncias': typeof AuthenticatedMinhasDenunciasRoute
   '/_authenticated/mp-processos': typeof AuthenticatedMpProcessosRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
+  '/_authenticated/pdo': typeof AuthenticatedPdoRoute
   '/_authenticated/pendente': typeof AuthenticatedPendenteRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
 }
@@ -168,6 +177,7 @@ export interface FileRouteTypes {
     | '/minhas-denuncias'
     | '/mp-processos'
     | '/painel'
+    | '/pdo'
     | '/pendente'
     | '/usuarios'
   fileRoutesByTo: FileRoutesByTo
@@ -184,6 +194,7 @@ export interface FileRouteTypes {
     | '/minhas-denuncias'
     | '/mp-processos'
     | '/painel'
+    | '/pdo'
     | '/pendente'
     | '/usuarios'
   id:
@@ -201,6 +212,7 @@ export interface FileRouteTypes {
     | '/_authenticated/minhas-denuncias'
     | '/_authenticated/mp-processos'
     | '/_authenticated/painel'
+    | '/_authenticated/pdo'
     | '/_authenticated/pendente'
     | '/_authenticated/usuarios'
   fileRoutesById: FileRoutesById
@@ -288,6 +300,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPendenteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/pdo': {
+      id: '/_authenticated/pdo'
+      path: '/pdo'
+      fullPath: '/pdo'
+      preLoaderRoute: typeof AuthenticatedPdoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/painel': {
       id: '/_authenticated/painel'
       path: '/painel'
@@ -332,6 +351,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMinhasDenunciasRoute: typeof AuthenticatedMinhasDenunciasRoute
   AuthenticatedMpProcessosRoute: typeof AuthenticatedMpProcessosRoute
   AuthenticatedPainelRoute: typeof AuthenticatedPainelRoute
+  AuthenticatedPdoRoute: typeof AuthenticatedPdoRoute
   AuthenticatedPendenteRoute: typeof AuthenticatedPendenteRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
 }
@@ -342,6 +362,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMinhasDenunciasRoute: AuthenticatedMinhasDenunciasRoute,
   AuthenticatedMpProcessosRoute: AuthenticatedMpProcessosRoute,
   AuthenticatedPainelRoute: AuthenticatedPainelRoute,
+  AuthenticatedPdoRoute: AuthenticatedPdoRoute,
   AuthenticatedPendenteRoute: AuthenticatedPendenteRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
 }

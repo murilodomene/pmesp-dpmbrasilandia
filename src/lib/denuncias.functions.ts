@@ -498,4 +498,98 @@ export const lavrarPortaria = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// Envio de denúncia por Cidadão autenticado — vincula owner_id.
+export const submitDenunciaCidadao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => submitSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const anon = data.denunciante_anonimo;
+    const { data: den, error } = await context.supabase
+      .from("denuncias")
+      .insert({
+        owner_id: context.userId,
+        denunciante_nome: anon ? null : data.denunciante_nome,
+        denunciante_identificador: anon ? null : data.denunciante_identificador,
+        denunciante_contato: anon ? null : data.denunciante_contato,
+        denunciante_anonimo: anon,
+        ocorrencia_tipo: data.ocorrencia_tipo,
+        ocorrencia_local: data.ocorrencia_local,
+        ocorrencia_data: data.ocorrencia_data || null,
+        ocorrencia_hora: data.ocorrencia_hora || null,
+        relato: data.relato,
+        info_adicional: data.info_adicional,
+        links: data.links,
+      })
+      .select("id, numero_protocolo")
+      .single();
+    if (error) throw new Error(error.message);
+
+    if (data.policiais.length) {
+      const rows = data.policiais.map((p) => ({
+        denuncia_id: den.id,
+        nome: p.nome,
+        rg_funcional: p.rg_funcional ?? null,
+        unidade: p.unidade ?? null,
+      }));
+      await context.supabase.from("denuncia_policiais").insert(rows);
+    }
+    return { protocolo: den.numero_protocolo };
+  });
+
+// Publica/despublica um IPC para o denunciante.
+export const alternarPublicacaoIpc = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({ movimento_id: z.string().uuid(), publicado: z.boolean() }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: mov } = await context.supabase
+      .from("movimentos")
+      .select("id, especie")
+      .eq("id", data.movimento_id)
+      .single();
+    if (!mov) throw new Error("Movimento não encontrado.");
+    if (mov.especie !== "ipc") throw new Error("Apenas movimentos IPC podem ser publicados.");
+    const { error } = await context.supabase
+      .from("movimentos")
+      .update({ ipc_publicado: data.publicado })
+      .eq("id", data.movimento_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// Painel do Cidadão.
+export const listMinhasDenuncias = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: dens, error } = await context.supabase
+      .from("denuncias")
+      .select("id, numero_protocolo, status, obs_denunciante, created_at, ocorrencia_tipo")
+      .eq("owner_id", context.userId)
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+
+    const ids = (dens ?? []).map((d) => d.id);
+    let ipcs: Array<{
+      id: string;
+      denuncia_id: string;
+      teor: string;
+      criado_em: string;
+      prolator_nome: string;
+      prolator_cargo: string;
+    }> = [];
+    if (ids.length) {
+      const { data: movs } = await context.supabase
+        .from("movimentos")
+        .select("id, denuncia_id, teor, criado_em, prolator_nome, prolator_cargo")
+        .in("denuncia_id", ids)
+        .eq("especie", "ipc")
+        .eq("ipc_publicado", true)
+        .order("criado_em", { ascending: false });
+      ipcs = (movs ?? []) as typeof ipcs;
+    }
+    return { denuncias: dens ?? [], ipcs };
+  });
+
+
 

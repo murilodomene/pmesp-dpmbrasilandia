@@ -7,7 +7,10 @@ export type AtoTipo = "DESPACHO" | "DECISÃO" | "PORTARIA" | "IPC";
 export interface DocumentTemplateCampo {
   label: string;
   valor: React.ReactNode;
+  /** Renderiza rótulo em linha própria e valor abaixo, na largura total. */
+  block?: boolean;
 }
+
 
 export interface DocumentTemplateProps {
   procedimento: string;

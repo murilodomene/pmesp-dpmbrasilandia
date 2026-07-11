@@ -25,6 +25,7 @@ import {
   concederAcessoMp,
   revogarAcessoMp,
   excluirDenuncia,
+  cancelarMovimento,
 } from "@/lib/denuncias.functions";
 
 

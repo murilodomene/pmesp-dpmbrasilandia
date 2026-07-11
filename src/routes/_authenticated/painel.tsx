@@ -334,7 +334,349 @@ function Row({ k, v }: { k: string; v: string | null | undefined }) {
   );
 }
 
-function RedirectPendente() {
+const UNIDADES = [
+  "DEIC",
+  "CORREGEPOL",
+  "DECAP",
+  "DHPP",
+  "CERCO",
+  "GARRA",
+  "DENARC",
+  "GER",
+  "SAT",
+] as const;
+
+type Envolvido = { nome: string; rg_funcional: string; unidade: string };
+
+function OficioModal({ onClose }: { onClose: () => void }) {
+  const qc = useQueryClient();
+  const instaurarFn = useServerFn(instaurarOficio);
+
+  const [titulo, setTitulo] = useState("");
+  const [descricao, setDescricao] = useState("");
+  const [dataOcorrencia, setDataOcorrencia] = useState("");
+  const [unidade, setUnidade] = useState("");
+  const [envolvidos, setEnvolvidos] = useState<Envolvido[]>([
+    { nome: "", rg_funcional: "", unidade: "" },
+  ]);
+  const [linkInput, setLinkInput] = useState("");
+  const [links, setLinks] = useState<string[]>([]);
+  const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const tituloErr = submitted && titulo.trim().length < 3;
+  const descricaoErr = submitted && descricao.trim().length < 20;
+  const envolvidosErr =
+    submitted && envolvidos.every((e) => e.nome.trim() === "");
+
+  const numeroPreview = `AUTO • ${new Date().getFullYear()}`;
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      instaurarFn({
+        data: {
+          titulo: titulo.trim(),
+          descricao: descricao.trim(),
+          ocorrencia_data: dataOcorrencia || null,
+          unidade: unidade
+            ? (unidade as (typeof UNIDADES)[number])
+            : null,
+          envolvidos: envolvidos
+            .filter((e) => e.nome.trim())
+            .map((e) => ({
+              nome: e.nome.trim(),
+              rg_funcional: e.rg_funcional.trim() || null,
+              unidade: e.unidade
+                ? (e.unidade as (typeof UNIDADES)[number])
+                : null,
+            })),
+          links,
+        },
+      }),
+    onSuccess: (res) => {
+      toast.success(`Procedimento instaurado com sucesso — ${res.protocolo}`);
+      qc.invalidateQueries({ queryKey: ["denuncias"] });
+      onClose();
+    },
+    onError: (err: unknown) => {
+      const msg = err instanceof Error ? err.message : "Falha ao instaurar.";
+      toast.error(msg);
+    },
+  });
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitted(true);
+    if (
+      titulo.trim().length < 3 ||
+      descricao.trim().length < 20 ||
+      envolvidos.every((x) => x.nome.trim() === "")
+    ) {
+      return;
+    }
+    mutation.mutate();
+  }
+
+  function updateEnv(i: number, patch: Partial<Envolvido>) {
+    setEnvolvidos((arr) => arr.map((e, idx) => (idx === i ? { ...e, ...patch } : e)));
+  }
+  function addEnv() {
+    setEnvolvidos((arr) => [...arr, { nome: "", rg_funcional: "", unidade: "" }]);
+  }
+  function removeEnv(i: number) {
+    setEnvolvidos((arr) => (arr.length === 1 ? arr : arr.filter((_, idx) => idx !== i)));
+  }
+
+  function addLink() {
+    const v = linkInput.trim();
+    if (!v) return;
+    try {
+      new URL(v);
+    } catch {
+      toast.error("URL inválida.");
+      return;
+    }
+    setLinks((l) => [...l, v]);
+    setLinkInput("");
+  }
+
+  return (
+    <div
+      role="dialog"
+      aria-modal
+      aria-labelledby="oficio-title"
+      className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4 animate-in fade-in duration-150"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <form
+        onSubmit={handleSubmit}
+        className="surface max-h-[92vh] w-full max-w-3xl overflow-y-auto p-6 shadow-xl animate-in fade-in zoom-in-95 duration-150"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="eyebrow text-primary">Instauração de ofício</div>
+            <h2 id="oficio-title" className="mt-1 font-serif text-2xl">
+              Nova denúncia de ofício
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Registro pela própria Corregedoria com base em conhecimento próprio dos fatos.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md p-1 hover:bg-surface-2"
+            aria-label="Fechar"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <label className="block">
+            <span className="text-xs uppercase tracking-wider text-muted-foreground">
+              Nº do procedimento
+            </span>
+            <input
+              readOnly
+              value={numeroPreview}
+              className="mt-1 w-full cursor-not-allowed rounded-md border border-border bg-muted/40 px-3 py-2 text-sm tabular text-muted-foreground"
+            />
+            <span className="mt-1 block text-[10px] text-muted-foreground">
+              O protocolo definitivo é gerado ao salvar.
+            </span>
+          </label>
+
+          <label className="block">
+            <span className="text-xs uppercase tracking-wider text-muted-foreground">
+              Data da ocorrência
+            </span>
+            <input
+              type="date"
+              value={dataOcorrencia}
+              onChange={(e) => setDataOcorrencia(e.target.value)}
+              className="mt-1 w-full rounded-md border border-border bg-input px-3 py-2 text-sm"
+            />
+          </label>
+
+          <label className="block md:col-span-2">
+            <span className="text-xs uppercase tracking-wider text-muted-foreground">
+              Título <span className="text-danger">*</span>
+            </span>
+            <input
+              value={titulo}
+              onChange={(e) => setTitulo(e.target.value)}
+              placeholder="Ex.: Abordagem irregular em via pública"
+              className={`mt-1 w-full rounded-md border bg-input px-3 py-2 text-sm ${
+                tituloErr ? "border-danger" : "border-border"
+              }`}
+              aria-invalid={tituloErr || undefined}
+            />
+            {tituloErr && (
+              <span className="mt-1 block text-xs text-danger">Informe um título com pelo menos 3 caracteres.</span>
+            )}
+          </label>
+
+          <label className="block md:col-span-2">
+            <span className="text-xs uppercase tracking-wider text-muted-foreground">
+              Descrição detalhada dos fatos <span className="text-danger">*</span>
+            </span>
+            <textarea
+              rows={6}
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+              className={`mt-1 w-full rounded-md border bg-input px-3 py-2 text-sm ${
+                descricaoErr ? "border-danger" : "border-border"
+              }`}
+              aria-invalid={descricaoErr || undefined}
+            />
+            {descricaoErr && (
+              <span className="mt-1 block text-xs text-danger">Descreva os fatos com pelo menos 20 caracteres.</span>
+            )}
+          </label>
+
+          <label className="block md:col-span-2">
+            <span className="text-xs uppercase tracking-wider text-muted-foreground">
+              Unidade de origem
+            </span>
+            <select
+              value={unidade}
+              onChange={(e) => setUnidade(e.target.value)}
+              className="mt-1 w-full rounded-md border border-border bg-input px-3 py-2 text-sm"
+            >
+              <option value="">— não informar —</option>
+              {UNIDADES.map((u) => (
+                <option key={u} value={u}>{u}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <fieldset className="mt-6 rounded-md border border-border p-3">
+          <legend className="px-1 text-xs uppercase tracking-wider text-muted-foreground">
+            Envolvidos <span className="text-danger">*</span>
+          </legend>
+          <div className="space-y-2">
+            {envolvidos.map((env, i) => (
+              <div key={i} className="grid grid-cols-1 gap-2 md:grid-cols-[1fr_140px_140px_auto]">
+                <input
+                  placeholder="Nome / cargo"
+                  value={env.nome}
+                  onChange={(e) => updateEnv(i, { nome: e.target.value })}
+                  className={`rounded-md border bg-input px-3 py-2 text-sm ${
+                    envolvidosErr && !env.nome.trim() ? "border-danger" : "border-border"
+                  }`}
+                />
+                <input
+                  placeholder="RG funcional"
+                  value={env.rg_funcional}
+                  onChange={(e) => updateEnv(i, { rg_funcional: e.target.value })}
+                  className="rounded-md border border-border bg-input px-3 py-2 text-sm"
+                />
+                <select
+                  value={env.unidade}
+                  onChange={(e) => updateEnv(i, { unidade: e.target.value })}
+                  className="rounded-md border border-border bg-input px-3 py-2 text-sm"
+                >
+                  <option value="">Unidade</option>
+                  {UNIDADES.map((u) => (
+                    <option key={u} value={u}>{u}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => removeEnv(i)}
+                  disabled={envolvidos.length === 1}
+                  className="rounded-md border border-border px-2 py-2 text-muted-foreground hover:bg-surface-2 disabled:opacity-40"
+                  aria-label="Remover envolvido"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={addEnv}
+            className="mt-3 inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
+          >
+            <Plus className="h-3.5 w-3.5" /> Adicionar envolvido
+          </button>
+          {envolvidosErr && (
+            <div className="mt-2 text-xs text-danger">Informe pelo menos um envolvido.</div>
+          )}
+        </fieldset>
+
+        <fieldset className="mt-4 rounded-md border border-border p-3">
+          <legend className="px-1 text-xs uppercase tracking-wider text-muted-foreground">
+            Links de documentos (opcional)
+          </legend>
+          <div className="flex gap-2">
+            <input
+              value={linkInput}
+              onChange={(e) => setLinkInput(e.target.value)}
+              placeholder="https://... (PDF, imagem, drive)"
+              className="flex-1 rounded-md border border-border bg-input px-3 py-2 text-sm"
+            />
+            <button
+              type="button"
+              onClick={addLink}
+              className="rounded-md border border-border px-3 py-2 text-sm hover:bg-surface-2"
+            >
+              Adicionar
+            </button>
+          </div>
+          {links.length > 0 && (
+            <ul className="mt-2 space-y-1 text-xs">
+              {links.map((l, i) => (
+                <li key={i} className="flex items-center justify-between gap-2 rounded bg-surface-2/60 px-2 py-1">
+                  <span className="truncate">{l}</span>
+                  <button
+                    type="button"
+                    onClick={() => setLinks((arr) => arr.filter((_, idx) => idx !== i))}
+                    className="text-muted-foreground hover:text-danger"
+                    aria-label="Remover link"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </fieldset>
+
+        <div className="mt-6 flex flex-wrap items-center justify-end gap-2 border-t border-border pt-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md border border-border px-4 py-2 text-sm hover:bg-surface-2"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={mutation.isPending}
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:brightness-110 disabled:opacity-60"
+          >
+            {mutation.isPending && (
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/40 border-t-primary-foreground" />
+            )}
+            {mutation.isPending ? "Instaurando..." : "Instaurar procedimento"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+
   return (
     <div className="min-h-screen">
       <Header />

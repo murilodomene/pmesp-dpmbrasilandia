@@ -27,8 +27,8 @@ async function assertDelegado(context: {
   )
     .select("role")
     .eq("user_id", context.userId)
-    .in("role", ["delegado_geral", "delegado_corregedor"] as const);
-  if (!data || data.length === 0) throw new Error("Apenas Delegado Geral ou Corregedor pode gerenciar usuários.");
+    .in("role", ["delegado_corregedor"] as const);
+  if (!data || data.length === 0) throw new Error("Apenas o Delegado Corregedor pode gerenciar usuários.");
 }
 
 export const getSessionInfo = createServerFn({ method: "GET" })

@@ -30,7 +30,8 @@ import {
 
 
 import { getSessionInfo } from "@/lib/usuarios.functions";
-import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2 } from "lucide-react";
+import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2, Download } from "lucide-react";
+import { DocumentTemplate, exportDocumentToPdf, useDocumentRef } from "@/components/DocumentTemplate";
 
 export const Route = createFileRoute("/_authenticated/corregedoria")({
   validateSearch: z.object({ id: z.string().uuid().optional() }),
@@ -240,7 +241,14 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
   const [dialog, setDialog] = useState<
     | { kind: "status" }
     | { kind: "portaria" }
-    | { kind: "verPortaria"; teor: string; quando: string; prolator: string; cargo: string }
+    | {
+        kind: "verAto";
+        especie: "despacho" | "decisao" | "portaria";
+        teor: string;
+        quando: string;
+        prolator: string;
+        cargo: string;
+      }
     | { kind: "prorrogar" }
     | { kind: "oitiva" }
     | { kind: "retificar"; policial: { id: string; nome: string; rg_funcional: string | null } }
@@ -485,7 +493,8 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                     <button
                       onClick={() =>
                         setDialog({
-                          kind: "verPortaria",
+                          kind: "verAto",
+                          especie: "portaria",
                           teor: portariaMov.teor,
                           quando: portariaMov.criado_em,
                           prolator: portariaMov.prolator_nome,
@@ -694,6 +703,23 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 </p>
                 <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
                   <span>{m.prolator_nome} · {cargoLabel(m.prolator_cargo as string)}</span>
+                  {(m.especie === "despacho" || m.especie === "decisao" || m.especie === "portaria") && (
+                    <button
+                      onClick={() =>
+                        setDialog({
+                          kind: "verAto",
+                          especie: m.especie as "despacho" | "decisao" | "portaria",
+                          teor: m.teor,
+                          quando: m.criado_em,
+                          prolator: m.prolator_nome,
+                          cargo: m.prolator_cargo as string,
+                        })
+                      }
+                      className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 hover:bg-surface-2"
+                    >
+                      <Eye className="h-3 w-3" /> Ver em papel timbrado
+                    </button>
+                  )}
                   {m.especie === "ipc" && (
                     <button
                       onClick={() => mPublicar.mutate({ id: m.id, publicado: !m.ipc_publicado })}
@@ -762,12 +788,21 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
           onClose={() => setDialog(null)}
         />
       )}
-      {dialog?.kind === "verPortaria" && (
-        <VerPortariaDialog
+      {dialog?.kind === "verAto" && (
+        <VerAtoDialog
+          especie={dialog.especie}
           teor={dialog.teor}
           quando={dialog.quando}
           prolator={dialog.prolator}
           cargo={dialog.cargo}
+          procedimento={denuncia.numero_protocolo}
+          denunciado={
+            policiais.length
+              ? policiais
+                  .map((p) => `${p.nome}${p.rg_funcional ? ` — ${p.rg_funcional}` : ""}`)
+                  .join("; ")
+              : "Não identificado"
+          }
           onClose={() => setDialog(null)}
         />
       )}
@@ -1202,34 +1237,81 @@ function PortariaDialog({
   );
 }
 
-function VerPortariaDialog({
+function VerAtoDialog({
+  especie,
   teor,
   quando,
   prolator,
   cargo,
+  procedimento,
+  denunciado,
   onClose,
 }: {
+  especie: "despacho" | "decisao" | "portaria";
   teor: string;
   quando: string;
   prolator: string;
   cargo: string;
+  procedimento: string;
+  denunciado: string;
   onClose: () => void;
 }) {
+  const docRef = useDocumentRef();
+  const [gerando, setGerando] = useState(false);
+
+  const assunto =
+    especie === "portaria" ? "Portaria Inaugural" : especie === "decisao" ? "Decisão" : "Despacho";
+  const titulo = assunto;
+
+  async function baixarPdf() {
+    if (!docRef.current) return;
+    setGerando(true);
+    try {
+      const fname = `${assunto.replace(/\s+/g, "_")}_${procedimento.replace(/[^\w-]/g, "_")}.pdf`;
+      await exportDocumentToPdf(docRef.current, fname);
+    } finally {
+      setGerando(false);
+    }
+  }
+
   return (
-    <Modal title="Portaria Inaugural" onClose={onClose}>
-      <div className="text-xs text-muted-foreground">
-        Lavrada por {prolator} · {cargoLabelFull(cargo)} ·{" "}
-        <span className="tabular">{new Date(quando).toLocaleString("pt-BR")}</span>
+    <div className="fixed inset-0 z-50 grid place-items-start overflow-y-auto bg-black/70 p-4">
+      <div className="mx-auto w-full max-w-[220mm]">
+        <div className="mb-3 flex items-center justify-between rounded-md bg-surface p-3">
+          <div>
+            <h3 className="font-serif text-lg">{titulo}</h3>
+            <div className="text-xs text-muted-foreground">
+              {prolator} · {cargoLabelFull(cargo)} ·{" "}
+              <span className="tabular">{new Date(quando).toLocaleString("pt-BR")}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={baixarPdf}
+              disabled={gerando}
+              className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
+            >
+              <Download className="h-3.5 w-3.5" /> {gerando ? "Gerando..." : "Baixar PDF"}
+            </button>
+            <button onClick={onClose} className="rounded-md border border-border p-1.5 hover:bg-surface-2">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        <DocumentTemplate
+          ref={docRef}
+          procedimento={procedimento}
+          denunciado={denunciado}
+          assunto={assunto}
+          prolatorNome={prolator}
+          prolatorCargo={cargoLabelFull(cargo)}
+          data={quando}
+        >
+          {especie === "portaria" ? renderTeorComLinks(teor) : teor}
+        </DocumentTemplate>
       </div>
-      <div className="mt-3 max-h-[60vh] overflow-y-auto whitespace-pre-wrap rounded-md border border-border/60 bg-surface-2 p-4 text-sm leading-relaxed">
-        {renderTeorComLinks(teor)}
-      </div>
-      <div className="mt-4 flex justify-end">
-        <button onClick={onClose} className="rounded-md border border-border px-4 py-2 text-sm">
-          Fechar
-        </button>
-      </div>
-    </Modal>
+    </div>
   );
 }
 

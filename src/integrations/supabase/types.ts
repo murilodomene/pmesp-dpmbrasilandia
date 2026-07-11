@@ -127,6 +127,27 @@ export type Database = {
         }
         Relationships: []
       }
+      documentos: {
+        Row: {
+          atualizado_em: string
+          conteudo: string
+          id: string
+          titulo: string
+        }
+        Insert: {
+          atualizado_em?: string
+          conteudo?: string
+          id: string
+          titulo: string
+        }
+        Update: {
+          atualizado_em?: string
+          conteudo?: string
+          id?: string
+          titulo?: string
+        }
+        Relationships: []
+      }
       movimentos: {
         Row: {
           criado_em: string

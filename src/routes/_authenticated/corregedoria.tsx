@@ -255,7 +255,18 @@ function Autuacao({ id, cargo }: { id: string; cargo: string | null }) {
   const unidadeFn = useServerFn(atualizarUnidade);
 
   const mLancar = useMutation({
-    mutationFn: () => lancarFn({ data: { denuncia_id: id, especie, teor } }),
+    mutationFn: () => {
+      const teorFinal = especie === "ipc" ? montarTeorIpc({
+        unidade: (data?.denuncia.unidade as string | null) ?? null,
+        protocolo: data?.denuncia.numero_protocolo ?? "",
+        policiais: (data?.policiais ?? []).map((p) => ({
+          nome: p.nome,
+          rg_funcional: p.rg_funcional ?? null,
+        })),
+        relato: teor,
+      }) : teor;
+      return lancarFn({ data: { denuncia_id: id, especie, teor: teorFinal } });
+    },
     onSuccess: () => {
       setTeor("");
       qc.invalidateQueries({ queryKey: ["denuncia", id] });

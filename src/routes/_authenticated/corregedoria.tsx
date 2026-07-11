@@ -643,18 +643,19 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                   : "Não identificado"
               }
             />
-            <label className="block">
+            <div>
               <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
                 3º Relato do fato
               </span>
-              <textarea
-                rows={5}
-                className="input mt-1"
-                placeholder="Descreva o fato..."
-                value={teor}
-                onChange={(e) => setTeor(e.target.value)}
-              />
-            </label>
+              <div className="mt-1">
+                <RichTextEditor
+                  value={teor}
+                  onChange={setTeor}
+                  placeholder="Descreva o fato. Use a barra acima para formatação."
+                  minHeight={160}
+                />
+              </div>
+            </div>
             <IpcCampoAuto
               label="4º Ciente dos fatos"
               valor="Corregedoria Geral da Polícia Civil"
@@ -674,9 +675,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
           <button
             onClick={() => mLancar.mutate()}
             disabled={
-              (especie === "ipc"
-                ? teor.trim().length < 3
-                : teor.replace(/<[^>]+>/g, "").trim().length < 3) || mLancar.isPending
+              teor.replace(/<[^>]+>/g, "").trim().length < 3 || mLancar.isPending
             }
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
           >
@@ -684,6 +683,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
           </button>
         </div>
       </div>
+
 
       {/* Timeline */}
       <div className="surface p-5">

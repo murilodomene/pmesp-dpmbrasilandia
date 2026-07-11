@@ -39,10 +39,16 @@ function PainelInterno() {
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState<DenunciaStatus | "">("");
   const [aberta, setAberta] = useState<string | null>(null);
+  const [oficioAberto, setOficioAberto] = useState(false);
+
+  const cargo = session?.cargo ?? null;
+  const podeInstaurar =
+    cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor";
 
   if (session && (session.profile?.status !== "ativo" || !session.cargo)) {
     return <RedirectPendente />;
   }
+
 
   const lista = useMemo(() => {
     if (!denuncias) return [];

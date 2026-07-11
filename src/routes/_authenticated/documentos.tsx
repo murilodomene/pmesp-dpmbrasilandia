@@ -430,6 +430,43 @@ function DocumentosPage() {
             )}
           </article>
         )}
+
+        {selected && !editando && buscaAtiva.trim() && (
+          <div
+            role="toolbar"
+            aria-label="Navegação entre resultados"
+            className="fixed z-40 flex items-center gap-2 rounded-full border border-border bg-surface/95 px-3 py-2 shadow-lg backdrop-blur
+                       bottom-4 left-1/2 -translate-x-1/2
+                       md:bottom-auto md:left-auto md:translate-x-0 md:top-24 md:right-6"
+          >
+            <button
+              onClick={goPrev}
+              disabled={total < 2}
+              aria-label="Resultado anterior"
+              className="grid h-8 w-8 place-items-center rounded-full border border-border text-muted-foreground transition hover:bg-surface-2 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronUp className="h-4 w-4" />
+            </button>
+            <span className="min-w-[6.5rem] text-center text-xs tabular-nums text-muted-foreground">
+              {total === 0 ? "Nenhum resultado" : `${currentIndex + 1} de ${total}`}
+            </span>
+            <button
+              onClick={goNext}
+              disabled={total < 2}
+              aria-label="Próximo resultado"
+              className="grid h-8 w-8 place-items-center rounded-full border border-border text-muted-foreground transition hover:bg-surface-2 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronDown className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setBuscaAtiva("")}
+              aria-label="Fechar busca"
+              className="ml-1 grid h-8 w-8 place-items-center rounded-full text-muted-foreground transition hover:bg-surface-2 hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
       </main>
     </div>
   );

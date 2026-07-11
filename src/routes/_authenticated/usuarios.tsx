@@ -39,7 +39,7 @@ function UsuariosPage() {
       <div className="min-h-screen">
         <Header />
         <div className="mx-auto max-w-md px-4 py-24 text-center text-sm text-muted-foreground">
-          Apenas Delegado Geral ou Delegado Corregedor pode gerenciar usuários.
+          Apenas o Delegado Corregedor pode gerenciar usuários.
         </div>
       </div>
     );

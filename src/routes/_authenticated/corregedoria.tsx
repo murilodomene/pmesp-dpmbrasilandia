@@ -419,14 +419,56 @@ function Autuacao({ id, cargo }: { id: string; cargo: string | null }) {
             interrupcoes_count={denuncia.interrupcoes_count}
             variant="block"
           />
-          <button
-            onClick={() => setDialog({ kind: "receber" })}
-            disabled={suspenso}
-            className="w-full rounded-md border border-border px-3 py-2 text-xs hover:bg-surface-2 disabled:opacity-40"
-          >
-            <Clock className="mr-1 inline h-3.5 w-3.5" /> Despacho de recebimento
-            <div className="text-[10px] text-muted-foreground">interrompe a prescrição</div>
-          </button>
+          {(() => {
+            const portariaMov = movimentos.find((m) => m.especie === "portaria");
+            return (
+              <div className="rounded-md border border-border p-3">
+                <div className="flex items-center gap-2 text-xs font-medium">
+                  <Stamp className="h-3.5 w-3.5" /> Portaria Inaugural
+                </div>
+                <div className="mt-0.5 text-[10px] text-muted-foreground">
+                  {portariaMov
+                    ? "Já lavrada — interrompe a prescrição"
+                    : "Instaura o PAD e interrompe a prescrição"}
+                </div>
+                <div className="mt-2 flex flex-col gap-1.5">
+                  {portariaMov && (
+                    <button
+                      onClick={() =>
+                        setDialog({
+                          kind: "verPortaria",
+                          teor: portariaMov.teor,
+                          quando: portariaMov.criado_em,
+                          prolator: portariaMov.prolator_nome,
+                          cargo: portariaMov.prolator_cargo as string,
+                        })
+                      }
+                      className="flex items-center justify-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
+                    >
+                      <Eye className="h-3.5 w-3.5" /> Ver portaria
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      if (portariaMov) {
+                        if (
+                          !window.confirm(
+                            "Já existe uma portaria lavrada. Lavrar outra irá interromper o prazo novamente. Deseja prosseguir?",
+                          )
+                        )
+                          return;
+                      }
+                      setDialog({ kind: "portaria" });
+                    }}
+                    disabled={suspenso}
+                    className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-40"
+                  >
+                    {portariaMov ? "Lavrar nova portaria" : "Lavrar portaria"}
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
           <button
             onClick={() => setDialog({ kind: "prorrogar" })}
             disabled={suspenso}

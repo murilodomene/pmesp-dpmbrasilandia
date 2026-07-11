@@ -507,6 +507,85 @@ export const lavrarPortaria = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// Instauração de ofício pela Corregedoria (Delegado Geral, Corregedor
+// ou Delegado Corregedor). Cria a denúncia já instaurada, com termo inicial
+// no momento da criação e status 'em_investigacao', e registra um despacho
+// inicial identificando a origem de ofício.
+const oficioSchema = z.object({
+  titulo: z.string().trim().min(3, "Informe o título.").max(300),
+  descricao: z.string().trim().min(20, "Descreva os fatos.").max(20000),
+  ocorrencia_data: z.string().optional().nullable(),
+  unidade: z.enum(UNIDADES).optional().nullable(),
+  envolvidos: z
+    .array(
+      z.object({
+        nome: z.string().trim().min(1).max(200),
+        rg_funcional: z.string().trim().max(50).optional().nullable(),
+        unidade: z.enum(UNIDADES).optional().nullable(),
+      }),
+    )
+    .min(1, "Adicione pelo menos um envolvido.")
+    .max(20),
+  links: z.array(z.string().url().max(1000)).max(20).default([]),
+});
+
+export const instaurarOficio = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => oficioSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const p = await getProlator(context);
+    if (
+      p.prolator_cargo !== "delegado_geral" &&
+      p.prolator_cargo !== "delegado_corregedor" &&
+      p.prolator_cargo !== "corregedor"
+    ) {
+      throw new Error("Apenas Delegado Geral, Delegado Corregedor ou Corregedor podem instaurar de ofício.");
+    }
+
+    const agora = new Date().toISOString();
+    const { data: den, error } = await context.supabase
+      .from("denuncias")
+      .insert({
+        owner_id: context.userId,
+        denunciante_nome: p.prolator_nome,
+        denunciante_anonimo: false,
+        ocorrencia_tipo: data.titulo,
+        ocorrencia_data: data.ocorrencia_data || null,
+        relato: data.descricao,
+        unidade: data.unidade ?? null,
+        links: data.links,
+        status: "em_investigacao",
+        termo_inicial: agora,
+        instaurada_em: agora,
+        interrupcoes_count: 1,
+      })
+      .select("id, numero_protocolo")
+      .single();
+    if (error) throw new Error(error.message);
+
+    const rows = data.envolvidos.map((e) => ({
+      denuncia_id: den.id,
+      nome: e.nome,
+      rg_funcional: e.rg_funcional ?? null,
+      unidade: e.unidade ?? null,
+    }));
+    await context.supabase.from("denuncia_policiais").insert(rows);
+
+    await context.supabase.from("movimentos").insert({
+      denuncia_id: den.id,
+      especie: "despacho",
+      teor:
+        `INSTAURAÇÃO DE OFÍCIO — Procedimento instaurado pela Corregedoria com base em conhecimento próprio dos fatos.\n\n` +
+        `Título: ${data.titulo}\n` +
+        `Descrição: ${data.descricao}`,
+      interrompe: true,
+      ...p,
+    });
+
+    return { id: den.id, protocolo: den.numero_protocolo };
+  });
+
+
 // Envio de denúncia por Cidadão autenticado — vincula owner_id.
 export const submitDenunciaCidadao = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

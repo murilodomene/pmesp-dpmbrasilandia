@@ -23,8 +23,7 @@ const CARGOS = [
 function UsuariosPage() {
   const sessionFn = useServerFn(getSessionInfo);
   const { data: session } = useQuery({ queryKey: ["session-info"], queryFn: () => sessionFn() });
-  const isDelegado =
-    session?.cargo === "delegado_geral" || session?.cargo === "delegado_corregedor";
+  const isDelegado = session?.cargo === "delegado_corregedor";
 
   const listFn = useServerFn(listUsuarios);
   const { data: usuarios, error } = useQuery({

@@ -137,10 +137,12 @@ export const getDenuncia = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
-    // Projeta explicitamente as colunas (evita SELECT * porque obs_internas
-    // tem GRANT revogado por segurança).
     const cols =
-      "id, numero_protocolo, denunciante_nome, denunciante_identificador, denunciante_contato, denunciante_anonimo, ocorrencia_tipo, ocorrencia_local, ocorrencia_data, ocorrencia_hora, relato, info_adicional, anexos, links, status, unidade, obs_denunciante, termo_inicial, acrescimos_dias, interrupcoes_count, created_at, instaurada_em, owner_id";
+      "id, numero_protocolo, denunciante_nome, denunciante_identificador, denunciante_contato, denunciante_anonimo, ocorrencia_tipo, ocorrencia_local, ocorrencia_data, ocorrencia_hora, relato, info_adicional, anexos, links, status, unidade, obs_denunciante, termo_inicial, acrescimos_dias, interrupcoes_count, concluido_em, certidao_gerada, created_at, instaurada_em, owner_id";
+    // Salvaguarda: se o prazo de 7 dias já venceu, transita antes de ler.
+    await context.supabase
+      .rpc("transitar_denuncia" as never, { _denuncia_id: data.id } as never)
+      .then(() => undefined, () => undefined);
     const { data: den, error } = await context.supabase
       .from("denuncias")
       .select(cols)

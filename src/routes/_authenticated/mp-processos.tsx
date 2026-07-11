@@ -9,6 +9,8 @@ import { type DenunciaStatus } from "@/lib/prescricao";
 import { listMeusProcessosMp, getDenuncia } from "@/lib/denuncias.functions";
 import { getSessionInfo } from "@/lib/usuarios.functions";
 import { FileText, Gavel, Scale, Stamp, ExternalLink } from "lucide-react";
+import { isHtmlAto, sanitizeAtoHtml } from "@/components/RichTextEditor";
+
 
 export const Route = createFileRoute("/_authenticated/mp-processos")({
   component: MpProcessosPage,

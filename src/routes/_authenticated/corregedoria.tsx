@@ -1510,4 +1510,65 @@ function AcessoMpSection({ denunciaId }: { denunciaId: string }) {
   );
 }
 
+function ExcluirDenunciaDialog({
+  protocolo,
+  onConfirm,
+  onClose,
+  pending,
+  erro,
+}: {
+  protocolo: string;
+  onConfirm: (protocolo: string) => void;
+  onClose: () => void;
+  pending: boolean;
+  erro: string | null;
+}) {
+  const [texto, setTexto] = useState("");
+  const bate = texto.trim() === protocolo;
+  return (
+    <Modal title="Excluir procedimento definitivamente" onClose={onClose}>
+      <div className="space-y-3 text-sm">
+        <p className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-destructive">
+          Esta ação é <strong>definitiva e irreversível</strong>. Todos os dados do
+          procedimento — movimentação, oitivas, denunciados, concessões ao MP e
+          vínculo com o cidadão — serão apagados do banco e não poderão ser recuperados.
+          O número <strong>{protocolo}</strong> não será reaproveitado.
+        </p>
+        <label className="block">
+          <span className="text-xs uppercase tracking-wider text-muted-foreground">
+            Para confirmar, digite o número do procedimento
+          </span>
+          <input
+            autoFocus
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            placeholder={protocolo}
+            className="input mt-1 tabular"
+          />
+        </label>
+        {erro && <p className="text-xs text-destructive">{erro}</p>}
+        <div className="flex justify-end gap-2 pt-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            disabled={!bate || pending}
+            onClick={() => onConfirm(texto.trim())}
+            className="inline-flex items-center gap-1 rounded-md bg-destructive px-3 py-1.5 text-xs text-destructive-foreground disabled:opacity-40"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            {pending ? "Excluindo..." : "Excluir definitivamente"}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+
 

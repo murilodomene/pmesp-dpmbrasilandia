@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Header } from "@/components/Header";
-import { submitDenuncia } from "@/lib/denuncias.functions";
+import { submitDenuncia, submitDenunciaCidadao } from "@/lib/denuncias.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { Trash2, Plus } from "lucide-react";
 
 export const Route = createFileRoute("/denunciar")({

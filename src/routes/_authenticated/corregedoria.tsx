@@ -1222,7 +1222,7 @@ function StatusDialog({
           className="input"
         >
           <option value="">Selecionar...</option>
-          {STATUS_LIST.map((s) => (
+          {STATUS_LIST_MANUAL.map((s) => (
             <option key={s} value={s} disabled={s === statusAtual}>
               {STATUS_LABEL[s]}
             </option>

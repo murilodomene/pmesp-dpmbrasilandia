@@ -692,12 +692,9 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
           {movimentos.length === 0 && (
             <li className="text-xs text-muted-foreground">Nenhum movimento ainda.</li>
           )}
-          {(() => {
-            // Numeração de Eventos permanente por procedimento (ordem de criação ASC).
-            // movimentos vem ordenado DESC, então o Evento nº = total - índice.
-            const total = movimentos.length;
-            return null;
-          })()}
+          {/* Numeração de Eventos por procedimento (permanente, por ordem de criação).
+              movimentos vem ordenado DESC por criado_em → Evento nº = total - índice. */}
+
           {movimentos.map((mRaw, idx) => {
             const eventoNo = movimentos.length - idx;
             const eventoLabel = `Evento nº ${String(eventoNo).padStart(2, "0")}`;

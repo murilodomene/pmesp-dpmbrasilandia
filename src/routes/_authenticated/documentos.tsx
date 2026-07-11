@@ -4,6 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { Header } from "@/components/Header";
 import { Search, Save, Pencil, X, FileText, ChevronUp, ChevronDown } from "lucide-react";
+import { HierarquiaQuadro } from "@/components/HierarquiaQuadro";
+
+const HIERARQUIA_ROLES = new Set(["delegado_geral", "delegado_corregedor", "corregedor"]);
 
 export const Route = createFileRoute("/_authenticated/documentos")({
   component: DocumentosPage,
@@ -125,7 +128,14 @@ function DocumentosPage() {
     }, 100);
   }, [selectedId]);
 
-  const selected = docs.find((d) => d.id === selectedId) ?? null;
+  const podeVerHierarquia = cargo !== null && HIERARQUIA_ROLES.has(cargo);
+  const visibleDocs = useMemo(
+    () => docs.filter((d) => d.id !== "hierarquia" || podeVerHierarquia),
+    [docs, podeVerHierarquia],
+  );
+
+  const selected = visibleDocs.find((d) => d.id === selectedId) ?? null;
+  const isHierarquia = selected?.id === "hierarquia";
 
   const rendered = useMemo(() => {
     if (!selected) return { html: "", toc: [] as { id: string; label: string }[], count: 0 };
@@ -162,7 +172,7 @@ function DocumentosPage() {
   const searchResults = useMemo(() => {
     const q = busca.trim().toLowerCase();
     if (!q || selectedId) return [];
-    return docs
+    return visibleDocs
       .map((d) => {
         const hay = (d.titulo + "\n" + d.conteudo).toLowerCase();
         const idx = hay.indexOf(q);
@@ -173,7 +183,7 @@ function DocumentosPage() {
         return { doc: d, trecho };
       })
       .filter(Boolean) as { doc: Doc; trecho: string }[];
-  }, [busca, docs, selectedId]);
+  }, [busca, visibleDocs, selectedId]);
 
   function abrir(id: string, termo?: string) {
     setSelectedId(id);
@@ -277,7 +287,7 @@ function DocumentosPage() {
 
         {!selectedId && !busca.trim() && (
           <ul className="grid gap-4 sm:grid-cols-2">
-            {docs.map((d) => (
+            {visibleDocs.map((d) => (
               <li key={d.id} className="animate-fade-in">
                 <button
                   onClick={() => abrir(d.id)}
@@ -310,7 +320,7 @@ function DocumentosPage() {
                 </button>
                 <h2 className="font-serif text-2xl">{selected.titulo}</h2>
               </div>
-              {podeEditar && !editando && (
+              {podeEditar && !editando && !isHierarquia && (
                 <button
                   onClick={() => { setRascunho(selected.conteudo); setEditando(true); }}
                   className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-surface-2"
@@ -337,7 +347,9 @@ function DocumentosPage() {
               )}
             </header>
 
-            {editando ? (
+            {isHierarquia ? (
+              <HierarquiaQuadro cargo={cargo} />
+            ) : editando ? (
               <div className="p-6">
                 <p className="mb-2 text-xs text-muted-foreground">
                   Suporta Markdown: <code>#</code> títulos, <code>**negrito**</code>, <code>*itálico*</code>, listas com <code>-</code>. Referências a "Art. N" viram âncoras.

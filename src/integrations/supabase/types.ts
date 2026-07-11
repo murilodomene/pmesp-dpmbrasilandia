@@ -157,6 +157,63 @@ export type Database = {
         }
         Relationships: []
       }
+      hierarquia_membros: {
+        Row: {
+          atividade: string | null
+          cargo: string | null
+          created_at: string
+          edital: string | null
+          grupo: string
+          id: string
+          instrutor: string | null
+          nome: string
+          ordem: number
+          pad: string | null
+          patente: string | null
+          promocao: string | null
+          rg: string | null
+          status: string
+          transferido: string | null
+          updated_at: string
+        }
+        Insert: {
+          atividade?: string | null
+          cargo?: string | null
+          created_at?: string
+          edital?: string | null
+          grupo: string
+          id?: string
+          instrutor?: string | null
+          nome: string
+          ordem?: number
+          pad?: string | null
+          patente?: string | null
+          promocao?: string | null
+          rg?: string | null
+          status?: string
+          transferido?: string | null
+          updated_at?: string
+        }
+        Update: {
+          atividade?: string | null
+          cargo?: string | null
+          created_at?: string
+          edital?: string | null
+          grupo?: string
+          id?: string
+          instrutor?: string | null
+          nome?: string
+          ordem?: number
+          pad?: string | null
+          patente?: string | null
+          promocao?: string | null
+          rg?: string | null
+          status?: string
+          transferido?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       movimentos: {
         Row: {
           cancelado_em: string | null

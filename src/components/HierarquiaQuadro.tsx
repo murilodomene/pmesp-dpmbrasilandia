@@ -286,64 +286,80 @@ export function HierarquiaQuadro({ cargo }: { cargo: string | null }) {
                     Nenhum membro registrado neste grupo.
                   </p>
                 ) : (
-                  <div className="overflow-x-auto rounded-lg border border-border bg-background/40">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-border bg-surface-2/60 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                          {COLS.map((c) => (
-                            <th key={c.key} className="px-3 py-2 font-medium">{c.label}</th>
-                          ))}
-                          {podeEditar && <th className="px-3 py-2 text-right font-medium">Ações</th>}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {list.map((m) => (
-                          <tr key={m.id} className="border-b border-border/40 last:border-0 hover:bg-surface/60">
+                  <div className="-mx-6 overflow-x-auto px-6 sm:mx-0 sm:px-0">
+                    <div className="rounded-lg border border-border bg-background/40">
+                      <table className="w-full min-w-[1100px] table-fixed border-collapse text-sm">
+                        <colgroup>
+                          <col style={{ width: "180px" }} />
+                          <col style={{ width: "72px" }} />
+                          <col style={{ width: "72px" }} />
+                          <col style={{ width: "160px" }} />
+                          <col style={{ width: "130px" }} />
+                          <col style={{ width: "90px" }} />
+                          <col style={{ width: "150px" }} />
+                          <col style={{ width: "160px" }} />
+                          <col style={{ width: "100px" }} />
+                          <col style={{ width: "70px" }} />
+                          <col style={{ width: "90px" }} />
+                          {podeEditar && <col style={{ width: "96px" }} />}
+                        </colgroup>
+                        <thead>
+                          <tr className="border-b border-border bg-surface-2/60 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
                             {COLS.map((c) => (
-                              <td key={c.key} className="px-3 py-2 align-middle">
-                                {renderCelula(m, c)}
-                              </td>
+                              <th key={c.key} className="whitespace-nowrap px-3 py-2 font-medium">{c.label}</th>
                             ))}
-                            {podeEditar && (
-                              <td className="px-3 py-2 text-right">
-                                {editId === m.id ? (
-                                  <div className="flex justify-end gap-1">
-                                    <button
-                                      onClick={salvar}
-                                      disabled={busy}
-                                      className="inline-flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-                                    >
-                                      <Save className="h-3.5 w-3.5" /> Salvar
-                                    </button>
-                                    <button
-                                      onClick={cancelarEdicao}
-                                      className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-surface-2"
-                                    >
-                                      <X className="h-3.5 w-3.5" />
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <div className="flex justify-end gap-1">
-                                    <button
-                                      onClick={() => iniciarEdicao(m)}
-                                      className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-surface-2"
-                                    >
-                                      <Pencil className="h-3.5 w-3.5" />
-                                    </button>
-                                    <button
-                                      onClick={() => remover(m.id)}
-                                      className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-rose-300 hover:bg-rose-500/10"
-                                    >
-                                      <Trash2 className="h-3.5 w-3.5" />
-                                    </button>
-                                  </div>
-                                )}
-                              </td>
-                            )}
+                            {podeEditar && <th className="whitespace-nowrap px-3 py-2 text-right font-medium">Ações</th>}
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {list.map((m) => (
+                            <tr key={m.id} className="border-b border-border/40 last:border-0 hover:bg-surface/60">
+                              {COLS.map((c) => (
+                                <td key={c.key} className="whitespace-nowrap px-3 py-2 align-middle">
+                                  {renderCelula(m, c)}
+                                </td>
+                              ))}
+                              {podeEditar && (
+                                <td className="whitespace-nowrap px-3 py-2 text-right">
+                                  {editId === m.id ? (
+                                    <div className="flex justify-end gap-1">
+                                      <button
+                                        onClick={salvar}
+                                        disabled={busy}
+                                        className="inline-flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                                      >
+                                        <Save className="h-3.5 w-3.5" />
+                                      </button>
+                                      <button
+                                        onClick={cancelarEdicao}
+                                        className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-surface-2"
+                                      >
+                                        <X className="h-3.5 w-3.5" />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className="flex justify-end gap-1">
+                                      <button
+                                        onClick={() => iniciarEdicao(m)}
+                                        className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-surface-2"
+                                      >
+                                        <Pencil className="h-3.5 w-3.5" />
+                                      </button>
+                                      <button
+                                        onClick={() => remover(m.id)}
+                                        className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-rose-300 hover:bg-rose-500/10"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </button>
+                                    </div>
+                                  )}
+                                </td>
+                              )}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
               </section>

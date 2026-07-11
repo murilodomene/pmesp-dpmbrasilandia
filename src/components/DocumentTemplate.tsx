@@ -126,12 +126,20 @@ export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps
 
           <section className="mt-4 grid gap-2 text-[12px] sm:text-[13px]">
             {campos ? (
-              campos.map((c) => (
-                <div key={c.label}>
-                  <span className="font-bold">{c.label.toUpperCase()}:</span>{" "}
-                  <span>{c.valor}</span>
-                </div>
-              ))
+              campos.map((c) =>
+                c.block ? (
+                  <div key={c.label}>
+                    <div className="font-bold">{c.label.toUpperCase()}:</div>
+                    <div className="mt-1 ato-body-pdf">{c.valor}</div>
+                  </div>
+                ) : (
+                  <div key={c.label}>
+                    <span className="font-bold">{c.label.toUpperCase()}:</span>{" "}
+                    <span>{c.valor}</span>
+                  </div>
+                ),
+              )
+
             ) : (
               <>
                 <div><span className="font-bold">PROCEDIMENTO:</span> {procedimento}</div>

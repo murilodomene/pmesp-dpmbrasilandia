@@ -24,7 +24,9 @@ import {
   listAcessosMp,
   concederAcessoMp,
   revogarAcessoMp,
+  excluirDenuncia,
 } from "@/lib/denuncias.functions";
+
 
 
 import { getSessionInfo } from "@/lib/usuarios.functions";

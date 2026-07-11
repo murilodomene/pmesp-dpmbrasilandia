@@ -145,12 +145,15 @@ function DetalheProcesso({ id }: { id: string }) {
               )}
             </div>
           </div>
-          <RelogioPrescricao
-            termo_inicial={d.termo_inicial ?? d.created_at}
-            acrescimos_dias={d.acrescimos_dias ?? 0}
-            status={d.status as DenunciaStatus}
-            interrupcoes_count={d.interrupcoes_count ?? 0}
-          />
+          <div className="flex items-center gap-3">
+            <ExportarProcessoMpBtn data={data} />
+            <RelogioPrescricao
+              termo_inicial={d.termo_inicial ?? d.created_at}
+              acrescimos_dias={d.acrescimos_dias ?? 0}
+              status={d.status as DenunciaStatus}
+              interrupcoes_count={d.interrupcoes_count ?? 0}
+            />
+          </div>
         </div>
       </div>
 

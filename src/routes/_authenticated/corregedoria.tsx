@@ -32,6 +32,7 @@ import {
 import { getSessionInfo } from "@/lib/usuarios.functions";
 import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2, Download } from "lucide-react";
 import { DocumentTemplate, exportDocumentToPdf, useDocumentRef } from "@/components/DocumentTemplate";
+import { RichTextEditor, isHtmlAto, sanitizeAtoHtml } from "@/components/RichTextEditor";
 
 export const Route = createFileRoute("/_authenticated/corregedoria")({
   validateSearch: z.object({ id: z.string().uuid().optional() }),
@@ -275,15 +276,20 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
 
   const mLancar = useMutation({
     mutationFn: () => {
-      const teorFinal = especie === "ipc" ? montarTeorIpc({
-        unidade: (data?.denuncia.unidade as string | null) ?? null,
-        protocolo: data?.denuncia.numero_protocolo ?? "",
-        policiais: (data?.policiais ?? []).map((p) => ({
-          nome: p.nome,
-          rg_funcional: p.rg_funcional ?? null,
-        })),
-        relato: teor,
-      }) : teor;
+      let teorFinal: string;
+      if (especie === "ipc") {
+        teorFinal = montarTeorIpc({
+          unidade: (data?.denuncia.unidade as string | null) ?? null,
+          protocolo: data?.denuncia.numero_protocolo ?? "",
+          policiais: (data?.policiais ?? []).map((p) => ({
+            nome: p.nome,
+            rg_funcional: p.rg_funcional ?? null,
+          })),
+          relato: teor,
+        });
+      } else {
+        teorFinal = sanitizeAtoHtml(teor);
+      }
       return lancarFn({ data: { denuncia_id: id, especie, teor: teorFinal } });
     },
     onSuccess: () => {
@@ -598,7 +604,10 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
             <button
               key={e.v}
               type="button"
-              onClick={() => setEspecie(e.v)}
+              onClick={() => {
+                if (e.v !== especie) setTeor("");
+                setEspecie(e.v);
+              }}
               className={`flex items-center gap-1 rounded-md border px-3 py-1.5 text-xs ${
                 especie === e.v ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-surface-2"
               }`}
@@ -639,18 +648,23 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
             />
           </div>
         ) : (
-          <textarea
-            rows={5}
-            className="input mt-3"
-            placeholder="Teor do ato..."
-            value={teor}
-            onChange={(e) => setTeor(e.target.value)}
-          />
+          <div className="mt-3">
+            <RichTextEditor
+              value={teor}
+              onChange={setTeor}
+              placeholder="Redija o teor do ato. Use a barra acima para formatação."
+              minHeight={160}
+            />
+          </div>
         )}
         <div className="mt-3 flex justify-end">
           <button
             onClick={() => mLancar.mutate()}
-            disabled={teor.trim().length < 3 || mLancar.isPending}
+            disabled={
+              (especie === "ipc"
+                ? teor.trim().length < 3
+                : teor.replace(/<[^>]+>/g, "").trim().length < 3) || mLancar.isPending
+            }
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
           >
             {mLancar.isPending ? "Lançando..." : "Lançar"}
@@ -1152,12 +1166,17 @@ function PortariaDialog({
       artigos,
       providencias,
     });
-    setCorpo(texto);
+    // Converte o modelo em parágrafos HTML preservando quebras duplas.
+    const html = texto
+      .split(/\n{2,}/)
+      .map((par) => `<p>${par.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br/>")}</p>`)
+      .join("");
+    setCorpo(html);
     setModeloAplicado(true);
   }
 
   const m = useMutation({
-    mutationFn: () => fn({ data: { denuncia_id: id, corpo } }),
+    mutationFn: () => fn({ data: { denuncia_id: id, corpo: sanitizeAtoHtml(corpo) } }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["denuncia", id] });
       qc.invalidateQueries({ queryKey: ["denuncias"] });
@@ -1227,22 +1246,21 @@ function PortariaDialog({
         </button>
       </div>
 
-      <label className="mt-3 grid gap-1">
+      <div className="mt-3 grid gap-1">
         <span className="text-xs uppercase tracking-wider text-muted-foreground">
-          Corpo da portaria (editável)
+          Corpo da portaria (editável — formatação disponível)
         </span>
-        <textarea
-          rows={14}
-          className="input font-mono text-xs"
+        <RichTextEditor
           value={corpo}
-          onChange={(e) => setCorpo(e.target.value)}
+          onChange={setCorpo}
           placeholder={
             modeloAplicado
               ? ""
               : "Clique em «Usar modelo pré-formatado» ou digite a portaria livremente."
           }
+          minHeight={280}
         />
-      </label>
+      </div>
 
       {m.isError && (
         <div className="mt-3 rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive-foreground">
@@ -1256,7 +1274,7 @@ function PortariaDialog({
         </button>
         <button
           onClick={() => m.mutate()}
-          disabled={corpo.trim().length < 50 || m.isPending}
+          disabled={corpo.replace(/<[^>]+>/g, "").trim().length < 50 || m.isPending}
           className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
           {m.isPending ? "Lavrando..." : "Confirmar e lavrar portaria"}
@@ -1272,11 +1290,36 @@ const ATO_ASSUNTO: Record<"despacho" | "decisao" | "portaria", string> = {
   portaria: "Portaria Inaugural",
 };
 
+const ATO_TIPO: Record<"despacho" | "decisao" | "portaria", "DESPACHO" | "DECISÃO" | "PORTARIA"> = {
+  despacho: "DESPACHO",
+  decisao: "DECISÃO",
+  portaria: "PORTARIA",
+};
+
 const ATO_MARKER: Record<"despacho" | "decisao" | "portaria", string> = {
   despacho: "bg-status-analise",
   decisao: "bg-destructive",
   portaria: "bg-primary",
 };
+
+/**
+ * Renderiza o corpo do ato: HTML sanitizado quando salvo como rich text,
+ * ou texto plano (com links, se portaria) para registros legados.
+ */
+function renderAtoBody(especie: "despacho" | "decisao" | "portaria", teor: string, pdf = false): React.ReactNode {
+  if (isHtmlAto(teor)) {
+    return (
+      <div
+        className={pdf ? "ato-body-pdf" : "ato-body"}
+        dangerouslySetInnerHTML={{ __html: sanitizeAtoHtml(teor) }}
+      />
+    );
+  }
+  if (especie === "portaria") {
+    return <div className="whitespace-pre-wrap">{renderTeorComLinks(teor)}</div>;
+  }
+  return <div className="whitespace-pre-wrap">{teor}</div>;
+}
 
 function TimelineAtoCard({
   especie,
@@ -1295,16 +1338,16 @@ function TimelineAtoCard({
   procedimento: string;
   denunciado: string;
 }) {
-  const ref = useDocumentRef();
+  const pdfRef = useDocumentRef();
   const [gerando, setGerando] = useState(false);
   const assunto = ATO_ASSUNTO[especie];
 
   async function exportarPdf() {
-    if (!ref.current) return;
+    if (!pdfRef.current) return;
     setGerando(true);
     try {
       const fname = `${assunto.replace(/\s+/g, "_")}_${procedimento.replace(/[^\w-]/g, "_")}.pdf`;
-      await exportDocumentToPdf(ref.current, fname);
+      await exportDocumentToPdf(pdfRef.current, fname);
     } finally {
       setGerando(false);
     }
@@ -1312,18 +1355,37 @@ function TimelineAtoCard({
 
   return (
     <div className="space-y-2">
+      {/* Exibição integrada ao sistema (tema escuro) */}
       <DocumentTemplate
-        ref={ref}
+        variant="screen"
         procedimento={procedimento}
         denunciado={denunciado}
-        assunto={assunto}
+        tipo={ATO_TIPO[especie]}
         prolatorNome={prolator}
         prolatorCargo={cargoLabelFull(cargo)}
         data={quando}
         markerClass={ATO_MARKER[especie]}
       >
-        {especie === "portaria" ? renderTeorComLinks(teor) : teor}
+        {renderAtoBody(especie, teor)}
       </DocumentTemplate>
+
+      {/* Versão para PDF, fora da tela, sem alterar o layout */}
+      <div className="pointer-events-none fixed left-[-10000px] top-0" aria-hidden>
+        <DocumentTemplate
+          ref={pdfRef}
+          variant="pdf"
+          procedimento={procedimento}
+          denunciado={denunciado}
+          assunto={assunto}
+          prolatorNome={prolator}
+          prolatorCargo={cargoLabelFull(cargo)}
+          data={quando}
+          markerClass={ATO_MARKER[especie]}
+        >
+          {renderAtoBody(especie, teor, true)}
+        </DocumentTemplate>
+      </div>
+
       <div className="flex justify-end">
         <button
           onClick={exportarPdf}
@@ -1357,7 +1419,7 @@ function VerAtoDialog({
   denunciado: string;
   onClose: () => void;
 }) {
-  const docRef = useDocumentRef();
+  const pdfRef = useDocumentRef();
   const [gerando, setGerando] = useState(false);
 
   const assunto =
@@ -1365,11 +1427,11 @@ function VerAtoDialog({
   const titulo = assunto;
 
   async function baixarPdf() {
-    if (!docRef.current) return;
+    if (!pdfRef.current) return;
     setGerando(true);
     try {
       const fname = `${assunto.replace(/\s+/g, "_")}_${procedimento.replace(/[^\w-]/g, "_")}.pdf`;
-      await exportDocumentToPdf(docRef.current, fname);
+      await exportDocumentToPdf(pdfRef.current, fname);
     } finally {
       setGerando(false);
     }
@@ -1400,17 +1462,36 @@ function VerAtoDialog({
           </div>
         </div>
 
-        <DocumentTemplate
-          ref={docRef}
-          procedimento={procedimento}
-          denunciado={denunciado}
-          assunto={assunto}
-          prolatorNome={prolator}
-          prolatorCargo={cargoLabelFull(cargo)}
-          data={quando}
-        >
-          {especie === "portaria" ? renderTeorComLinks(teor) : teor}
-        </DocumentTemplate>
+        <div className="surface p-5">
+          <DocumentTemplate
+            variant="screen"
+            procedimento={procedimento}
+            denunciado={denunciado}
+            tipo={ATO_TIPO[especie]}
+            prolatorNome={prolator}
+            prolatorCargo={cargoLabelFull(cargo)}
+            data={quando}
+            markerClass={ATO_MARKER[especie]}
+          >
+            {renderAtoBody(especie, teor)}
+          </DocumentTemplate>
+        </div>
+
+        {/* PDF invisível */}
+        <div className="pointer-events-none fixed left-[-10000px] top-0" aria-hidden>
+          <DocumentTemplate
+            ref={pdfRef}
+            variant="pdf"
+            procedimento={procedimento}
+            denunciado={denunciado}
+            assunto={assunto}
+            prolatorNome={prolator}
+            prolatorCargo={cargoLabelFull(cargo)}
+            data={quando}
+          >
+            {renderAtoBody(especie, teor, true)}
+          </DocumentTemplate>
+        </div>
       </div>
     </div>
   );

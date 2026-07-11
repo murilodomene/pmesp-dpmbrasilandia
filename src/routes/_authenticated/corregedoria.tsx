@@ -1361,3 +1361,116 @@ function RetificarDialog({
   );
 }
 
+// ============ Acesso do Ministério Público ============
+function AcessoMpSection({ denunciaId }: { denunciaId: string }) {
+  const qc = useQueryClient();
+  const listMembrosFn = useServerFn(listMembrosMp);
+  const listAcessosFn = useServerFn(listAcessosMp);
+  const concederFn = useServerFn(concederAcessoMp);
+  const revogarFn = useServerFn(revogarAcessoMp);
+  const [selected, setSelected] = useState<string>("");
+
+  const { data: membros } = useQuery({
+    queryKey: ["mp-membros"],
+    queryFn: () => listMembrosFn(),
+  });
+  const { data: acessos } = useQuery({
+    queryKey: ["mp-acessos", denunciaId],
+    queryFn: () => listAcessosFn({ data: { denuncia_id: denunciaId } }),
+  });
+
+  const jaConcedidos = new Set((acessos ?? []).map((a) => a.mp_user_id));
+  const disponiveis = (membros ?? []).filter((m) => !jaConcedidos.has(m.id));
+
+  const mConceder = useMutation({
+    mutationFn: async () => {
+      if (!selected) return;
+      await concederFn({ data: { denuncia_id: denunciaId, mp_user_id: selected } });
+    },
+    onSuccess: () => {
+      setSelected("");
+      qc.invalidateQueries({ queryKey: ["mp-acessos", denunciaId] });
+    },
+  });
+
+  const mRevogar = useMutation({
+    mutationFn: (id: string) => revogarFn({ data: { id } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["mp-acessos", denunciaId] }),
+  });
+
+  return (
+    <div className="surface p-5">
+      <h3 className="font-serif text-lg">Acesso do Ministério Público</h3>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Conceda leitura deste processo a um membro do MP já cadastrado. O acesso é
+        exclusivo deste processo — não vale para nenhum outro.
+      </p>
+
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <select
+          value={selected}
+          onChange={(e) => setSelected(e.target.value)}
+          className="input flex-1"
+        >
+          <option value="">
+            {disponiveis.length === 0
+              ? "Nenhum membro do MP disponível"
+              : "Selecionar membro do MP..."}
+          </option>
+          {disponiveis.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.nome}
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={() => mConceder.mutate()}
+          disabled={!selected || mConceder.isPending}
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+        >
+          Conceder acesso
+        </button>
+      </div>
+
+      <div className="mt-5">
+        <div className="text-xs uppercase tracking-wider text-muted-foreground">
+          Concessões ativas
+        </div>
+        {!acessos || acessos.length === 0 ? (
+          <div className="mt-2 text-xs text-muted-foreground">
+            Ninguém tem acesso a este processo além da Corregedoria.
+          </div>
+        ) : (
+          <ul className="mt-2 space-y-2">
+            {acessos.map((a) => (
+              <li
+                key={a.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/60 p-3"
+              >
+                <div>
+                  <div className="text-sm font-medium">{a.mp_nome}</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    Concedido por {a.concedido_por_nome} em{" "}
+                    {new Date(a.concedido_em).toLocaleString("pt-BR")}
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    if (confirm("Revogar o acesso deste membro do MP a este processo?")) {
+                      mRevogar.mutate(a.id);
+                    }
+                  }}
+                  className="rounded-md border border-destructive/40 px-3 py-1 text-xs text-destructive-foreground hover:bg-destructive/10"
+                >
+                  Revogar
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+

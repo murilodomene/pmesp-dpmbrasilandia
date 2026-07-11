@@ -1283,6 +1283,69 @@ function StatusDialog({
   );
 }
 
+function RecursoDialog({ id, onClose }: { id: string; onClose: () => void }) {
+  const qc = useQueryClient();
+  const fn = useServerFn(registrarRecurso);
+  const [certificacao, setCertificacao] = useState(
+    "Certifico e dou fé que, dentro do prazo legal, foi interposto recurso administrativo em face da decisão proferida nos autos.",
+  );
+  const [link, setLink] = useState("");
+  const m = useMutation({
+    mutationFn: () =>
+      fn({ data: { denuncia_id: id, certificacao, recurso_link: link || null } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["denuncia", id] });
+      qc.invalidateQueries({ queryKey: ["denuncias"] });
+      onClose();
+    },
+  });
+  return (
+    <Modal title="Registrar recurso administrativo" onClose={onClose}>
+      <p className="text-xs text-muted-foreground">
+        Ao confirmar, o decurso automático é interrompido, o procedimento retorna
+        para "Em análise" e a certificação é juntada aos autos como Evento.
+      </p>
+      <label className="mt-3 grid gap-1.5">
+        <span className="text-xs uppercase tracking-wider text-muted-foreground">
+          Certificação (obrigatória)
+        </span>
+        <textarea
+          rows={4}
+          className="input"
+          value={certificacao}
+          onChange={(e) => setCertificacao(e.target.value)}
+        />
+      </label>
+      <label className="mt-3 grid gap-1.5">
+        <span className="text-xs uppercase tracking-wider text-muted-foreground">
+          Link / referência do recurso juntado (opcional)
+        </span>
+        <input
+          className="input"
+          value={link}
+          onChange={(e) => setLink(e.target.value)}
+          placeholder="https://... ou nº do documento anexado"
+        />
+      </label>
+      {m.error instanceof Error && (
+        <p className="mt-2 text-xs text-destructive">{m.error.message}</p>
+      )}
+      <div className="mt-4 flex justify-end gap-2">
+        <button onClick={onClose} className="rounded-md border border-border px-4 py-2 text-sm">
+          Cancelar
+        </button>
+        <button
+          onClick={() => m.mutate()}
+          disabled={certificacao.trim().length < 10 || m.isPending}
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+        >
+          {m.isPending ? "Registrando..." : "Registrar recurso"}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
 function cargoLabelFull(c: string | null | undefined): string {
   if (!c) return "";
   return c === "delegado_geral"

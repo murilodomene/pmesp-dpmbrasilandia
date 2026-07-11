@@ -25,6 +25,7 @@ import {
   concederAcessoMp,
   revogarAcessoMp,
   excluirDenuncia,
+  cancelarMovimento,
 } from "@/lib/denuncias.functions";
 
 
@@ -33,6 +34,17 @@ import { getSessionInfo } from "@/lib/usuarios.functions";
 import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2, Download } from "lucide-react";
 import { DocumentTemplate, exportDocumentToPdf, useDocumentRef } from "@/components/DocumentTemplate";
 import { RichTextEditor, isHtmlAto, sanitizeAtoHtml } from "@/components/RichTextEditor";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/corregedoria")({
   validateSearch: z.object({ id: z.string().uuid().optional() }),
@@ -254,6 +266,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     | { kind: "oitiva" }
     | { kind: "retificar"; policial: { id: string; nome: string; rg_funcional: string | null } }
     | { kind: "excluir" }
+    | { kind: "cancelarMov"; movimento_id: string; resumo: string }
     | null
   >(null);
 
@@ -679,18 +692,65 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
           {movimentos.length === 0 && (
             <li className="text-xs text-muted-foreground">Nenhum movimento ainda.</li>
           )}
-          {movimentos.map((m) => {
+          {movimentos.map((mRaw) => {
+            const m = mRaw as typeof mRaw & {
+              cancelado_em?: string | null;
+              cancelado_por_nome?: string | null;
+              cancelado_por_cargo?: string | null;
+              motivo_cancelamento?: string | null;
+            };
             const isAto =
               m.especie === "despacho" || m.especie === "decisao" || m.especie === "portaria";
+            const canceladoEm = m.cancelado_em ?? null;
+            const podeCancelar =
+              podeExcluir && !canceladoEm && m.especie !== "cancelamento";
+            const resumoMov = `${labelEspecie(m.especie as string)} de ${new Date(
+              m.criado_em,
+            ).toLocaleString("pt-BR")}`;
+            const canceladoBadge = canceladoEm && (
+              <span className="rounded-full bg-destructive/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-destructive-foreground">
+                Cancelada
+              </span>
+            );
+            const canceladoFooter = canceladoEm && (
+              <div className="mt-2 rounded-md border border-destructive/30 bg-destructive/10 p-2 text-[11px] text-destructive-foreground">
+                Cancelada em{" "}
+                <span className="tabular">
+                  {new Date(canceladoEm).toLocaleString("pt-BR")}
+                </span>{" "}
+                por {m.cancelado_por_nome} · {cargoLabel(m.cancelado_por_cargo as string)}
+                {m.motivo_cancelamento && (
+                  <>
+                    <br />
+                    <span className="opacity-90">Justificativa: {m.motivo_cancelamento}</span>
+                  </>
+                )}
+              </div>
+            );
+            const btnCancelar = podeCancelar && (
+              <button
+                type="button"
+                onClick={() =>
+                  setDialog({ kind: "cancelarMov", movimento_id: m.id, resumo: resumoMov })
+                }
+                aria-label="Cancelar movimentação"
+                title="Cancelar movimentação (Delegado Corregedor)"
+                className="inline-flex items-center gap-1 rounded-md border border-transparent px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"
+              >
+                <Trash2 className="h-3.5 w-3.5" /> Cancelar
+              </button>
+            );
+
             if (isAto) {
               return (
-                <li key={m.id} className="flex gap-3">
+                <li key={m.id} className={`flex gap-3 ${canceladoEm ? "opacity-60" : ""}`}>
                   <MovMarker especie={m.especie as string} />
                   <div className="min-w-0 flex-1 space-y-2">
                     <div className="flex flex-wrap items-center gap-2 text-xs">
                       <span className="font-medium uppercase tracking-wider">
                         {labelEspecie(m.especie as string)}
                       </span>
+                      {canceladoBadge}
                       {m.interrompe && (
                         <span className="rounded-full bg-destructive/20 px-2 py-0.5 text-destructive-foreground">
                           Interrompe
@@ -704,34 +764,39 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                       <span className="ml-auto text-muted-foreground tabular">
                         {new Date(m.criado_em).toLocaleString("pt-BR")}
                       </span>
+                      {btnCancelar}
                     </div>
-                    <TimelineAtoCard
-                      especie={m.especie as "despacho" | "decisao" | "portaria"}
-                      teor={m.teor}
-                      quando={m.criado_em}
-                      prolator={m.prolator_nome}
-                      cargo={m.prolator_cargo as string}
-                      procedimento={denuncia.numero_protocolo}
-                      denunciado={
-                        policiais.length
-                          ? policiais
-                              .map((p) => `${p.nome}${p.rg_funcional ? ` — ${p.rg_funcional}` : ""}`)
-                              .join("; ")
-                          : "Não identificado"
-                      }
-                    />
+                    <div className={canceladoEm ? "line-through decoration-destructive/60" : ""}>
+                      <TimelineAtoCard
+                        especie={m.especie as "despacho" | "decisao" | "portaria"}
+                        teor={m.teor}
+                        quando={m.criado_em}
+                        prolator={m.prolator_nome}
+                        cargo={m.prolator_cargo as string}
+                        procedimento={denuncia.numero_protocolo}
+                        denunciado={
+                          policiais.length
+                            ? policiais
+                                .map((p) => `${p.nome}${p.rg_funcional ? ` — ${p.rg_funcional}` : ""}`)
+                                .join("; ")
+                            : "Não identificado"
+                        }
+                      />
+                    </div>
+                    {canceladoFooter}
                   </div>
                 </li>
               );
             }
             return (
-              <li key={m.id} className="flex gap-3">
+              <li key={m.id} className={`flex gap-3 ${canceladoEm ? "opacity-60" : ""}`}>
                 <MovMarker especie={m.especie as string} />
                 <div className="flex-1 rounded-md border border-border/60 p-3">
                   <div className="flex flex-wrap items-center gap-2 text-xs">
                     <span className="font-medium uppercase tracking-wider">
                       {labelEspecie(m.especie as string)}
                     </span>
+                    {canceladoBadge}
                     {m.interrompe && (
                       <span className="rounded-full bg-destructive/20 px-2 py-0.5 text-destructive-foreground">
                         Interrompe
@@ -757,21 +822,31 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                       {new Date(m.criado_em).toLocaleString("pt-BR")}
                     </span>
                   </div>
-                  <p className="mt-2 whitespace-pre-wrap text-sm">{m.teor}</p>
-                  <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                  <p
+                    className={`mt-2 whitespace-pre-wrap text-sm ${
+                      canceladoEm ? "line-through decoration-destructive/60" : ""
+                    }`}
+                  >
+                    {m.teor}
+                  </p>
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
                     <span>
                       {m.prolator_nome} · {cargoLabel(m.prolator_cargo as string)}
                     </span>
-                    {m.especie === "ipc" && (
-                      <button
-                        onClick={() => mPublicar.mutate({ id: m.id, publicado: !m.ipc_publicado })}
-                        disabled={mPublicar.isPending}
-                        className="rounded-md border border-border px-2 py-1 hover:bg-surface-2 disabled:opacity-50"
-                      >
-                        {m.ipc_publicado ? "Despublicar" : "Publicar para o denunciante"}
-                      </button>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {m.especie === "ipc" && (
+                        <button
+                          onClick={() => mPublicar.mutate({ id: m.id, publicado: !m.ipc_publicado })}
+                          disabled={mPublicar.isPending}
+                          className="rounded-md border border-border px-2 py-1 hover:bg-surface-2 disabled:opacity-50"
+                        >
+                          {m.ipc_publicado ? "Despublicar" : "Publicar para o denunciante"}
+                        </button>
+                      )}
+                      {btnCancelar}
+                    </div>
                   </div>
+                  {canceladoFooter}
                 </div>
               </li>
             );
@@ -864,6 +939,14 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
           pending={mExcluir.isPending}
           erro={mExcluir.error instanceof Error ? mExcluir.error.message : null}
           onConfirm={(protocolo) => mExcluir.mutate(protocolo)}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {dialog?.kind === "cancelarMov" && (
+        <CancelarMovDialog
+          movimentoId={dialog.movimento_id}
+          resumo={dialog.resumo}
+          denunciaId={id}
           onClose={() => setDialog(null)}
         />
       )}
@@ -1836,3 +1919,77 @@ function ExcluirDenunciaDialog({
 
 
 
+
+function CancelarMovDialog({
+  movimentoId,
+  resumo,
+  denunciaId,
+  onClose,
+}: {
+  movimentoId: string;
+  resumo: string;
+  denunciaId: string;
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const fn = useServerFn(cancelarMovimento);
+  const [motivo, setMotivo] = useState("");
+
+  const m = useMutation({
+    mutationFn: () => fn({ data: { movimento_id: movimentoId, motivo } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["denuncia", denunciaId] });
+      qc.invalidateQueries({ queryKey: ["denuncias"] });
+      toast.success("Movimentação cancelada com sucesso.");
+      onClose();
+    },
+    onError: (e) => {
+      toast.error(
+        e instanceof Error && e.message
+          ? e.message
+          : "Falha ao cancelar movimentação. Tente novamente.",
+      );
+    },
+  });
+
+  return (
+    <AlertDialog open onOpenChange={(o) => !o && !m.isPending && onClose()}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Cancelar movimentação</AlertDialogTitle>
+          <AlertDialogDescription>
+            A movimentação <strong>{resumo}</strong> permanecerá no histórico marcada como
+            cancelada, e um novo lançamento de auditoria será criado. A ação é irreversível.
+            Informe a justificativa.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="mt-2 grid gap-1">
+          <label className="text-[11px] uppercase tracking-wider text-muted-foreground">
+            Justificativa
+          </label>
+          <textarea
+            rows={4}
+            className="input"
+            autoFocus
+            value={motivo}
+            onChange={(e) => setMotivo(e.target.value)}
+            placeholder="Explique o motivo do cancelamento..."
+          />
+        </div>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={m.isPending}>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={motivo.trim().length < 3 || m.isPending}
+            onClick={(e) => {
+              e.preventDefault();
+              m.mutate();
+            }}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {m.isPending ? "Cancelando..." : "Confirmar cancelamento"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}

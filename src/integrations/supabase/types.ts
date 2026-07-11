@@ -153,12 +153,17 @@ export type Database = {
       }
       movimentos: {
         Row: {
+          cancelado_em: string | null
+          cancelado_por_cargo: Database["public"]["Enums"]["app_role"] | null
+          cancelado_por_id: string | null
+          cancelado_por_nome: string | null
           criado_em: string
           denuncia_id: string
           especie: Database["public"]["Enums"]["movimento_especie"]
           id: string
           interrompe: boolean
           ipc_publicado: boolean
+          motivo_cancelamento: string | null
           prolator_cargo: Database["public"]["Enums"]["app_role"]
           prolator_id: string | null
           prolator_nome: string
@@ -166,12 +171,17 @@ export type Database = {
           teor: string
         }
         Insert: {
+          cancelado_em?: string | null
+          cancelado_por_cargo?: Database["public"]["Enums"]["app_role"] | null
+          cancelado_por_id?: string | null
+          cancelado_por_nome?: string | null
           criado_em?: string
           denuncia_id: string
           especie: Database["public"]["Enums"]["movimento_especie"]
           id?: string
           interrompe?: boolean
           ipc_publicado?: boolean
+          motivo_cancelamento?: string | null
           prolator_cargo: Database["public"]["Enums"]["app_role"]
           prolator_id?: string | null
           prolator_nome: string
@@ -179,12 +189,17 @@ export type Database = {
           teor: string
         }
         Update: {
+          cancelado_em?: string | null
+          cancelado_por_cargo?: Database["public"]["Enums"]["app_role"] | null
+          cancelado_por_id?: string | null
+          cancelado_por_nome?: string | null
           criado_em?: string
           denuncia_id?: string
           especie?: Database["public"]["Enums"]["movimento_especie"]
           id?: string
           interrompe?: boolean
           ipc_publicado?: boolean
+          motivo_cancelamento?: string | null
           prolator_cargo?: Database["public"]["Enums"]["app_role"]
           prolator_id?: string | null
           prolator_nome?: string
@@ -428,6 +443,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancelar_movimento: {
+        Args: { _motivo: string; _movimento_id: string }
+        Returns: undefined
+      }
       gerar_numero_pdo: { Args: never; Returns: string }
       gerar_protocolo: { Args: never; Returns: string }
       get_obs_internas: { Args: { _denuncia_id: string }; Returns: string }
@@ -472,6 +491,7 @@ export type Database = {
         | "status"
         | "retificacao"
         | "portaria"
+        | "cancelamento"
       profile_status: "pendente" | "ativo" | "inativo"
       unidade_pc:
         | "DEIC"
@@ -632,6 +652,7 @@ export const Constants = {
         "status",
         "retificacao",
         "portaria",
+        "cancelamento",
       ],
       profile_status: ["pendente", "ativo", "inativo"],
       unidade_pc: [

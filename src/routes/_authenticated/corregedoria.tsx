@@ -30,7 +30,7 @@ import {
 
 
 import { getSessionInfo } from "@/lib/usuarios.functions";
-import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye } from "lucide-react";
+import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/corregedoria")({
   validateSearch: z.object({ id: z.string().uuid().optional() }),

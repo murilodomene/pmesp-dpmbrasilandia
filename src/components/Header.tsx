@@ -88,12 +88,18 @@ export function Header() {
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               <Link
                 to="/cidadao"
                 className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
               >
                 Área do Cidadão
+              </Link>
+              <Link
+                to="/mp"
+                className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
+              >
+                Ministério Público
               </Link>
               <Link
                 to="/auth"
@@ -102,6 +108,7 @@ export function Header() {
                 Acesso interno
               </Link>
             </div>
+
           )}
         </div>
       </div>

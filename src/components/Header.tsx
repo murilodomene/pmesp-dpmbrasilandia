@@ -65,6 +65,7 @@ export function Header() {
           <NavLink to="/denunciar">Fazer Denúncia</NavLink>
           <NavLink to="/consultar">Consultar</NavLink>
           {isCidadao && <NavLink to="/minhas-denuncias">Minhas denúncias</NavLink>}
+          {isMp && <NavLink to="/mp-processos">Meus processos</NavLink>}
           {isStaff && (
             <>
               <NavLink to="/painel">Painel Interno</NavLink>
@@ -72,6 +73,7 @@ export function Header() {
               <NavLink to="/documentos">Documentos</NavLink>
             </>
           )}
+
         </nav>
 
         <div className="flex items-center gap-2">

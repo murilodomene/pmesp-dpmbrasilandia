@@ -5,29 +5,29 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Design system definition.
+ * Sistema de Corregedoria — Design System
  *
- * The @theme inline block maps CSS custom properties to Tailwind utility
- * classes (e.g. --color-primary -> bg-primary, text-primary).
- *
- * The :root and .dark blocks define the actual color values using oklch.
- * All colors MUST use oklch format.
- *
- * To add a new semantic color:
- * 1. Add the variable to :root (light value) and .dark (dark value)
- * 2. Register it in @theme inline as --color-<name>: var(--<name>)
+ * Azul-marinho profundo, superfícies um tom acima, âmbar como acento.
+ * Serifada nos títulos, sans no corpo, monoespaçada tabular em números.
+ * Cores semânticas de status são próprias — o âmbar NUNCA é status.
+ * Vermelho reservado a risco prescricional e decisões.
  */
 
 @theme inline {
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-serif: "Fraunces", "Cormorant Garamond", Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
@@ -45,91 +45,87 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-ring-offset-background: var(--background);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Status semânticos — cada estado com sua própria cor */
+  --color-status-recebida: var(--status-recebida);
+  --color-status-recebida-fg: var(--status-recebida-fg);
+  --color-status-aguardando: var(--status-aguardando);
+  --color-status-aguardando-fg: var(--status-aguardando-fg);
+  --color-status-analise: var(--status-analise);
+  --color-status-analise-fg: var(--status-analise-fg);
+  --color-status-investigacao: var(--status-investigacao);
+  --color-status-investigacao-fg: var(--status-investigacao-fg);
+  --color-status-concluida: var(--status-concluida);
+  --color-status-concluida-fg: var(--status-concluida-fg);
+  --color-status-arquivada: var(--status-arquivada);
+  --color-status-arquivada-fg: var(--status-arquivada-fg);
+
+  /* Escala do relógio de prescrição */
+  --color-clock-safe: var(--clock-safe);
+  --color-clock-warn: var(--clock-warn);
+  --color-clock-danger: var(--clock-danger);
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.984 0.003 247.858);
-  --sidebar-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-primary: oklch(0.208 0.042 265.755);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.704 0.04 256.788);
+  --radius: 0.5rem;
+
+  /* Azul-marinho profundo */
+  --background: oklch(0.19 0.04 258);
+  --foreground: oklch(0.96 0.008 250);
+
+  --surface: oklch(0.235 0.045 258);
+  --surface-2: oklch(0.28 0.05 258);
+
+  --card: oklch(0.235 0.045 258);
+  --card-foreground: oklch(0.96 0.008 250);
+
+  --popover: oklch(0.24 0.045 258);
+  --popover-foreground: oklch(0.96 0.008 250);
+
+  /* Primário = âmbar (ação primária, marca) */
+  --primary: oklch(0.78 0.13 75);
+  --primary-foreground: oklch(0.18 0.04 258);
+
+  --secondary: oklch(0.3 0.045 258);
+  --secondary-foreground: oklch(0.96 0.008 250);
+
+  --muted: oklch(0.28 0.04 258);
+  --muted-foreground: oklch(0.72 0.02 250);
+
+  --accent: oklch(0.78 0.13 75);
+  --accent-foreground: oklch(0.18 0.04 258);
+
+  --destructive: oklch(0.63 0.22 25);
+  --destructive-foreground: oklch(0.98 0.005 250);
+
+  --border: oklch(0.34 0.04 258);
+  --input: oklch(0.3 0.04 258);
+  --ring: oklch(0.78 0.13 75);
+
+  /* Status — sem âmbar, sem vermelho */
+  --status-recebida: oklch(0.5 0.08 235);            /* azul frio */
+  --status-recebida-fg: oklch(0.97 0.02 235);
+  --status-aguardando: oklch(0.45 0.01 260);         /* cinza */
+  --status-aguardando-fg: oklch(0.96 0.01 250);
+  --status-analise: oklch(0.5 0.06 200);             /* azul-petróleo */
+  --status-analise-fg: oklch(0.97 0.02 200);
+  --status-investigacao: oklch(0.5 0.11 55);         /* âmbar queimado, escuro */
+  --status-investigacao-fg: oklch(0.97 0.02 60);
+  --status-concluida: oklch(0.5 0.13 150);           /* verde */
+  --status-concluida-fg: oklch(0.97 0.02 150);
+  --status-arquivada: oklch(0.32 0.02 260);          /* cinza-escuro */
+  --status-arquivada-fg: oklch(0.85 0.01 250);
+
+  /* Relógio */
+  --clock-safe: oklch(0.72 0.02 250);
+  --clock-warn: oklch(0.75 0.15 75);
+  --clock-danger: oklch(0.65 0.22 25);
 }
 
 .dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
+  /* mesmo tema — o sistema é escuro por padrão */
+  --background: oklch(0.19 0.04 258);
+  --foreground: oklch(0.96 0.008 250);
 }
 
 @layer base {
@@ -137,8 +133,47 @@
     border-color: var(--color-border);
   }
 
+  html {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
+
+  h1, h2, h3, h4, .font-serif {
+    font-family: var(--font-serif);
+    font-feature-settings: "ss01";
+    letter-spacing: -0.01em;
+  }
+
+  .tabular {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+@utility eyebrow {
+  font-family: var(--font-sans);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+@utility surface {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
 }

@@ -215,7 +215,7 @@ function VazioAutuacao() {
   );
 }
 
-function Autuacao({ id }: { id: string }) {
+function Autuacao({ id, cargo }: { id: string; cargo: string | null }) {
   const qc = useQueryClient();
   const getFn = useServerFn(getDenuncia);
   const { data, isLoading } = useQuery({
@@ -223,13 +223,17 @@ function Autuacao({ id }: { id: string }) {
     queryFn: () => getFn({ data: { id } }),
   });
 
+  const podeRetificar = cargo === "delegado_geral" || cargo === "delegado_corregedor";
+
   const [dialog, setDialog] = useState<
     | { kind: "status" }
     | { kind: "receber" }
     | { kind: "prorrogar" }
     | { kind: "oitiva" }
+    | { kind: "retificar"; policial: { id: string; nome: string; rg_funcional: string | null } }
     | null
   >(null);
+
 
   const lancarFn = useServerFn(lancarMovimento);
   const [especie, setEspecie] = useState<"despacho" | "decisao" | "ipc">("despacho");

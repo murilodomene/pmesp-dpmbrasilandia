@@ -85,10 +85,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "Corregedoria da Polícia Civil" },
       {
         property: "og:description",
-        content: "Denuncie condutas irregulares. Acompanhe o andamento pelo número de protocolo.",
+        content: "Canal oficial de denúncias e sistema interno de procedimentos disciplinares da Corregedoria da Polícia Civil.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Corregedoria da Polícia Civil" },
+      { name: "twitter:description", content: "Canal oficial de denúncias e sistema interno de procedimentos disciplinares da Corregedoria da Polícia Civil." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/6bfbc1fc-b96f-441a-a11f-0636a53ca45c/id-preview-dfce3ba8--c4a50768-6b27-4967-9e96-cee53ecda3f5.lovable.app-1783792569455.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/6bfbc1fc-b96f-441a-a11f-0636a53ca45c/id-preview-dfce3ba8--c4a50768-6b27-4967-9e96-cee53ecda3f5.lovable.app-1783792569455.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },

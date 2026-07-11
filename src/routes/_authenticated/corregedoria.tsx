@@ -286,6 +286,12 @@ function Autuacao({ id, cargo }: { id: string; cargo: string | null }) {
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["denuncia", id] }),
   });
+  const publicarFn = useServerFn(alternarPublicacaoIpc);
+  const mPublicar = useMutation({
+    mutationFn: (args: { id: string; publicado: boolean }) =>
+      publicarFn({ data: { movimento_id: args.id, publicado: args.publicado } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["denuncia", id] }),
+  });
 
   if (isLoading || !data) {
     return <div className="surface p-8 text-sm text-muted-foreground">Carregando autos...</div>;

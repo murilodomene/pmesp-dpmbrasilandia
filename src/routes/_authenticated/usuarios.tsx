@@ -164,9 +164,12 @@ function UsuarioRow({ u }: { u: Usuario }) {
 }
 
 function cargoLabel(c: string): string {
-  return c === "delegado_geral"
-    ? "Delegado Geral"
-    : c === "delegado_corregedor"
-      ? "Delegado Corregedor"
-      : "Corregedor";
+  switch (c) {
+    case "delegado_geral": return "Delegado Geral";
+    case "delegado_corregedor": return "Delegado Corregedor";
+    case "corregedor": return "Corregedor";
+    case "cidadao": return "Cidadão";
+    case "mp": return "Ministério Público";
+    default: return c;
+  }
 }

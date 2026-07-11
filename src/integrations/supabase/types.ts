@@ -331,6 +331,7 @@ export type Database = {
         | "ipc"
         | "status"
         | "retificacao"
+        | "portaria"
       profile_status: "pendente" | "ativo" | "inativo"
       unidade_pc:
         | "DEIC"
@@ -484,6 +485,7 @@ export const Constants = {
         "ipc",
         "status",
         "retificacao",
+        "portaria",
       ],
       profile_status: ["pendente", "ativo", "inativo"],
       unidade_pc: [

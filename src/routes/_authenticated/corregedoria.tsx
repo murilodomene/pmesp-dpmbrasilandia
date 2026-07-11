@@ -12,17 +12,17 @@ import {
   getDenuncia,
   lancarMovimento,
   alterarStatus,
-  receberDenuncia,
   prorrogar,
   juntarOitiva,
   desentranharOitiva,
   atualizarObservacoes,
   atualizarUnidade,
   retificarDenunciado,
+  lavrarPortaria,
 } from "@/lib/denuncias.functions";
 
 import { getSessionInfo } from "@/lib/usuarios.functions";
-import { Gavel, FileText, Scale, Clock, ExternalLink, X, Users, Pencil } from "lucide-react";
+import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/corregedoria")({
   validateSearch: z.object({ id: z.string().uuid().optional() }),

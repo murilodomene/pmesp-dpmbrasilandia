@@ -41,7 +41,9 @@ export function Header() {
 
   const ativo = profile?.status === "ativo";
   const isCidadao = cargo === "cidadao";
-  const isStaff = ativo && cargo && !isCidadao;
+  const isMp = cargo === "mp";
+  const isStaff = ativo && cargo && !isCidadao && !isMp;
+
 
   return (
     <header className="border-b border-border bg-surface/60 backdrop-blur">
@@ -63,6 +65,7 @@ export function Header() {
           <NavLink to="/denunciar">Fazer Denúncia</NavLink>
           <NavLink to="/consultar">Consultar</NavLink>
           {isCidadao && <NavLink to="/minhas-denuncias">Minhas denúncias</NavLink>}
+          {isMp && <NavLink to="/mp-processos">Meus processos</NavLink>}
           {isStaff && (
             <>
               <NavLink to="/painel">Painel Interno</NavLink>
@@ -70,6 +73,7 @@ export function Header() {
               <NavLink to="/documentos">Documentos</NavLink>
             </>
           )}
+
         </nav>
 
         <div className="flex items-center gap-2">
@@ -84,12 +88,18 @@ export function Header() {
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               <Link
                 to="/cidadao"
                 className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
               >
                 Área do Cidadão
+              </Link>
+              <Link
+                to="/mp"
+                className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
+              >
+                Ministério Público
               </Link>
               <Link
                 to="/auth"
@@ -98,6 +108,7 @@ export function Header() {
                 Acesso interno
               </Link>
             </div>
+
           )}
         </div>
       </div>

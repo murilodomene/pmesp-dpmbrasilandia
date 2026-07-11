@@ -201,6 +201,38 @@ export type Database = {
           },
         ]
       }
+      mp_acessos: {
+        Row: {
+          concedido_em: string
+          concedido_por: string
+          denuncia_id: string
+          id: string
+          mp_user_id: string
+        }
+        Insert: {
+          concedido_em?: string
+          concedido_por: string
+          denuncia_id: string
+          id?: string
+          mp_user_id: string
+        }
+        Update: {
+          concedido_em?: string
+          concedido_por?: string
+          denuncia_id?: string
+          id?: string
+          mp_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mp_acessos_denuncia_id_fkey"
+            columns: ["denuncia_id"]
+            isOneToOne: false
+            referencedRelation: "denuncias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       oitivas: {
         Row: {
           ativa: boolean
@@ -322,6 +354,11 @@ export type Database = {
       }
       is_active_staff: { Args: { _user_id: string }; Returns: boolean }
       is_delegado: { Args: { _user_id: string }; Returns: boolean }
+      mp_tem_acesso: {
+        Args: { _denuncia_id: string; _user_id: string }
+        Returns: boolean
+      }
+      pode_conceder_mp: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role:

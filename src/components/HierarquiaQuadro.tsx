@@ -261,16 +261,16 @@ export function HierarquiaQuadro({ cargo }: { cargo: string | null }) {
       ) : (
         <div className="-mx-6 overflow-x-auto px-6 sm:mx-0 sm:px-0">
           <div className="overflow-hidden rounded-lg border border-[#1f3a5f] bg-[#0a1a2e] shadow-inner">
-            <table className="w-full min-w-[980px] table-fixed border-collapse text-sm">
+            <table className="w-full min-w-[900px] border-collapse text-sm">
               <colgroup>
-                <col style={{ width: "200px" }} />
-                <col style={{ width: "80px" }} />
-                <col style={{ width: "180px" }} />
-                <col style={{ width: "140px" }} />
-                <col style={{ width: "100px" }} />
-                <col style={{ width: "150px" }} />
-                <col style={{ width: "170px" }} />
-                {podeEditar && <col style={{ width: "96px" }} />}
+                <col style={{ width: "18%" }} />
+                <col style={{ width: "8%" }} />
+                <col style={{ width: "16%" }} />
+                <col style={{ width: "13%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "15%" }} />
+                <col style={{ width: "15%" }} />
+                {podeEditar && <col style={{ width: "9%" }} />}
               </colgroup>
               <thead>
                 <tr className="border-b border-[#1f3a5f] bg-[#0a1a2e] text-left text-[11px] font-bold uppercase tracking-wider text-yellow-400">
@@ -286,7 +286,8 @@ export function HierarquiaQuadro({ cargo }: { cargo: string | null }) {
                   const colspan = COLS.length + (podeEditar ? 1 : 0);
                   return (
                     <>
-                      <tr key={`hdr-${g.key}`} className="bg-[#6b7a2f]/90 border-y border-[#4a5620]">
+                      <tr key={`hdr-${g.key}`} className="bg-black border-y border-[#1f3a5f]">
+
                         <td colSpan={colspan} className="px-3 py-1.5 text-center text-[13px] font-bold uppercase tracking-wider text-white">
                           <div className="flex items-center justify-center gap-3">
                             <span>{g.label} ({list.length})</span>

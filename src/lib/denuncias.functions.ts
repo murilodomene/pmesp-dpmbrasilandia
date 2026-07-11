@@ -225,9 +225,18 @@ export const alterarStatus = createServerFn({ method: "POST" })
       .single();
     if (!atual) throw new Error("Denúncia não encontrada.");
 
+    const patch: Record<string, unknown> = { status: data.novo_status };
+    if (data.novo_status === "ag_decurso_prazo") {
+      patch.concluido_em = new Date().toISOString();
+      patch.certidao_gerada = false;
+    } else {
+      // qualquer outra transição limpa o marcador de conclusão
+      patch.concluido_em = null;
+    }
+
     const { error: updErr } = await context.supabase
       .from("denuncias")
-      .update({ status: data.novo_status })
+      .update(patch)
       .eq("id", data.denuncia_id);
     if (updErr) throw new Error(updErr.message);
 
@@ -237,6 +246,27 @@ export const alterarStatus = createServerFn({ method: "POST" })
       teor: `Status alterado de ${atual.status} para ${data.novo_status}. Motivação: ${data.motivo}`,
       ...p,
     });
+    return { ok: true };
+  });
+
+export const registrarRecurso = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        denuncia_id: z.string().uuid(),
+        certificacao: z.string().trim().min(10, "Descreva a certificação com no mínimo 10 caracteres.").max(4000),
+        recurso_link: z.string().trim().max(1000).optional().nullable(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.rpc("registrar_recurso" as never, {
+      _denuncia_id: data.denuncia_id,
+      _certificacao: data.certificacao,
+      _recurso_link: data.recurso_link ?? "",
+    } as never);
+    if (error) throw new Error(error.message);
     return { ok: true };
   });
 

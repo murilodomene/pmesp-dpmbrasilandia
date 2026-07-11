@@ -1643,51 +1643,6 @@ function TimelineIpcCard({
 }
 
 
-  return (
-    <div className="space-y-2">
-      {/* Exibição integrada ao sistema (tema escuro) */}
-      <DocumentTemplate
-        variant="screen"
-        procedimento={procedimento}
-        denunciado={denunciado}
-        tipo={ATO_TIPO[especie]}
-        prolatorNome={prolator}
-        prolatorCargo={cargoLabelFull(cargo)}
-        data={quando}
-        markerClass={ATO_MARKER[especie]}
-      >
-        {renderAtoBody(especie, teor)}
-      </DocumentTemplate>
-
-      {/* Versão para PDF, fora da tela, sem alterar o layout */}
-      <div className="pointer-events-none fixed left-[-10000px] top-0" aria-hidden>
-        <DocumentTemplate
-          ref={pdfRef}
-          variant="pdf"
-          procedimento={procedimento}
-          denunciado={denunciado}
-          assunto={assunto}
-          prolatorNome={prolator}
-          prolatorCargo={cargoLabelFull(cargo)}
-          data={quando}
-          markerClass={ATO_MARKER[especie]}
-        >
-          {renderAtoBody(especie, teor, true)}
-        </DocumentTemplate>
-      </div>
-
-      <div className="flex justify-end">
-        <button
-          onClick={exportarPdf}
-          disabled={gerando}
-          className="inline-flex items-center gap-1 rounded-md border border-border bg-surface px-3 py-1.5 text-xs hover:bg-surface-2 disabled:opacity-50"
-        >
-          <Download className="h-3.5 w-3.5" /> {gerando ? "Gerando..." : "Exportar PDF"}
-        </button>
-      </div>
-    </div>
-  );
-}
 
 
 function VerAtoDialog({

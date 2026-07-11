@@ -600,5 +600,106 @@ export const listMinhasDenuncias = createServerFn({ method: "GET" })
     return { denuncias: dens ?? [], ipcs };
   });
 
+// ============ MINISTÉRIO PÚBLICO ============
 
+// Lista todos os membros do MP cadastrados (para o painel de concessão).
+// Só serve utilidade quando quem chama é Delegado — a RLS de profiles/user_roles
+// já impede que MP ou Cidadão vejam outras contas.
+export const listMembrosMp = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const sb = context.supabase as unknown as ReturnType<typeof publicClient>;
+    const { data: roles, error } = await sb
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "mp" as never);
+    if (error) throw new Error(error.message);
+    const ids = (roles ?? []).map((r: { user_id: string }) => r.user_id);
+    if (!ids.length) return [] as Array<{ id: string; nome: string }>;
+    const { data: profs } = await sb
+      .from("profiles")
+      .select("id, nome")
+      .in("id", ids);
+    return (profs ?? []) as Array<{ id: string; nome: string }>;
+  });
+
+// Lista quem tem acesso a uma denúncia.
+export const listAcessosMp = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ denuncia_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as unknown as ReturnType<typeof publicClient>;
+    const { data: rows, error } = await sb
+      .from("mp_acessos" as never)
+      .select("id, mp_user_id, concedido_por, concedido_em")
+      .eq("denuncia_id", data.denuncia_id)
+      .order("concedido_em", { ascending: false });
+    if (error) throw new Error(error.message);
+    const list = (rows ?? []) as Array<{
+      id: string;
+      mp_user_id: string;
+      concedido_por: string;
+      concedido_em: string;
+    }>;
+    const userIds = Array.from(new Set(list.flatMap((r) => [r.mp_user_id, r.concedido_por])));
+    if (!userIds.length) return [];
+    const { data: profs } = await sb
+      .from("profiles")
+      .select("id, nome")
+      .in("id", userIds);
+    const nomes = new Map((profs ?? []).map((p: { id: string; nome: string }) => [p.id, p.nome]));
+    return list.map((r) => ({
+      id: r.id,
+      mp_user_id: r.mp_user_id,
+      mp_nome: nomes.get(r.mp_user_id) ?? "—",
+      concedido_por: r.concedido_por,
+      concedido_por_nome: nomes.get(r.concedido_por) ?? "—",
+      concedido_em: r.concedido_em,
+    }));
+  });
+
+export const concederAcessoMp = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ denuncia_id: z.string().uuid(), mp_user_id: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as unknown as ReturnType<typeof publicClient>;
+    // A RLS impede quem não é delegado_geral/delegado_corregedor; aqui só delegamos.
+    const { error } = await sb
+      .from("mp_acessos" as never)
+      .insert({
+        denuncia_id: data.denuncia_id,
+        mp_user_id: data.mp_user_id,
+        concedido_por: context.userId,
+      } as never);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const revogarAcessoMp = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as unknown as ReturnType<typeof publicClient>;
+    const { error } = await sb.from("mp_acessos" as never).delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// Painel MP — lista processos concedidos ao usuário logado.
+export const listMeusProcessosMp = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const sb = context.supabase as unknown as ReturnType<typeof publicClient>;
+    // A RLS já limita denuncias visíveis ao MP às concedidas.
+    const { data, error } = await sb
+      .from("denuncias")
+      .select(
+        "id, numero_protocolo, status, ocorrencia_tipo, unidade, created_at, instaurada_em",
+      )
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
 

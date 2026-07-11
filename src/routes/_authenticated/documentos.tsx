@@ -287,7 +287,7 @@ function DocumentosPage() {
 
         {!selectedId && !busca.trim() && (
           <ul className="grid gap-4 sm:grid-cols-2">
-            {docs.map((d) => (
+            {visibleDocs.map((d) => (
               <li key={d.id} className="animate-fade-in">
                 <button
                   onClick={() => abrir(d.id)}

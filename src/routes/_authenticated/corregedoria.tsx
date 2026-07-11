@@ -34,6 +34,7 @@ import { getSessionInfo } from "@/lib/usuarios.functions";
 import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2, Download } from "lucide-react";
 import { DocumentTemplate, exportDocumentToPdf, useDocumentRef } from "@/components/DocumentTemplate";
 import { RichTextEditor, isHtmlAto, sanitizeAtoHtml } from "@/components/RichTextEditor";
+import { exportProcessoCompleto } from "@/lib/exportProcesso";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -369,6 +370,13 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
             >
               Movimentar status
             </button>
+            {(cargo === "delegado_geral" || cargo === "delegado_corregedor") && (
+              <ExportarProcessoBtn
+                denuncia={denuncia}
+                policiais={policiais}
+                movimentos={movimentos as never}
+              />
+            )}
             {podeExcluir && (
               <button
                 onClick={() => setDialog({ kind: "excluir" })}
@@ -2173,3 +2181,60 @@ function CancelarMovDialog({
     </AlertDialog>
   );
 }
+
+function ExportarProcessoBtn({
+  denuncia,
+  policiais,
+  movimentos,
+}: {
+  denuncia: {
+    numero_protocolo: string;
+    denunciante_nome: string | null;
+    denunciante_anonimo: boolean | null;
+    ocorrencia_tipo: string | null;
+    unidade: string | null;
+    status: string;
+    termo_inicial: string;
+    acrescimos_dias: number;
+    interrupcoes_count: number;
+    instaurada_em: string | null;
+    created_at: string;
+  };
+  policiais: Array<{ id: string; nome: string; rg_funcional: string | null; unidade: string | null }>;
+  movimentos: Array<{
+    id: string;
+    especie: string;
+    teor: string;
+    prolator_nome: string;
+    prolator_cargo: string;
+    criado_em: string;
+    interrompe?: boolean | null;
+    prorroga?: boolean | null;
+    cancelado_em?: string | null;
+    cancelado_por_nome?: string | null;
+    motivo_cancelamento?: string | null;
+  }>;
+}) {
+  const [gerando, setGerando] = useState(false);
+  async function onClick() {
+    setGerando(true);
+    try {
+      await exportProcessoCompleto({ denuncia, policiais, movimentos, oitivas: [] });
+    } catch (e) {
+      toast.error((e as Error)?.message || "Falha ao gerar o PDF do processo.");
+    } finally {
+      setGerando(false);
+    }
+  }
+  return (
+    <button
+      onClick={onClick}
+      disabled={gerando}
+      title="Exportar processo completo em PDF"
+      className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2 disabled:opacity-50"
+    >
+      <Download className="h-3.5 w-3.5" /> {gerando ? "Gerando PDF..." : "Exportar processo (PDF)"}
+    </button>
+  );
+}
+

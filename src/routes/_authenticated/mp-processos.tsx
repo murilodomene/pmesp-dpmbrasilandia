@@ -8,8 +8,9 @@ import { RelogioPrescricao } from "@/components/RelogioPrescricao";
 import { type DenunciaStatus } from "@/lib/prescricao";
 import { listMeusProcessosMp, getDenuncia } from "@/lib/denuncias.functions";
 import { getSessionInfo } from "@/lib/usuarios.functions";
-import { FileText, Gavel, Scale, Stamp, ExternalLink } from "lucide-react";
+import { FileText, Gavel, Scale, Stamp, ExternalLink, Download } from "lucide-react";
 import { isHtmlAto, sanitizeAtoHtml } from "@/components/RichTextEditor";
+import { exportProcessoCompleto } from "@/lib/exportProcesso";
 
 
 export const Route = createFileRoute("/_authenticated/mp-processos")({
@@ -144,12 +145,15 @@ function DetalheProcesso({ id }: { id: string }) {
               )}
             </div>
           </div>
-          <RelogioPrescricao
-            termo_inicial={d.termo_inicial ?? d.created_at}
-            acrescimos_dias={d.acrescimos_dias ?? 0}
-            status={d.status as DenunciaStatus}
-            interrupcoes_count={d.interrupcoes_count ?? 0}
-          />
+          <div className="flex items-center gap-3">
+            <ExportarProcessoMpBtn data={data} />
+            <RelogioPrescricao
+              termo_inicial={d.termo_inicial ?? d.created_at}
+              acrescimos_dias={d.acrescimos_dias ?? 0}
+              status={d.status as DenunciaStatus}
+              interrupcoes_count={d.interrupcoes_count ?? 0}
+            />
+          </div>
         </div>
       </div>
 
@@ -306,3 +310,31 @@ function IconEspecie({ especie }: { especie: string }) {
   if (especie === "decisao") return <Scale className="h-3.5 w-3.5" />;
   return <FileText className="h-3.5 w-3.5" />;
 }
+
+function ExportarProcessoMpBtn({ data }: { data: Awaited<ReturnType<typeof getDenuncia>> }) {
+  const [gerando, setGerando] = useState(false);
+  async function onClick() {
+    setGerando(true);
+    try {
+      await exportProcessoCompleto({
+        denuncia: data.denuncia as never,
+        policiais: data.policiais as never,
+        movimentos: data.movimentos as never,
+        oitivas: [],
+      });
+    } finally {
+      setGerando(false);
+    }
+  }
+  return (
+    <button
+      onClick={onClick}
+      disabled={gerando}
+      title="Exportar processo completo em PDF"
+      className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2 disabled:opacity-50"
+    >
+      <Download className="h-3.5 w-3.5" /> {gerando ? "Gerando PDF..." : "Exportar processo (PDF)"}
+    </button>
+  );
+}
+

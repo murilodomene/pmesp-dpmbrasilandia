@@ -733,4 +733,27 @@ export const excluirDenuncia = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// Cancela (anula) uma movimentação. Não apaga: marca como cancelada e gera
+// um novo lançamento de auditoria de espécie "cancelamento".
+// Autorização de cargo é validada dentro da SECURITY DEFINER `cancelar_movimento`.
+export const cancelarMovimento = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        movimento_id: z.string().uuid(),
+        motivo: z.string().trim().min(3, "Descreva a justificativa.").max(2000),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await (context.supabase as any).rpc("cancelar_movimento", {
+      _movimento_id: data.movimento_id,
+      _motivo: data.motivo,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+
 

@@ -41,7 +41,9 @@ export function Header() {
 
   const ativo = profile?.status === "ativo";
   const isCidadao = cargo === "cidadao";
-  const isStaff = ativo && cargo && !isCidadao;
+  const isMp = cargo === "mp";
+  const isStaff = ativo && cargo && !isCidadao && !isMp;
+
 
   return (
     <header className="border-b border-border bg-surface/60 backdrop-blur">

@@ -1649,7 +1649,7 @@ function TimelineIpcCard({
           markerClass="bg-status-investigacao"
           campos={[
             ...camposBase,
-            { label: "Relato dos fatos", valor: relatoNodePdf },
+            { label: "Relato dos fatos", valor: relatoNodePdf, block: true },
             { label: "Ciente dos fatos", valor: "Corregedoria Geral da Polícia Civil" },
           ]}
         />

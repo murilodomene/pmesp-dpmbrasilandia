@@ -49,9 +49,12 @@ export function Header() {
     <header className="border-b border-border bg-surface/60 backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
         <Link to="/" className="flex items-center gap-2">
-          <div className="grid h-8 w-8 place-items-center rounded-md bg-primary text-primary-foreground font-serif text-lg font-bold">
-            C
-          </div>
+          <img
+            src="/brasao-pcsp.png"
+            alt="Brasão da Polícia Civil de São Paulo"
+            className="h-9 w-auto"
+          />
+
           <div className="leading-tight">
             <div className="font-serif text-sm">Corregedoria</div>
             <div className="text-[10px] uppercase tracking-widest text-muted-foreground">

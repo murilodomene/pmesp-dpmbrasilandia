@@ -1,4 +1,5 @@
 import { forwardRef, useRef } from "react";
+import { ShieldCheck } from "lucide-react";
 
 export interface DocumentTemplateProps {
   procedimento: string;
@@ -8,16 +9,26 @@ export interface DocumentTemplateProps {
   prolatorCargo: string;
   data: string; // ISO
   children: React.ReactNode;
+  /** Cor do marcador lateral esquerdo (Despacho / Decisão / Portaria). */
+  markerClass?: string;
 }
 
 /**
- * Papel timbrado estático (A4) para envelopar atos:
- * Despacho, Decisão e Portaria. NÃO usar para IPC.
- * Cabeçalho e rodapé não são persistidos no banco — são apresentação.
+ * Papel timbrado A4 responsivo — envelopa Despacho, Decisão e Portaria.
+ * NÃO usar para IPC. Somente leitura. Nada aqui é persistido no banco.
  */
 export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps>(
   function DocumentTemplate(
-    { procedimento, denunciado, assunto, prolatorNome, prolatorCargo, data, children },
+    {
+      procedimento,
+      denunciado,
+      assunto,
+      prolatorNome,
+      prolatorCargo,
+      data,
+      children,
+      markerClass,
+    },
     ref,
   ) {
     const dataFmt = new Date(data).toLocaleDateString("pt-BR", {
@@ -30,98 +41,64 @@ export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps
       <div
         ref={ref}
         data-document-template
-        style={{
-          background: "#ffffff",
-          color: "#111827",
-          width: "210mm",
-          minHeight: "297mm",
-          padding: "20mm",
-          margin: "0 auto",
-          fontFamily: "Arial, Helvetica, sans-serif",
-          fontSize: "12px",
-          lineHeight: 1.55,
-          boxSizing: "border-box",
-        }}
+        className={`relative mx-auto w-full max-w-[210mm] overflow-hidden rounded-md border border-gray-200 bg-white p-4 text-gray-900 shadow-sm sm:p-8 md:p-10 ${
+          markerClass ? "pl-5 sm:pl-9 md:pl-11" : ""
+        }`}
+        style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
       >
-        {/* Cabeçalho */}
-        <header
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "16px",
-            paddingBottom: "10px",
-            borderBottom: "2px solid #9ca3af",
-          }}
-        >
+        {markerClass && (
+          <span
+            aria-hidden
+            className={`absolute inset-y-0 left-0 w-1.5 ${markerClass}`}
+          />
+        )}
+
+        {/* Cabeçalho institucional */}
+        <header className="flex flex-col items-center gap-2 border-b-2 border-gray-400 pb-3 text-center">
           <img
             src="/brasao-pcsp.png"
             alt="Brasão da Polícia Civil do Estado de São Paulo"
-            style={{ height: "80px", width: "auto", flexShrink: 0 }}
+            className="h-16 w-auto sm:h-20"
             crossOrigin="anonymous"
           />
-          <div
-            style={{
-              fontFamily: "Arial, Helvetica, sans-serif",
-              fontSize: "11px",
-              fontWeight: 700,
-              color: "#374151",
-              lineHeight: 1.5,
-              textAlign: "left",
-            }}
-          >
-            <div>SECRETARIA DA SEGURANÇA PÚBLICA</div>
-            <div>POLÍCIA CIVIL DO ESTADO DE SÃO PAULO</div>
+          <div className="font-serif text-[10px] font-bold uppercase leading-snug text-gray-700 sm:text-[11px]">
+            <div>Secretaria da Segurança Pública</div>
+            <div>Polícia Civil do Estado de São Paulo</div>
             <div>Corregedoria Geral da Polícia Civil</div>
             <div>1ª Corregedoria da Capital</div>
-            <div>corregedoriageral@policiacivil.sp</div>
+            <div className="normal-case">corregedoriageral@policiacivil.sp</div>
           </div>
         </header>
 
-        {/* Bloco de identificação */}
-        <section
-          style={{
-            display: "grid",
-            gap: "8px",
-            marginTop: "16px",
-            fontSize: "12px",
-          }}
-        >
+        {/* Identificação */}
+        <section className="mt-4 grid gap-2 text-[12px] sm:text-[13px]">
           <div>
-            <strong>PROCEDIMENTO:</strong> {procedimento}
+            <span className="font-bold">PROCEDIMENTO:</span> {procedimento}
           </div>
           <div>
-            <strong>DENUNCIADO:</strong> {denunciado}
+            <span className="font-bold">DENUNCIADO:</span> {denunciado}
           </div>
           <div>
-            <strong>ASSUNTO:</strong> {assunto}
+            <span className="font-bold">ASSUNTO:</span> {assunto}
           </div>
         </section>
 
         {/* Corpo */}
         <main
-          style={{
-            marginTop: "24px",
-            marginBottom: "24px",
-            fontSize: "12px",
-            lineHeight: 1.6,
-            whiteSpace: "pre-wrap",
-            textAlign: "justify",
-          }}
+          className="mx-1 my-6 whitespace-pre-wrap text-justify text-[12px] leading-relaxed sm:mx-4 sm:text-[13px]"
+          aria-readonly="true"
         >
           {children}
         </main>
 
-        {/* Rodapé */}
-        <footer
-          style={{
-            marginTop: "40px",
-            textAlign: "center",
-            fontSize: "11px",
-            color: "#374151",
-            fontStyle: "italic",
-          }}
-        >
-          Datado e assinado digitalmente por {prolatorNome} — {prolatorCargo} em {dataFmt}.
+        {/* Rodapé de assinatura */}
+        <footer className="mt-10 border-t border-gray-300 pt-3 text-center text-[11px] italic text-gray-700">
+          <div className="inline-flex items-center gap-1.5">
+            <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" aria-hidden />
+            <span>
+              Datado e assinado digitalmente por {prolatorNome} — {prolatorCargo} em {dataFmt}.
+            </span>
+          </div>
         </footer>
       </div>
     );
@@ -129,8 +106,7 @@ export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps
 );
 
 /**
- * Exporta o elemento envelopado em `DocumentTemplate` como PDF A4
- * com margens dinâmicas e quebra de página evitando linhas órfãs.
+ * Exporta o elemento envelopado como PDF A4 com quebra de página automática.
  */
 export async function exportDocumentToPdf(
   element: HTMLElement,
@@ -152,17 +128,15 @@ export async function exportDocumentToPdf(
   const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
   const pageW = pdf.internal.pageSize.getWidth();
   const pageH = pdf.internal.pageSize.getHeight();
-
-  // A imagem já contém as margens de 20mm do template; ocupamos página cheia.
-  const imgW = pageW;
+  const margin = 20; // 20mm
+  const imgW = pageW - margin * 2;
   const imgH = (canvas.height * imgW) / canvas.width;
 
-  if (imgH <= pageH) {
-    pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, imgW, imgH);
+  if (imgH <= pageH - margin * 2) {
+    pdf.addImage(canvas.toDataURL("image/png"), "PNG", margin, margin, imgW, imgH);
   } else {
-    // Fatiar em páginas evitando cortar linhas: recortamos por página em canvas separado.
-    const pxPerMm = canvas.width / pageW;
-    const pageHpx = Math.floor(pageH * pxPerMm);
+    const pxPerMm = canvas.width / imgW;
+    const pageHpx = Math.floor((pageH - margin * 2) * pxPerMm);
     let y = 0;
     let first = true;
     while (y < canvas.height) {
@@ -177,7 +151,7 @@ export async function exportDocumentToPdf(
       ctx.drawImage(canvas, 0, y, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
       const sliceImgH = (sliceH * imgW) / canvas.width;
       if (!first) pdf.addPage();
-      pdf.addImage(slice.toDataURL("image/png"), "PNG", 0, 0, imgW, sliceImgH);
+      pdf.addImage(slice.toDataURL("image/png"), "PNG", margin, margin, imgW, sliceImgH);
       first = false;
       y += sliceH;
     }
@@ -186,7 +160,6 @@ export async function exportDocumentToPdf(
   pdf.save(filename);
 }
 
-/** Hook conveniente para telas que precisam capturar/baixar o template. */
 export function useDocumentRef() {
   return useRef<HTMLDivElement>(null);
 }

@@ -867,9 +867,13 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 <MovMarker especie={m.especie as string} />
                 <div className="flex-1 rounded-md border border-border/60 p-3">
                   <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <span className="rounded-md border border-primary/40 bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-primary" title="Número permanente do evento no procedimento">
+                      {eventoLabel}
+                    </span>
                     <span className="font-medium uppercase tracking-wider">
                       {labelEspecie(m.especie as string)}
                     </span>
+
                     {canceladoBadge}
                     {m.interrompe && (
                       <span className="rounded-full bg-destructive/20 px-2 py-0.5 text-destructive-foreground">

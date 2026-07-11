@@ -1169,7 +1169,7 @@ function PortariaDialog({
     // Converte o modelo em parágrafos HTML preservando quebras duplas.
     const html = texto
       .split(/\n{2,}/)
-      .map((par) => `<p>${par.replace(/\n/g, "<br/>").replace(/</g, "&lt;")}</p>`)
+      .map((par) => `<p>${par.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br/>")}</p>`)
       .join("");
     setCorpo(html);
     setModeloAplicado(true);

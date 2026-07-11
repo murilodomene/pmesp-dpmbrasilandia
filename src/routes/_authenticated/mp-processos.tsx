@@ -5,7 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Header } from "@/components/Header";
 import { StatusBadge, STATUS_LABEL } from "@/components/StatusBadge";
 import { RelogioPrescricao } from "@/components/RelogioPrescricao";
-import { calcularPrescricao, type DenunciaStatus } from "@/lib/prescricao";
+import { type DenunciaStatus } from "@/lib/prescricao";
 import { listMeusProcessosMp, getDenuncia } from "@/lib/denuncias.functions";
 import { getSessionInfo } from "@/lib/usuarios.functions";
 import { FileText, Gavel, Scale, Stamp, ExternalLink } from "lucide-react";

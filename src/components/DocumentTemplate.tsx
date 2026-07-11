@@ -193,9 +193,12 @@ export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps
         {/* Tipo do ato em destaque */}
         {tipo && (
           <div className="py-3 text-center">
-            <span className="font-serif text-base font-semibold tracking-[0.2em] text-foreground sm:text-lg">
+            <div className="font-serif text-base font-semibold tracking-[0.25em] text-foreground sm:text-lg">
               {tipo}
-            </span>
+            </div>
+            {subtitulo && (
+              <div className="mt-0.5 text-[11px] italic text-muted-foreground">{subtitulo}</div>
+            )}
           </div>
         )}
 
@@ -203,15 +206,29 @@ export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps
 
         {/* Bloco de identificação */}
         <dl className="grid gap-1.5 py-3 text-xs sm:text-sm">
-          <div className="flex flex-wrap gap-x-2">
-            <dt className="font-semibold uppercase tracking-wider text-primary">Procedimento:</dt>
-            <dd className="text-foreground">{procedimento}</dd>
-          </div>
-          <div className="flex flex-wrap gap-x-2">
-            <dt className="font-semibold uppercase tracking-wider text-primary">Denunciado:</dt>
-            <dd className="text-foreground">{denunciado}</dd>
-          </div>
+          {campos ? (
+            campos.map((c) => (
+              <div key={c.label} className="flex flex-wrap gap-x-2">
+                <dt className="font-semibold uppercase tracking-wider text-primary">
+                  {c.label}:
+                </dt>
+                <dd className="min-w-0 flex-1 text-foreground">{c.valor}</dd>
+              </div>
+            ))
+          ) : (
+            <>
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="font-semibold uppercase tracking-wider text-primary">Procedimento:</dt>
+                <dd className="text-foreground">{procedimento}</dd>
+              </div>
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="font-semibold uppercase tracking-wider text-primary">Denunciado:</dt>
+                <dd className="text-foreground">{denunciado}</dd>
+              </div>
+            </>
+          )}
         </dl>
+
 
         <div className="h-px w-full bg-border/60" />
 

@@ -493,7 +493,8 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                     <button
                       onClick={() =>
                         setDialog({
-                          kind: "verPortaria",
+                          kind: "verAto",
+                          especie: "portaria",
                           teor: portariaMov.teor,
                           quando: portariaMov.criado_em,
                           prolator: portariaMov.prolator_nome,

@@ -579,7 +579,7 @@ export const instaurarOficio = createServerFn({ method: "POST" })
         `INSTAURAÇÃO DE OFÍCIO — Procedimento instaurado pela Corregedoria com base em conhecimento próprio dos fatos.\n\n` +
         `Título: ${data.titulo}\n` +
         `Descrição: ${data.descricao}`,
-      interrompe: true,
+      interrompe: false,
       ...p,
     });
 

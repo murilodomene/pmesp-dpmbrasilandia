@@ -171,6 +171,10 @@ function PainelInterno() {
       </div>
 
       {aberta && <TriagemModal id={aberta} onClose={() => setAberta(null)} />}
+      {oficioAberto && podeInstaurar && (
+        <OficioModal onClose={() => setOficioAberto(false)} />
+      )}
+
     </div>
   );
 }

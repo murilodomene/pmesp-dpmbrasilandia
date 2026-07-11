@@ -1166,12 +1166,17 @@ function PortariaDialog({
       artigos,
       providencias,
     });
-    setCorpo(texto);
+    // Converte o modelo em parágrafos HTML preservando quebras duplas.
+    const html = texto
+      .split(/\n{2,}/)
+      .map((par) => `<p>${par.replace(/\n/g, "<br/>").replace(/</g, "&lt;")}</p>`)
+      .join("");
+    setCorpo(html);
     setModeloAplicado(true);
   }
 
   const m = useMutation({
-    mutationFn: () => fn({ data: { denuncia_id: id, corpo } }),
+    mutationFn: () => fn({ data: { denuncia_id: id, corpo: sanitizeAtoHtml(corpo) } }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["denuncia", id] });
       qc.invalidateQueries({ queryKey: ["denuncias"] });

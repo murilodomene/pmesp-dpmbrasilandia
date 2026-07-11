@@ -732,7 +732,42 @@ function Row({ k, children }: { k: string; children: React.ReactNode }) {
   );
 }
 
-function labelEspecie(e: string): string {
+function IpcCampoAuto({ label, valor }: { label: string; valor: string }) {
+  return (
+    <div className="rounded-md border border-border/60 bg-surface-2 px-3 py-2">
+      <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="mt-0.5 whitespace-pre-wrap text-sm">{valor}</div>
+    </div>
+  );
+}
+
+function montarTeorIpc(params: {
+  unidade: string | null;
+  protocolo: string;
+  policiais: Array<{ nome: string; rg_funcional: string | null }>;
+  relato: string;
+}): string {
+  const ident = params.policiais.length
+    ? params.policiais
+        .map((p) => `${p.nome}${p.rg_funcional ? ` — ${p.rg_funcional}` : ""}`)
+        .join("; ")
+    : "";
+  return [
+    `| UNIDADE: ${params.unidade || "—"}`,
+    ``,
+    `| 1º PROCESSO NÚMERO: ${params.protocolo}`,
+    ``,
+    `| 2º IDENTIFICAÇÃO DO POLICIAL: ${ident}`,
+    ``,
+    `| 3º RELATO DO FATO:`,
+    params.relato.trim(),
+    ``,
+    `| 4º CIENTE DOS FATOS:`,
+    `Corregedoria Geral da Polícia Civil`,
+  ].join("\n");
+}
+
+
   return e === "despacho"
     ? "Despacho"
     : e === "decisao"

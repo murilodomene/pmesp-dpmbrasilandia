@@ -97,15 +97,11 @@ function badgeCls(kind: "status" | "patente" | "transferido" | "cargo", value: s
 const COLS: { key: keyof Membro; label: string; badge?: "status" | "patente" | "transferido" | "cargo"; options?: string[] }[] = [
   { key: "nome", label: "Nome" },
   { key: "rg", label: "RG" },
-  { key: "edital", label: "Edital" },
   { key: "patente", label: "Patente", badge: "patente", options: PATENTES },
-  { key: "transferido", label: "Transferido", badge: "transferido", options: TRANSFERIDOS },
+  { key: "transferido", label: "Transferência", badge: "transferido", options: TRANSFERIDOS },
   { key: "status", label: "Status", badge: "status", options: STATUSES },
   { key: "cargo", label: "Cargo", badge: "cargo", options: CARGOS },
   { key: "instrutor", label: "Instrutor", options: INSTRUTORES },
-  { key: "promocao", label: "Promoção" },
-  { key: "pad", label: "PAD" },
-  { key: "atividade", label: "Atividade" },
 ];
 
 export function HierarquiaQuadro({ cargo }: { cargo: string | null }) {

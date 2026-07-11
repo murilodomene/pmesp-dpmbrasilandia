@@ -235,6 +235,8 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
 
   const podeRetificar = cargo === "delegado_geral" || cargo === "delegado_corregedor";
 
+  const podeExcluir = cargo === "delegado_geral" || cargo === "delegado_corregedor";
+
   const [dialog, setDialog] = useState<
     | { kind: "status" }
     | { kind: "portaria" }
@@ -242,6 +244,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     | { kind: "prorrogar" }
     | { kind: "oitiva" }
     | { kind: "retificar"; policial: { id: string; nome: string; rg_funcional: string | null } }
+    | { kind: "excluir" }
     | null
   >(null);
 

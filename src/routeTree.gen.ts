@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as MpRouteImport } from './routes/mp'
 import { Route as DenunciarRouteImport } from './routes/denunciar'
 import { Route as ConsultarRouteImport } from './routes/consultar'
 import { Route as CidadaoRouteImport } from './routes/cidadao'
@@ -19,6 +20,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedPendenteRouteImport } from './routes/_authenticated/pendente'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
+import { Route as AuthenticatedMpProcessosRouteImport } from './routes/_authenticated/mp-processos'
 import { Route as AuthenticatedMinhasDenunciasRouteImport } from './routes/_authenticated/minhas-denuncias'
 import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated/documentos'
 import { Route as AuthenticatedCorregedoriaRouteImport } from './routes/_authenticated/corregedoria'
@@ -26,6 +28,11 @@ import { Route as AuthenticatedCorregedoriaRouteImport } from './routes/_authent
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MpRoute = MpRouteImport.update({
+  id: '/mp',
+  path: '/mp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DenunciarRoute = DenunciarRouteImport.update({
@@ -72,6 +79,12 @@ const AuthenticatedPainelRoute = AuthenticatedPainelRouteImport.update({
   path: '/painel',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMpProcessosRoute =
+  AuthenticatedMpProcessosRouteImport.update({
+    id: '/mp-processos',
+    path: '/mp-processos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedMinhasDenunciasRoute =
   AuthenticatedMinhasDenunciasRouteImport.update({
     id: '/minhas-denuncias',
@@ -96,10 +109,12 @@ export interface FileRoutesByFullPath {
   '/cidadao': typeof CidadaoRoute
   '/consultar': typeof ConsultarRoute
   '/denunciar': typeof DenunciarRoute
+  '/mp': typeof MpRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/corregedoria': typeof AuthenticatedCorregedoriaRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
   '/minhas-denuncias': typeof AuthenticatedMinhasDenunciasRoute
+  '/mp-processos': typeof AuthenticatedMpProcessosRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/pendente': typeof AuthenticatedPendenteRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
@@ -110,10 +125,12 @@ export interface FileRoutesByTo {
   '/cidadao': typeof CidadaoRoute
   '/consultar': typeof ConsultarRoute
   '/denunciar': typeof DenunciarRoute
+  '/mp': typeof MpRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/corregedoria': typeof AuthenticatedCorregedoriaRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
   '/minhas-denuncias': typeof AuthenticatedMinhasDenunciasRoute
+  '/mp-processos': typeof AuthenticatedMpProcessosRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/pendente': typeof AuthenticatedPendenteRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
@@ -126,10 +143,12 @@ export interface FileRoutesById {
   '/cidadao': typeof CidadaoRoute
   '/consultar': typeof ConsultarRoute
   '/denunciar': typeof DenunciarRoute
+  '/mp': typeof MpRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/corregedoria': typeof AuthenticatedCorregedoriaRoute
   '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
   '/_authenticated/minhas-denuncias': typeof AuthenticatedMinhasDenunciasRoute
+  '/_authenticated/mp-processos': typeof AuthenticatedMpProcessosRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
   '/_authenticated/pendente': typeof AuthenticatedPendenteRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
@@ -142,10 +161,12 @@ export interface FileRouteTypes {
     | '/cidadao'
     | '/consultar'
     | '/denunciar'
+    | '/mp'
     | '/sitemap.xml'
     | '/corregedoria'
     | '/documentos'
     | '/minhas-denuncias'
+    | '/mp-processos'
     | '/painel'
     | '/pendente'
     | '/usuarios'
@@ -156,10 +177,12 @@ export interface FileRouteTypes {
     | '/cidadao'
     | '/consultar'
     | '/denunciar'
+    | '/mp'
     | '/sitemap.xml'
     | '/corregedoria'
     | '/documentos'
     | '/minhas-denuncias'
+    | '/mp-processos'
     | '/painel'
     | '/pendente'
     | '/usuarios'
@@ -171,10 +194,12 @@ export interface FileRouteTypes {
     | '/cidadao'
     | '/consultar'
     | '/denunciar'
+    | '/mp'
     | '/sitemap.xml'
     | '/_authenticated/corregedoria'
     | '/_authenticated/documentos'
     | '/_authenticated/minhas-denuncias'
+    | '/_authenticated/mp-processos'
     | '/_authenticated/painel'
     | '/_authenticated/pendente'
     | '/_authenticated/usuarios'
@@ -187,6 +212,7 @@ export interface RootRouteChildren {
   CidadaoRoute: typeof CidadaoRoute
   ConsultarRoute: typeof ConsultarRoute
   DenunciarRoute: typeof DenunciarRoute
+  MpRoute: typeof MpRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
 }
 
@@ -197,6 +223,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mp': {
+      id: '/mp'
+      path: '/mp'
+      fullPath: '/mp'
+      preLoaderRoute: typeof MpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/denunciar': {
@@ -262,6 +295,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPainelRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/mp-processos': {
+      id: '/_authenticated/mp-processos'
+      path: '/mp-processos'
+      fullPath: '/mp-processos'
+      preLoaderRoute: typeof AuthenticatedMpProcessosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/minhas-denuncias': {
       id: '/_authenticated/minhas-denuncias'
       path: '/minhas-denuncias'
@@ -290,6 +330,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCorregedoriaRoute: typeof AuthenticatedCorregedoriaRoute
   AuthenticatedDocumentosRoute: typeof AuthenticatedDocumentosRoute
   AuthenticatedMinhasDenunciasRoute: typeof AuthenticatedMinhasDenunciasRoute
+  AuthenticatedMpProcessosRoute: typeof AuthenticatedMpProcessosRoute
   AuthenticatedPainelRoute: typeof AuthenticatedPainelRoute
   AuthenticatedPendenteRoute: typeof AuthenticatedPendenteRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
@@ -299,6 +340,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCorregedoriaRoute: AuthenticatedCorregedoriaRoute,
   AuthenticatedDocumentosRoute: AuthenticatedDocumentosRoute,
   AuthenticatedMinhasDenunciasRoute: AuthenticatedMinhasDenunciasRoute,
+  AuthenticatedMpProcessosRoute: AuthenticatedMpProcessosRoute,
   AuthenticatedPainelRoute: AuthenticatedPainelRoute,
   AuthenticatedPendenteRoute: AuthenticatedPendenteRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
@@ -314,6 +356,7 @@ const rootRouteChildren: RootRouteChildren = {
   CidadaoRoute: CidadaoRoute,
   ConsultarRoute: ConsultarRoute,
   DenunciarRoute: DenunciarRoute,
+  MpRoute: MpRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
 }
 export const routeTree = rootRouteImport

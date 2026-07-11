@@ -6,7 +6,11 @@ import { toast } from "sonner";
 import { Header } from "@/components/Header";
 import { StatusBadge, STATUS_LABEL } from "@/components/StatusBadge";
 import { RelogioPrescricao } from "@/components/RelogioPrescricao";
-import { calcularPrescricao, type DenunciaStatus } from "@/lib/prescricao";
+import {
+  calcularPrescricao,
+  calcularDecursoPrazo,
+  type DenunciaStatus,
+} from "@/lib/prescricao";
 import {
   listDenuncias,
   alterarStatus,
@@ -14,21 +18,35 @@ import {
   instaurarOficio,
 } from "@/lib/denuncias.functions";
 import { getSessionInfo } from "@/lib/usuarios.functions";
-import { Plus, Trash2, X } from "lucide-react";
+import { Plus, Trash2, X, Clock } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/painel")({
   component: PainelInterno,
 });
 
-
-const STATUS_LIST: DenunciaStatus[] = [
+// "transito_julgado" NÃO aparece — só é atingido automaticamente.
+const STATUS_LIST_MANUAL: DenunciaStatus[] = [
   "recebida",
   "aguardando_analise",
   "em_analise",
   "em_investigacao",
-  "concluida",
+  "ag_decurso_prazo",
   "arquivada",
 ];
+
+type TabKey = "em_andamento" | "ag_decurso" | "transitado" | "arquivado";
+const TAB_STATUS: Record<TabKey, DenunciaStatus[]> = {
+  em_andamento: ["recebida", "aguardando_analise", "em_analise", "em_investigacao"],
+  ag_decurso: ["ag_decurso_prazo"],
+  transitado: ["transito_julgado", "concluida"],
+  arquivado: ["arquivada"],
+};
+const TAB_LABEL: Record<TabKey, string> = {
+  em_andamento: "Em andamento",
+  ag_decurso: "Ag. Decurso do Prazo",
+  transitado: "Trânsito em Julgado",
+  arquivado: "Arquivados",
+};
 
 function PainelInterno() {
   const sessionFn = useServerFn(getSessionInfo);

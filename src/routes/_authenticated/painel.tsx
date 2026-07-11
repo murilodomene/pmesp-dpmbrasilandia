@@ -55,7 +55,7 @@ function PainelInterno() {
   const { data: denuncias } = useQuery({ queryKey: ["denuncias"], queryFn: () => listFn() });
 
   const [busca, setBusca] = useState("");
-  const [filtro, setFiltro] = useState<DenunciaStatus | "">("");
+  const [aba, setAba] = useState<TabKey>("em_andamento");
   const [aberta, setAberta] = useState<string | null>(null);
   const [oficioAberto, setOficioAberto] = useState(false);
 
@@ -67,25 +67,60 @@ function PainelInterno() {
     return <RedirectPendente />;
   }
 
+  const contagens = useMemo(() => {
+    const acc: Record<TabKey, number> = {
+      em_andamento: 0,
+      ag_decurso: 0,
+      transitado: 0,
+      arquivado: 0,
+    };
+    if (!denuncias) return acc;
+    for (const d of denuncias) {
+      const s = d.status as DenunciaStatus;
+      (Object.keys(TAB_STATUS) as TabKey[]).forEach((k) => {
+        if (TAB_STATUS[k].includes(s)) acc[k] += 1;
+      });
+    }
+    return acc;
+  }, [denuncias]);
 
   const lista = useMemo(() => {
     if (!denuncias) return [];
     const q = busca.toLowerCase().trim();
-    return denuncias.filter((d) => {
-      if (filtro && d.status !== filtro) return false;
-      if (!q) return true;
-      const alvo = [
-        d.numero_protocolo,
-        d.denunciante_nome,
-        d.unidade,
-        ...(d.denuncia_policiais ?? []).map((p) => `${p.nome} ${p.unidade ?? ""}`),
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      return alvo.includes(q);
-    });
-  }, [denuncias, busca, filtro]);
+    const statusPermitidos = TAB_STATUS[aba];
+    let filtrada = denuncias.filter((d) => statusPermitidos.includes(d.status as DenunciaStatus));
+    if (q) {
+      filtrada = filtrada.filter((d) => {
+        const alvo = [
+          d.numero_protocolo,
+          d.denunciante_nome,
+          d.unidade,
+          ...(d.denuncia_policiais ?? []).map((p) => `${p.nome} ${p.unidade ?? ""}`),
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return alvo.includes(q);
+      });
+    }
+    if (aba === "em_andamento") {
+      // ordenar por prazo prescricional crescente (o que prescreve primeiro no topo)
+      filtrada = [...filtrada].sort((a, b) => {
+        const pa = calcularPrescricao({
+          termo_inicial: a.termo_inicial,
+          acrescimos_dias: a.acrescimos_dias,
+          status: a.status as DenunciaStatus,
+        });
+        const pb = calcularPrescricao({
+          termo_inicial: b.termo_inicial,
+          acrescimos_dias: b.acrescimos_dias,
+          status: b.status as DenunciaStatus,
+        });
+        return pa.diasRestantes - pb.diasRestantes;
+      });
+    }
+    return filtrada;
+  }, [denuncias, busca, aba]);
 
   return (
     <div className="min-h-screen">

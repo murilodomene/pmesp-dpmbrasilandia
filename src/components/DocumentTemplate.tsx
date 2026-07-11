@@ -224,7 +224,7 @@ export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps
                   <dt className="font-semibold uppercase tracking-wider text-primary">
                     {c.label}:
                   </dt>
-                  <dd className="mt-1 text-foreground ato-body">{c.valor}</dd>
+                  <dd className="mt-2 text-sm leading-relaxed text-foreground ato-body">{c.valor}</dd>
                 </div>
               ) : (
                 <div key={c.label} className="flex flex-wrap gap-x-2">

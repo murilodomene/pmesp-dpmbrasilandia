@@ -717,7 +717,13 @@ function Autuacao({ id, cargo }: { id: string; cargo: string | null }) {
           >
             Salvar observações
           </button>
-        </div>
+      </div>
+
+      {/* Acesso do Ministério Público — apenas Delegado Geral / Delegado Corregedor */}
+      {(cargo === "delegado_geral" || cargo === "delegado_corregedor") && (
+        <AcessoMpSection denunciaId={id} />
+      )}
+
       </div>
 
       {dialog?.kind === "status" && (

@@ -8,7 +8,7 @@ import { RelogioPrescricao } from "@/components/RelogioPrescricao";
 import { type DenunciaStatus } from "@/lib/prescricao";
 import { listMeusProcessosMp, getDenuncia } from "@/lib/denuncias.functions";
 import { getSessionInfo } from "@/lib/usuarios.functions";
-import { FileText, Gavel, Scale, Stamp, ExternalLink, Download, ShieldAlert, Lock } from "lucide-react";
+import { FileText, Gavel, Scale, Stamp, ExternalLink, Download, ShieldAlert } from "lucide-react";
 import { isHtmlAto, sanitizeAtoHtml } from "@/components/RichTextEditor";
 import { exportProcessoCompleto } from "@/lib/exportProcesso";
 import { ProcessoLetterhead, ProcessoDetalheSkeleton } from "@/components/ProcessoLetterhead";

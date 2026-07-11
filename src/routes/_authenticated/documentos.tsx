@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { Header } from "@/components/Header";
-import { Search, Save, Pencil, X, FileText } from "lucide-react";
+import { Search, Save, Pencil, X, FileText, ChevronUp, ChevronDown } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/documentos")({
   component: DocumentosPage,
@@ -130,14 +130,28 @@ function DocumentosPage() {
     return { html: finalHtml, toc: withAnchors.toc, count };
   }, [selected, buscaAtiva]);
 
-  // Auto-scroll to first match when searching inside a document
+  // Sequential navigation between matches
+  const [currentIndex, setCurrentIndex] = useState(0);
+  useEffect(() => { setCurrentIndex(0); }, [buscaAtiva, selectedId]);
+
   useEffect(() => {
-    if (!selectedId || !buscaAtiva.trim()) return;
-    const t = setTimeout(() => {
-      contentRef.current?.querySelector("mark")?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 120);
-    return () => clearTimeout(t);
-  }, [buscaAtiva, selectedId, rendered.html]);
+    if (!contentRef.current) return;
+    const marks = contentRef.current.querySelectorAll<HTMLElement>("mark");
+    marks.forEach((m, i) => {
+      if (i === currentIndex) {
+        m.classList.remove("bg-yellow-300");
+        m.classList.add("bg-orange-400", "ring-2", "ring-blue-500");
+      } else {
+        m.classList.add("bg-yellow-300");
+        m.classList.remove("bg-orange-400", "ring-2", "ring-blue-500");
+      }
+    });
+    marks[currentIndex]?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [currentIndex, rendered.html]);
+
+  const total = rendered.count;
+  function goNext() { if (total > 1) setCurrentIndex((i) => (i + 1) % total); }
+  function goPrev() { if (total > 1) setCurrentIndex((i) => (i - 1 + total) % total); }
 
   const searchResults = useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -336,7 +350,17 @@ function DocumentosPage() {
                     <input
                       value={buscaAtiva}
                       onChange={(e) => setBuscaAtiva(e.target.value)}
-                      placeholder="Buscar neste documento…"
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") { setBuscaAtiva(""); return; }
+                        if (e.key === "Enter" || e.key === "ArrowDown") {
+                          e.preventDefault();
+                          if (e.shiftKey && e.key === "Enter") goPrev(); else goNext();
+                        } else if (e.key === "ArrowUp") {
+                          e.preventDefault();
+                          goPrev();
+                        }
+                      }}
+                      placeholder="Buscar neste documento… (Enter próximo, Shift+Enter anterior, Esc limpa)"
                       className="w-full rounded-lg border border-border bg-background pl-9 pr-9 py-2 text-sm shadow-sm outline-none transition focus:ring-2 focus:ring-primary focus:border-transparent"
                     />
                     {buscaAtiva && (
@@ -405,6 +429,43 @@ function DocumentosPage() {
               </>
             )}
           </article>
+        )}
+
+        {selected && !editando && buscaAtiva.trim() && (
+          <div
+            role="toolbar"
+            aria-label="Navegação entre resultados"
+            className="fixed z-40 flex items-center gap-2 rounded-full border border-border bg-surface/95 px-3 py-2 shadow-lg backdrop-blur
+                       bottom-4 left-1/2 -translate-x-1/2
+                       md:bottom-auto md:left-auto md:translate-x-0 md:top-24 md:right-6"
+          >
+            <button
+              onClick={goPrev}
+              disabled={total < 2}
+              aria-label="Resultado anterior"
+              className="grid h-8 w-8 place-items-center rounded-full border border-border text-muted-foreground transition hover:bg-surface-2 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronUp className="h-4 w-4" />
+            </button>
+            <span className="min-w-[6.5rem] text-center text-xs tabular-nums text-muted-foreground">
+              {total === 0 ? "Nenhum resultado" : `${currentIndex + 1} de ${total}`}
+            </span>
+            <button
+              onClick={goNext}
+              disabled={total < 2}
+              aria-label="Próximo resultado"
+              className="grid h-8 w-8 place-items-center rounded-full border border-border text-muted-foreground transition hover:bg-surface-2 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronDown className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setBuscaAtiva("")}
+              aria-label="Fechar busca"
+              className="ml-1 grid h-8 w-8 place-items-center rounded-full text-muted-foreground transition hover:bg-surface-2 hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         )}
       </main>
     </div>

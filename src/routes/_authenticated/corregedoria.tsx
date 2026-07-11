@@ -200,7 +200,7 @@ function Corregedoria() {
           </aside>
 
           {/* Autuação direita */}
-          <section>{selecionada ? <Autuacao id={selecionada} /> : <VazioAutuacao />}</section>
+          <section>{selecionada ? <Autuacao id={selecionada} cargo={session?.cargo ?? null} /> : <VazioAutuacao />}</section>
         </div>
       </div>
     </div>

@@ -508,37 +508,37 @@ function OficioModal({ onClose }: { onClose: () => void }) {
 
           <label className="block md:col-span-2">
             <span className="text-xs uppercase tracking-wider text-muted-foreground">
-              Título <span className="text-danger">*</span>
+              Título <span className="text-destructive">*</span>
             </span>
             <input
               value={titulo}
               onChange={(e) => setTitulo(e.target.value)}
               placeholder="Ex.: Abordagem irregular em via pública"
               className={`mt-1 w-full rounded-md border bg-input px-3 py-2 text-sm ${
-                tituloErr ? "border-danger" : "border-border"
+                tituloErr ? "border-destructive" : "border-border"
               }`}
               aria-invalid={tituloErr || undefined}
             />
             {tituloErr && (
-              <span className="mt-1 block text-xs text-danger">Informe um título com pelo menos 3 caracteres.</span>
+              <span className="mt-1 block text-xs text-destructive">Informe um título com pelo menos 3 caracteres.</span>
             )}
           </label>
 
           <label className="block md:col-span-2">
             <span className="text-xs uppercase tracking-wider text-muted-foreground">
-              Descrição detalhada dos fatos <span className="text-danger">*</span>
+              Descrição detalhada dos fatos <span className="text-destructive">*</span>
             </span>
             <textarea
               rows={6}
               value={descricao}
               onChange={(e) => setDescricao(e.target.value)}
               className={`mt-1 w-full rounded-md border bg-input px-3 py-2 text-sm ${
-                descricaoErr ? "border-danger" : "border-border"
+                descricaoErr ? "border-destructive" : "border-border"
               }`}
               aria-invalid={descricaoErr || undefined}
             />
             {descricaoErr && (
-              <span className="mt-1 block text-xs text-danger">Descreva os fatos com pelo menos 20 caracteres.</span>
+              <span className="mt-1 block text-xs text-destructive">Descreva os fatos com pelo menos 20 caracteres.</span>
             )}
           </label>
 
@@ -561,7 +561,7 @@ function OficioModal({ onClose }: { onClose: () => void }) {
 
         <fieldset className="mt-6 rounded-md border border-border p-3">
           <legend className="px-1 text-xs uppercase tracking-wider text-muted-foreground">
-            Envolvidos <span className="text-danger">*</span>
+            Envolvidos <span className="text-destructive">*</span>
           </legend>
           <div className="space-y-2">
             {envolvidos.map((env, i) => (
@@ -571,7 +571,7 @@ function OficioModal({ onClose }: { onClose: () => void }) {
                   value={env.nome}
                   onChange={(e) => updateEnv(i, { nome: e.target.value })}
                   className={`rounded-md border bg-input px-3 py-2 text-sm ${
-                    envolvidosErr && !env.nome.trim() ? "border-danger" : "border-border"
+                    envolvidosErr && !env.nome.trim() ? "border-destructive" : "border-border"
                   }`}
                 />
                 <input
@@ -610,7 +610,7 @@ function OficioModal({ onClose }: { onClose: () => void }) {
             <Plus className="h-3.5 w-3.5" /> Adicionar envolvido
           </button>
           {envolvidosErr && (
-            <div className="mt-2 text-xs text-danger">Informe pelo menos um envolvido.</div>
+            <div className="mt-2 text-xs text-destructive">Informe pelo menos um envolvido.</div>
           )}
         </fieldset>
 
@@ -641,7 +641,7 @@ function OficioModal({ onClose }: { onClose: () => void }) {
                   <button
                     type="button"
                     onClick={() => setLinks((arr) => arr.filter((_, idx) => idx !== i))}
-                    className="text-muted-foreground hover:text-danger"
+                    className="text-muted-foreground hover:text-destructive"
                     aria-label="Remover link"
                   >
                     <X className="h-3.5 w-3.5" />

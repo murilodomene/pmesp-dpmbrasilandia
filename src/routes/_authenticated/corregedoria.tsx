@@ -6,7 +6,12 @@ import { useServerFn } from "@tanstack/react-start";
 import { Header } from "@/components/Header";
 import { StatusBadge, STATUS_LABEL } from "@/components/StatusBadge";
 import { RelogioPrescricao } from "@/components/RelogioPrescricao";
-import { calcularPrescricao, type DenunciaStatus } from "@/lib/prescricao";
+import {
+  calcularPrescricao,
+  calcularDecursoPrazo,
+  isEncerrado,
+  type DenunciaStatus,
+} from "@/lib/prescricao";
 import {
   listDenuncias,
   getDenuncia,
@@ -26,6 +31,7 @@ import {
   revogarAcessoMp,
   excluirDenuncia,
   cancelarMovimento,
+  registrarRecurso,
 } from "@/lib/denuncias.functions";
 
 

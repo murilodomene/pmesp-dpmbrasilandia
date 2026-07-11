@@ -1477,6 +1477,124 @@ function TimelineAtoCard({
     }
   }
 
+/**
+ * Extrai a seção do RELATO DOS FATOS do teor estruturado do IPC
+ * (produzido por montarTeorIpc). Preserva HTML se houver.
+ */
+function extrairRelatoIpc(teor: string): string {
+  const m = teor.match(/\|\s*3º\s+RELATO\s+DO\s+FATO\s*:\s*\n([\s\S]*?)(?:\n\s*\n\|\s*4º|$)/i);
+  if (m) return m[1].trim();
+  return teor;
+}
+
+function TimelineIpcCard({
+  teor,
+  quando,
+  prolator,
+  cargo,
+  unidade,
+  procedimento,
+  identificacao,
+}: {
+  teor: string;
+  quando: string;
+  prolator: string;
+  cargo: string;
+  unidade: string;
+  procedimento: string;
+  identificacao: string;
+}) {
+  const pdfRef = useDocumentRef();
+  const [gerando, setGerando] = useState(false);
+  const relato = extrairRelatoIpc(teor);
+
+  const relatoNode = isHtmlAto(relato) ? (
+    <div
+      className="ato-body"
+      dangerouslySetInnerHTML={{ __html: sanitizeAtoHtml(relato) }}
+    />
+  ) : (
+    <div className="whitespace-pre-wrap">{relato}</div>
+  );
+  const relatoNodePdf = isHtmlAto(relato) ? (
+    <div
+      className="ato-body-pdf"
+      dangerouslySetInnerHTML={{ __html: sanitizeAtoHtml(relato) }}
+    />
+  ) : (
+    <div className="whitespace-pre-wrap">{relato}</div>
+  );
+
+  const camposBase = [
+    { label: "Unidade", valor: unidade },
+    { label: "Processo Nº", valor: procedimento },
+    { label: "Identificação do policial", valor: identificacao },
+  ];
+
+  async function exportarPdf() {
+    if (!pdfRef.current) return;
+    setGerando(true);
+    try {
+      const fname = `IPC_${procedimento.replace(/[^\w-]/g, "_")}.pdf`;
+      await exportDocumentToPdf(pdfRef.current, fname);
+    } finally {
+      setGerando(false);
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <DocumentTemplate
+        variant="screen"
+        procedimento={procedimento}
+        denunciado={identificacao}
+        tipo="IPC"
+        subtitulo="Resolução final do inquérito"
+        prolatorNome={prolator}
+        prolatorCargo={cargoLabelFull(cargo)}
+        data={quando}
+        markerClass="bg-status-investigacao"
+        campos={[
+          ...camposBase,
+          { label: "Relato dos fatos", valor: relatoNode },
+          { label: "Ciente dos fatos", valor: "Corregedoria Geral da Polícia Civil" },
+        ]}
+      />
+
+      <div className="pointer-events-none fixed left-[-10000px] top-0" aria-hidden>
+        <DocumentTemplate
+          ref={pdfRef}
+          variant="pdf"
+          procedimento={procedimento}
+          denunciado={identificacao}
+          tipo="IPC"
+          subtitulo="Resolução final do inquérito"
+          prolatorNome={prolator}
+          prolatorCargo={cargoLabelFull(cargo)}
+          data={quando}
+          markerClass="bg-status-investigacao"
+          campos={[
+            ...camposBase,
+            { label: "Relato dos fatos", valor: relatoNodePdf },
+            { label: "Ciente dos fatos", valor: "Corregedoria Geral da Polícia Civil" },
+          ]}
+        />
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          onClick={exportarPdf}
+          disabled={gerando}
+          className="inline-flex items-center gap-1 rounded-md border border-border bg-surface px-3 py-1.5 text-xs hover:bg-surface-2 disabled:opacity-50"
+        >
+          <Download className="h-3.5 w-3.5" /> {gerando ? "Gerando..." : "Exportar PDF"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
   return (
     <div className="space-y-2">
       {/* Exibição integrada ao sistema (tema escuro) */}

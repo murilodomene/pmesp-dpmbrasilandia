@@ -627,8 +627,17 @@ function Row({ k, children }: { k: string; children: React.ReactNode }) {
 }
 
 function labelEspecie(e: string): string {
-  return e === "despacho" ? "Despacho" : e === "decisao" ? "Decisão" : e === "ipc" ? "IPC" : "Status";
+  return e === "despacho"
+    ? "Despacho"
+    : e === "decisao"
+      ? "Decisão"
+      : e === "ipc"
+        ? "IPC"
+        : e === "retificacao"
+          ? "Retificação"
+          : "Status";
 }
+
 function cargoLabel(c: string): string {
   return c === "delegado_geral"
     ? "Delegado Geral"

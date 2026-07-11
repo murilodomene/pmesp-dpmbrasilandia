@@ -640,13 +640,14 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
             />
           </div>
         ) : (
-          <textarea
-            rows={5}
-            className="input mt-3"
-            placeholder="Teor do ato..."
-            value={teor}
-            onChange={(e) => setTeor(e.target.value)}
-          />
+          <div className="mt-3">
+            <RichTextEditor
+              value={teor}
+              onChange={setTeor}
+              placeholder="Redija o teor do ato. Use a barra acima para formatação."
+              minHeight={160}
+            />
+          </div>
         )}
         <div className="mt-3 flex justify-end">
           <button

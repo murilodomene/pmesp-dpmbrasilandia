@@ -117,33 +117,46 @@ function DetalheProcesso({ id }: { id: string }) {
     queryFn: () => getFn({ data: { id } }),
   });
 
-  if (isLoading) return <div className="text-sm text-muted-foreground">Carregando...</div>;
-  if (isError)
+  if (isLoading) return <ProcessoDetalheSkeleton />;
+  if (isError) {
+    const msg = error instanceof Error ? error.message : "erro";
+    const naoAutorizado = /permiss|not.?found|acesso|unauth|forbidden|denied|policy|rls/i.test(msg);
     return (
-      <div className="surface p-6 text-sm text-destructive-foreground">
-        Não foi possível abrir este processo: {error instanceof Error ? error.message : "erro"}
+      <div className="surface grid place-items-center gap-3 p-10 text-center">
+        <ShieldAlert className="h-10 w-10 text-destructive" aria-hidden />
+        <div>
+          <div className="font-serif text-lg">
+            {naoAutorizado ? "Acesso não autorizado" : "Não foi possível abrir o processo"}
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {naoAutorizado
+              ? "Você não possui habilitação para consultar este processo."
+              : msg}
+          </p>
+        </div>
       </div>
     );
+  }
   if (!data) return null;
 
   const d = data.denuncia;
 
   return (
     <div className="space-y-4">
+      <ProcessoLetterhead
+        numeroProtocolo={d.numero_protocolo}
+        unidade={d.unidade}
+        readOnly
+      />
+
       <div className="surface p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="tabular text-xs text-muted-foreground">{d.numero_protocolo}</div>
             <div className="mt-1 flex items-center gap-2">
               <StatusBadge status={d.status as DenunciaStatus} />
               <span className="text-sm text-muted-foreground">
                 {STATUS_LABEL[d.status as DenunciaStatus]}
               </span>
-              {d.unidade && (
-                <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                  {d.unidade}
-                </span>
-              )}
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -157,6 +170,7 @@ function DetalheProcesso({ id }: { id: string }) {
           </div>
         </div>
       </div>
+
 
 
       <div className="surface p-5">

@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /auth
+Disallow: /painel
+Disallow: /corregedoria
+Disallow: /pendente
+Disallow: /usuarios

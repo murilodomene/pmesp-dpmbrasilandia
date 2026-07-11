@@ -110,10 +110,22 @@ export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps
           </header>
 
           <section className="mt-4 grid gap-2 text-[12px] sm:text-[13px]">
-            <div><span className="font-bold">PROCEDIMENTO:</span> {procedimento}</div>
-            <div><span className="font-bold">DENUNCIADO:</span> {denunciado}</div>
-            {assunto && <div><span className="font-bold">ASSUNTO:</span> {assunto}</div>}
+            {campos ? (
+              campos.map((c) => (
+                <div key={c.label}>
+                  <span className="font-bold">{c.label.toUpperCase()}:</span>{" "}
+                  <span>{c.valor}</span>
+                </div>
+              ))
+            ) : (
+              <>
+                <div><span className="font-bold">PROCEDIMENTO:</span> {procedimento}</div>
+                <div><span className="font-bold">DENUNCIADO:</span> {denunciado}</div>
+                {assunto && <div><span className="font-bold">ASSUNTO:</span> {assunto}</div>}
+              </>
+            )}
           </section>
+
 
           <main
             className="mx-1 my-6 whitespace-pre-wrap text-justify text-[12px] leading-relaxed sm:mx-4 sm:text-[13px]"

@@ -2,13 +2,20 @@ import { forwardRef, useRef } from "react";
 import { ShieldCheck } from "lucide-react";
 import { isHtmlAto, sanitizeAtoHtml } from "./RichTextEditor";
 
-export type AtoTipo = "DESPACHO" | "DECISÃO" | "PORTARIA";
+export type AtoTipo = "DESPACHO" | "DECISÃO" | "PORTARIA" | "IPC";
+
+export interface DocumentTemplateCampo {
+  label: string;
+  valor: React.ReactNode;
+}
 
 export interface DocumentTemplateProps {
   procedimento: string;
   denunciado: string;
-  /** Rótulo central em destaque (DESPACHO/DECISÃO/PORTARIA). */
+  /** Rótulo central em destaque (DESPACHO/DECISÃO/PORTARIA/IPC). */
   tipo?: AtoTipo;
+  /** Subtítulo discreto abaixo do tipo (ex.: "Resolução final do inquérito"). */
+  subtitulo?: string;
   /** Compatibilidade legada — usado apenas no PDF quando `tipo` não é definido. */
   assunto?: string;
   prolatorNome: string;
@@ -20,9 +27,12 @@ export interface DocumentTemplateProps {
   children?: React.ReactNode;
   /** "screen" = tema escuro integrado; "pdf" = papel branco A4. */
   variant?: "screen" | "pdf";
-  /** Cor do marcador lateral esquerdo (Despacho / Decisão / Portaria). */
+  /** Cor do marcador lateral esquerdo. */
   markerClass?: string;
+  /** Campos estruturados. Se ausente, exibe apenas Procedimento + Denunciado. */
+  campos?: DocumentTemplateCampo[];
 }
+
 
 /**
  * Envelopa Despacho, Decisão e Portaria. Duas apresentações:
@@ -36,6 +46,7 @@ export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps
       procedimento,
       denunciado,
       tipo,
+      subtitulo,
       assunto,
       prolatorNome,
       prolatorCargo,
@@ -44,9 +55,11 @@ export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps
       children,
       variant = "screen",
       markerClass,
+      campos,
     },
     ref,
   ) {
+
     const dataFmt = new Date(data).toLocaleDateString("pt-BR", {
       day: "2-digit",
       month: "long",
@@ -96,11 +109,35 @@ export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps
             </div>
           </header>
 
+          {tipo && (
+            <div className="mt-3 text-center">
+              <div className="font-serif text-[15px] font-bold tracking-[0.25em] text-gray-900">
+                {tipo}
+              </div>
+              {subtitulo && (
+                <div className="mt-0.5 text-[10px] italic text-gray-600">{subtitulo}</div>
+              )}
+            </div>
+          )}
+
+
           <section className="mt-4 grid gap-2 text-[12px] sm:text-[13px]">
-            <div><span className="font-bold">PROCEDIMENTO:</span> {procedimento}</div>
-            <div><span className="font-bold">DENUNCIADO:</span> {denunciado}</div>
-            {assunto && <div><span className="font-bold">ASSUNTO:</span> {assunto}</div>}
+            {campos ? (
+              campos.map((c) => (
+                <div key={c.label}>
+                  <span className="font-bold">{c.label.toUpperCase()}:</span>{" "}
+                  <span>{c.valor}</span>
+                </div>
+              ))
+            ) : (
+              <>
+                <div><span className="font-bold">PROCEDIMENTO:</span> {procedimento}</div>
+                <div><span className="font-bold">DENUNCIADO:</span> {denunciado}</div>
+                {assunto && <div><span className="font-bold">ASSUNTO:</span> {assunto}</div>}
+              </>
+            )}
           </section>
+
 
           <main
             className="mx-1 my-6 whitespace-pre-wrap text-justify text-[12px] leading-relaxed sm:mx-4 sm:text-[13px]"
@@ -156,9 +193,12 @@ export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps
         {/* Tipo do ato em destaque */}
         {tipo && (
           <div className="py-3 text-center">
-            <span className="font-serif text-base font-semibold tracking-[0.2em] text-foreground sm:text-lg">
+            <div className="font-serif text-base font-semibold tracking-[0.25em] text-foreground sm:text-lg">
               {tipo}
-            </span>
+            </div>
+            {subtitulo && (
+              <div className="mt-0.5 text-[11px] italic text-muted-foreground">{subtitulo}</div>
+            )}
           </div>
         )}
 
@@ -166,15 +206,29 @@ export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps
 
         {/* Bloco de identificação */}
         <dl className="grid gap-1.5 py-3 text-xs sm:text-sm">
-          <div className="flex flex-wrap gap-x-2">
-            <dt className="font-semibold uppercase tracking-wider text-primary">Procedimento:</dt>
-            <dd className="text-foreground">{procedimento}</dd>
-          </div>
-          <div className="flex flex-wrap gap-x-2">
-            <dt className="font-semibold uppercase tracking-wider text-primary">Denunciado:</dt>
-            <dd className="text-foreground">{denunciado}</dd>
-          </div>
+          {campos ? (
+            campos.map((c) => (
+              <div key={c.label} className="flex flex-wrap gap-x-2">
+                <dt className="font-semibold uppercase tracking-wider text-primary">
+                  {c.label}:
+                </dt>
+                <dd className="min-w-0 flex-1 text-foreground">{c.valor}</dd>
+              </div>
+            ))
+          ) : (
+            <>
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="font-semibold uppercase tracking-wider text-primary">Procedimento:</dt>
+                <dd className="text-foreground">{procedimento}</dd>
+              </div>
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="font-semibold uppercase tracking-wider text-primary">Denunciado:</dt>
+                <dd className="text-foreground">{denunciado}</dd>
+              </div>
+            </>
+          )}
         </dl>
+
 
         <div className="h-px w-full bg-border/60" />
 

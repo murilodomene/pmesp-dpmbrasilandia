@@ -9,6 +9,8 @@ import { getSessionInfo } from "@/lib/usuarios.functions";
 import { supabase } from "@/integrations/supabase/client";
 import type { DenunciaStatus } from "@/lib/prescricao";
 import { FileText } from "lucide-react";
+import { isHtmlAto, sanitizeAtoHtml } from "@/components/RichTextEditor";
+
 
 export const Route = createFileRoute("/_authenticated/minhas-denuncias")({
   beforeLoad: async () => {
@@ -172,9 +174,17 @@ function MinhasDenunciasPage() {
                                 {new Date(ipc.criado_em).toLocaleString("pt-BR")}
                               </span>
                             </div>
-                            <pre className="mt-2 whitespace-pre-wrap font-sans text-sm">
-                              {ipc.teor}
-                            </pre>
+                            {isHtmlAto(ipc.teor) ? (
+                              <div
+                                className="ato-body mt-2 whitespace-pre-wrap text-sm"
+                                dangerouslySetInnerHTML={{ __html: sanitizeAtoHtml(ipc.teor) }}
+                              />
+                            ) : (
+                              <pre className="mt-2 whitespace-pre-wrap font-sans text-sm">
+                                {ipc.teor}
+                              </pre>
+                            )}
+
                             <div className="mt-2 text-[11px] text-muted-foreground">
                               {ipc.prolator_nome}
                             </div>

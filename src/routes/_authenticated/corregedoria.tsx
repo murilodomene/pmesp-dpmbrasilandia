@@ -298,7 +298,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
             nome: p.nome,
             rg_funcional: p.rg_funcional ?? null,
           })),
-          relato: teor,
+          relato: sanitizeAtoHtml(teor),
         });
       } else {
         teorFinal = sanitizeAtoHtml(teor);
@@ -643,18 +643,19 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                   : "Não identificado"
               }
             />
-            <label className="block">
+            <div>
               <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
                 3º Relato do fato
               </span>
-              <textarea
-                rows={5}
-                className="input mt-1"
-                placeholder="Descreva o fato..."
-                value={teor}
-                onChange={(e) => setTeor(e.target.value)}
-              />
-            </label>
+              <div className="mt-1">
+                <RichTextEditor
+                  value={teor}
+                  onChange={setTeor}
+                  placeholder="Descreva o fato. Use a barra acima para formatação."
+                  minHeight={160}
+                />
+              </div>
+            </div>
             <IpcCampoAuto
               label="4º Ciente dos fatos"
               valor="Corregedoria Geral da Polícia Civil"
@@ -674,9 +675,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
           <button
             onClick={() => mLancar.mutate()}
             disabled={
-              (especie === "ipc"
-                ? teor.trim().length < 3
-                : teor.replace(/<[^>]+>/g, "").trim().length < 3) || mLancar.isPending
+              teor.replace(/<[^>]+>/g, "").trim().length < 3 || mLancar.isPending
             }
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
           >
@@ -684,6 +683,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
           </button>
         </div>
       </div>
+
 
       {/* Timeline */}
       <div className="surface p-5">
@@ -701,6 +701,8 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
             };
             const isAto =
               m.especie === "despacho" || m.especie === "decisao" || m.especie === "portaria";
+            const isIpc = m.especie === "ipc";
+
             const canceladoEm = m.cancelado_em ?? null;
             const podeCancelar =
               podeExcluir && !canceladoEm && m.especie !== "cancelamento";
@@ -788,6 +790,64 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 </li>
               );
             }
+            if (isIpc) {
+              return (
+                <li key={m.id} className={`flex gap-3 ${canceladoEm ? "opacity-60" : ""}`}>
+                  <MovMarker especie={m.especie as string} />
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span className="font-medium uppercase tracking-wider">
+                        {labelEspecie(m.especie as string)}
+                      </span>
+                      <span className="rounded-full bg-status-investigacao/25 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-status-investigacao-fg">
+                        Decisão final
+                      </span>
+                      {canceladoBadge}
+                      <span
+                        className={`rounded-full px-2 py-0.5 ${
+                          m.ipc_publicado
+                            ? "bg-primary/20 text-primary"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {m.ipc_publicado ? "Publicado ao denunciante" : "Não publicado"}
+                      </span>
+                      <span className="ml-auto text-muted-foreground tabular">
+                        {new Date(m.criado_em).toLocaleString("pt-BR")}
+                      </span>
+                      {btnCancelar}
+                    </div>
+                    <div className={canceladoEm ? "line-through decoration-destructive/60" : ""}>
+                      <TimelineIpcCard
+                        teor={m.teor}
+                        quando={m.criado_em}
+                        prolator={m.prolator_nome}
+                        cargo={m.prolator_cargo as string}
+                        unidade={denuncia.unidade || "—"}
+                        procedimento={denuncia.numero_protocolo}
+                        identificacao={
+                          policiais.length
+                            ? policiais
+                                .map((p) => `${p.nome}${p.rg_funcional ? ` — ${p.rg_funcional}` : ""}`)
+                                .join("; ")
+                            : "Não identificado"
+                        }
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => mPublicar.mutate({ id: m.id, publicado: !m.ipc_publicado })}
+                        disabled={mPublicar.isPending}
+                        className="rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground hover:bg-surface-2 disabled:opacity-50"
+                      >
+                        {m.ipc_publicado ? "Despublicar" : "Publicar para o denunciante"}
+                      </button>
+                    </div>
+                    {canceladoFooter}
+                  </div>
+                </li>
+              );
+            }
             return (
               <li key={m.id} className={`flex gap-3 ${canceladoEm ? "opacity-60" : ""}`}>
                 <MovMarker especie={m.especie as string} />
@@ -807,17 +867,6 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                         +30 dias
                       </span>
                     )}
-                    {m.especie === "ipc" && (
-                      <span
-                        className={`rounded-full px-2 py-0.5 ${
-                          m.ipc_publicado
-                            ? "bg-primary/20 text-primary"
-                            : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {m.ipc_publicado ? "Publicado ao denunciante" : "Não publicado"}
-                      </span>
-                    )}
                     <span className="ml-auto text-muted-foreground tabular">
                       {new Date(m.criado_em).toLocaleString("pt-BR")}
                     </span>
@@ -834,15 +883,6 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                       {m.prolator_nome} · {cargoLabel(m.prolator_cargo as string)}
                     </span>
                     <div className="flex items-center gap-2">
-                      {m.especie === "ipc" && (
-                        <button
-                          onClick={() => mPublicar.mutate({ id: m.id, publicado: !m.ipc_publicado })}
-                          disabled={mPublicar.isPending}
-                          className="rounded-md border border-border px-2 py-1 hover:bg-surface-2 disabled:opacity-50"
-                        >
-                          {m.ipc_publicado ? "Despublicar" : "Publicar para o denunciante"}
-                        </button>
-                      )}
                       {btnCancelar}
                     </div>
                   </div>
@@ -850,6 +890,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 </div>
               </li>
             );
+
           })}
         </ul>
       </div>
@@ -1481,6 +1522,127 @@ function TimelineAtoCard({
     </div>
   );
 }
+
+
+
+/**
+ * Extrai a seção do RELATO DOS FATOS do teor estruturado do IPC
+ * (produzido por montarTeorIpc). Preserva HTML se houver.
+ */
+function extrairRelatoIpc(teor: string): string {
+  const m = teor.match(/\|\s*3º\s+RELATO\s+DO\s+FATO\s*:\s*\n([\s\S]*?)(?:\n\s*\n\|\s*4º|$)/i);
+  if (m) return m[1].trim();
+  return teor;
+}
+
+function TimelineIpcCard({
+  teor,
+  quando,
+  prolator,
+  cargo,
+  unidade,
+  procedimento,
+  identificacao,
+}: {
+  teor: string;
+  quando: string;
+  prolator: string;
+  cargo: string;
+  unidade: string;
+  procedimento: string;
+  identificacao: string;
+}) {
+  const pdfRef = useDocumentRef();
+  const [gerando, setGerando] = useState(false);
+  const relato = extrairRelatoIpc(teor);
+
+  const relatoNode = isHtmlAto(relato) ? (
+    <div
+      className="ato-body"
+      dangerouslySetInnerHTML={{ __html: sanitizeAtoHtml(relato) }}
+    />
+  ) : (
+    <div className="whitespace-pre-wrap">{relato}</div>
+  );
+  const relatoNodePdf = isHtmlAto(relato) ? (
+    <div
+      className="ato-body-pdf"
+      dangerouslySetInnerHTML={{ __html: sanitizeAtoHtml(relato) }}
+    />
+  ) : (
+    <div className="whitespace-pre-wrap">{relato}</div>
+  );
+
+  const camposBase = [
+    { label: "Unidade", valor: unidade },
+    { label: "Processo Nº", valor: procedimento },
+    { label: "Identificação do policial", valor: identificacao },
+  ];
+
+  async function exportarPdf() {
+    if (!pdfRef.current) return;
+    setGerando(true);
+    try {
+      const fname = `IPC_${procedimento.replace(/[^\w-]/g, "_")}.pdf`;
+      await exportDocumentToPdf(pdfRef.current, fname);
+    } finally {
+      setGerando(false);
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <DocumentTemplate
+        variant="screen"
+        procedimento={procedimento}
+        denunciado={identificacao}
+        tipo="IPC"
+        subtitulo="Resolução final do inquérito"
+        prolatorNome={prolator}
+        prolatorCargo={cargoLabelFull(cargo)}
+        data={quando}
+        markerClass="bg-status-investigacao"
+        campos={[
+          ...camposBase,
+          { label: "Relato dos fatos", valor: relatoNode },
+          { label: "Ciente dos fatos", valor: "Corregedoria Geral da Polícia Civil" },
+        ]}
+      />
+
+      <div className="pointer-events-none fixed left-[-10000px] top-0" aria-hidden>
+        <DocumentTemplate
+          ref={pdfRef}
+          variant="pdf"
+          procedimento={procedimento}
+          denunciado={identificacao}
+          tipo="IPC"
+          subtitulo="Resolução final do inquérito"
+          prolatorNome={prolator}
+          prolatorCargo={cargoLabelFull(cargo)}
+          data={quando}
+          markerClass="bg-status-investigacao"
+          campos={[
+            ...camposBase,
+            { label: "Relato dos fatos", valor: relatoNodePdf },
+            { label: "Ciente dos fatos", valor: "Corregedoria Geral da Polícia Civil" },
+          ]}
+        />
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          onClick={exportarPdf}
+          disabled={gerando}
+          className="inline-flex items-center gap-1 rounded-md border border-border bg-surface px-3 py-1.5 text-xs hover:bg-surface-2 disabled:opacity-50"
+        >
+          <Download className="h-3.5 w-3.5" /> {gerando ? "Gerando..." : "Exportar PDF"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
 
 
 function VerAtoDialog({

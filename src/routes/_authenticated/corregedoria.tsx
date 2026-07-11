@@ -370,6 +370,13 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
             >
               Movimentar status
             </button>
+            {(cargo === "delegado_geral" || cargo === "delegado_corregedor") && (
+              <ExportarProcessoBtn
+                denuncia={denuncia}
+                policiais={policiais}
+                movimentos={movimentos as never}
+              />
+            )}
             {podeExcluir && (
               <button
                 onClick={() => setDialog({ kind: "excluir" })}

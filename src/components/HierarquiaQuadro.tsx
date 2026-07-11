@@ -281,38 +281,43 @@ export function HierarquiaQuadro({ cargo }: { cargo: string | null }) {
                   )}
                 </div>
 
-                {list.length === 0 ? (
-                  <p className="px-1 py-6 text-xs italic text-muted-foreground">
-                    Nenhum membro registrado neste grupo.
-                  </p>
-                ) : (
-                  <div className="-mx-6 overflow-x-auto px-6 sm:mx-0 sm:px-0">
-                    <div className="rounded-lg border border-border bg-background/40">
-                      <table className="w-full min-w-[1100px] table-fixed border-collapse text-sm">
-                        <colgroup>
-                          <col style={{ width: "180px" }} />
-                          <col style={{ width: "72px" }} />
-                          <col style={{ width: "72px" }} />
-                          <col style={{ width: "160px" }} />
-                          <col style={{ width: "130px" }} />
-                          <col style={{ width: "90px" }} />
-                          <col style={{ width: "150px" }} />
-                          <col style={{ width: "160px" }} />
-                          <col style={{ width: "100px" }} />
-                          <col style={{ width: "70px" }} />
-                          <col style={{ width: "90px" }} />
-                          {podeEditar && <col style={{ width: "96px" }} />}
-                        </colgroup>
-                        <thead>
-                          <tr className="border-b border-border bg-surface-2/60 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                            {COLS.map((c) => (
-                              <th key={c.key} className="whitespace-nowrap px-3 py-2 font-medium">{c.label}</th>
-                            ))}
-                            {podeEditar && <th className="whitespace-nowrap px-3 py-2 text-right font-medium">Ações</th>}
+                <div className="-mx-6 overflow-x-auto px-6 sm:mx-0 sm:px-0">
+                  <div className="rounded-lg border border-border bg-background/40">
+                    <table className="w-full min-w-[1100px] table-fixed border-collapse text-sm">
+                      <colgroup>
+                        <col style={{ width: "180px" }} />
+                        <col style={{ width: "72px" }} />
+                        <col style={{ width: "72px" }} />
+                        <col style={{ width: "160px" }} />
+                        <col style={{ width: "130px" }} />
+                        <col style={{ width: "90px" }} />
+                        <col style={{ width: "150px" }} />
+                        <col style={{ width: "160px" }} />
+                        <col style={{ width: "100px" }} />
+                        <col style={{ width: "70px" }} />
+                        <col style={{ width: "90px" }} />
+                        {podeEditar && <col style={{ width: "96px" }} />}
+                      </colgroup>
+                      <thead>
+                        <tr className="border-b border-border bg-surface-2/60 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
+                          {COLS.map((c) => (
+                            <th key={c.key} className="whitespace-nowrap px-3 py-2 font-medium">{c.label}</th>
+                          ))}
+                          {podeEditar && <th className="whitespace-nowrap px-3 py-2 text-right font-medium">Ações</th>}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {list.length === 0 ? (
+                          <tr>
+                            <td
+                              colSpan={COLS.length + (podeEditar ? 1 : 0)}
+                              className="px-3 py-6 text-center text-xs italic text-muted-foreground"
+                            >
+                              Nenhum membro registrado neste grupo.
+                            </td>
                           </tr>
-                        </thead>
-                        <tbody>
-                          {list.map((m) => (
+                        ) : (
+                          list.map((m) => (
                             <tr key={m.id} className="border-b border-border/40 last:border-0 hover:bg-surface/60">
                               {COLS.map((c) => (
                                 <td key={c.key} className="whitespace-nowrap px-3 py-2 align-middle">
@@ -356,12 +361,12 @@ export function HierarquiaQuadro({ cargo }: { cargo: string | null }) {
                                 </td>
                               )}
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
                   </div>
-                )}
+                </div>
               </section>
             );
           })}

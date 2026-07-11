@@ -596,7 +596,9 @@ function Autuacao({ id, cargo }: { id: string; cargo: string | null }) {
                     {new Date(m.criado_em).toLocaleString("pt-BR")}
                   </span>
                 </div>
-                <p className="mt-2 whitespace-pre-wrap text-sm">{m.teor}</p>
+                <p className="mt-2 whitespace-pre-wrap text-sm">
+                  {m.especie === "portaria" ? renderTeorComLinks(m.teor) : m.teor}
+                </p>
                 <div className="mt-2 text-[11px] text-muted-foreground">
                   {m.prolator_nome} · {cargoLabel(m.prolator_cargo as string)}
                 </div>

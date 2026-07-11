@@ -768,6 +768,7 @@ function montarTeorIpc(params: {
 }
 
 
+function labelEspecie(e: string): string {
   return e === "despacho"
     ? "Despacho"
     : e === "decisao"

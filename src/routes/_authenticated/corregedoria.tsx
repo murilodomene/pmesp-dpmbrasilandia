@@ -24,11 +24,13 @@ import {
   listAcessosMp,
   concederAcessoMp,
   revogarAcessoMp,
+  excluirDenuncia,
 } from "@/lib/denuncias.functions";
 
 
+
 import { getSessionInfo } from "@/lib/usuarios.functions";
-import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye } from "lucide-react";
+import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/corregedoria")({
   validateSearch: z.object({ id: z.string().uuid().optional() }),
@@ -208,7 +210,7 @@ function Corregedoria() {
           </aside>
 
           {/* Autuação direita */}
-          <section>{selecionada ? <Autuacao id={selecionada} cargo={session?.cargo ?? null} /> : <VazioAutuacao />}</section>
+          <section>{selecionada ? <Autuacao id={selecionada} cargo={session?.cargo ?? null} onDeleted={() => setSelecionada(null)} /> : <VazioAutuacao />}</section>
         </div>
       </div>
     </div>
@@ -223,7 +225,7 @@ function VazioAutuacao() {
   );
 }
 
-function Autuacao({ id, cargo }: { id: string; cargo: string | null }) {
+function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; onDeleted?: () => void }) {
   const qc = useQueryClient();
   const getFn = useServerFn(getDenuncia);
   const { data, isLoading } = useQuery({
@@ -233,6 +235,8 @@ function Autuacao({ id, cargo }: { id: string; cargo: string | null }) {
 
   const podeRetificar = cargo === "delegado_geral" || cargo === "delegado_corregedor";
 
+  const podeExcluir = cargo === "delegado_geral" || cargo === "delegado_corregedor";
+
   const [dialog, setDialog] = useState<
     | { kind: "status" }
     | { kind: "portaria" }
@@ -240,6 +244,7 @@ function Autuacao({ id, cargo }: { id: string; cargo: string | null }) {
     | { kind: "prorrogar" }
     | { kind: "oitiva" }
     | { kind: "retificar"; policial: { id: string; nome: string; rg_funcional: string | null } }
+    | { kind: "excluir" }
     | null
   >(null);
 
@@ -297,6 +302,16 @@ function Autuacao({ id, cargo }: { id: string; cargo: string | null }) {
       publicarFn({ data: { movimento_id: args.id, publicado: args.publicado } }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["denuncia", id] }),
   });
+  const excluirFn = useServerFn(excluirDenuncia);
+  const mExcluir = useMutation({
+    mutationFn: (protocolo: string) => excluirFn({ data: { id, confirmar_protocolo: protocolo } }),
+    onSuccess: () => {
+      setDialog(null);
+      qc.invalidateQueries({ queryKey: ["denuncias"] });
+      qc.removeQueries({ queryKey: ["denuncia", id] });
+      onDeleted?.();
+    },
+  });
 
   if (isLoading || !data) {
     return <div className="surface p-8 text-sm text-muted-foreground">Carregando autos...</div>;
@@ -320,12 +335,23 @@ function Autuacao({ id, cargo }: { id: string; cargo: string | null }) {
               </span>
             </div>
           </div>
-          <button
-            onClick={() => setDialog({ kind: "status" })}
-            className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
-          >
-            Movimentar status
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setDialog({ kind: "status" })}
+              className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
+            >
+              Movimentar status
+            </button>
+            {podeExcluir && (
+              <button
+                onClick={() => setDialog({ kind: "excluir" })}
+                title="Excluir procedimento definitivamente"
+                className="inline-flex items-center gap-1 rounded-md border border-destructive/40 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-3.5 w-3.5" /> Excluir
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -754,6 +780,17 @@ function Autuacao({ id, cargo }: { id: string; cargo: string | null }) {
           onClose={() => setDialog(null)}
         />
       )}
+      {dialog?.kind === "excluir" && (
+        <ExcluirDenunciaDialog
+          protocolo={denuncia.numero_protocolo}
+          pending={mExcluir.isPending}
+          erro={mExcluir.error instanceof Error ? mExcluir.error.message : null}
+          onConfirm={(protocolo) => mExcluir.mutate(protocolo)}
+          onClose={() => setDialog(null)}
+        />
+      )}
+
+
 
 
       <style>{`.input{background:var(--input);border:1px solid var(--border);border-radius:6px;padding:.55rem .7rem;font-size:.9rem;color:var(--foreground);width:100%}`}</style>
@@ -1472,5 +1509,66 @@ function AcessoMpSection({ denunciaId }: { denunciaId: string }) {
     </div>
   );
 }
+
+function ExcluirDenunciaDialog({
+  protocolo,
+  onConfirm,
+  onClose,
+  pending,
+  erro,
+}: {
+  protocolo: string;
+  onConfirm: (protocolo: string) => void;
+  onClose: () => void;
+  pending: boolean;
+  erro: string | null;
+}) {
+  const [texto, setTexto] = useState("");
+  const bate = texto.trim() === protocolo;
+  return (
+    <Modal title="Excluir procedimento definitivamente" onClose={onClose}>
+      <div className="space-y-3 text-sm">
+        <p className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-destructive">
+          Esta ação é <strong>definitiva e irreversível</strong>. Todos os dados do
+          procedimento — movimentação, oitivas, denunciados, concessões ao MP e
+          vínculo com o cidadão — serão apagados do banco e não poderão ser recuperados.
+          O número <strong>{protocolo}</strong> não será reaproveitado.
+        </p>
+        <label className="block">
+          <span className="text-xs uppercase tracking-wider text-muted-foreground">
+            Para confirmar, digite o número do procedimento
+          </span>
+          <input
+            autoFocus
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            placeholder={protocolo}
+            className="input mt-1 tabular"
+          />
+        </label>
+        {erro && <p className="text-xs text-destructive">{erro}</p>}
+        <div className="flex justify-end gap-2 pt-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            disabled={!bate || pending}
+            onClick={() => onConfirm(texto.trim())}
+            className="inline-flex items-center gap-1 rounded-md bg-destructive px-3 py-1.5 text-xs text-destructive-foreground disabled:opacity-40"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            {pending ? "Excluindo..." : "Excluir definitivamente"}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 
 

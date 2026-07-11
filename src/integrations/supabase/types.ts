@@ -359,6 +359,7 @@ export type Database = {
         Returns: boolean
       }
       pode_conceder_mp: { Args: { _user_id: string }; Returns: boolean }
+      pode_excluir_denuncia: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role:

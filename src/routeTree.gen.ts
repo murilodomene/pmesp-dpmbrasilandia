@@ -18,6 +18,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedPendenteRouteImport } from './routes/_authenticated/pendente'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
+import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated/documentos'
 import { Route as AuthenticatedCorregedoriaRouteImport } from './routes/_authenticated/corregedoria'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -64,6 +65,11 @@ const AuthenticatedPainelRoute = AuthenticatedPainelRouteImport.update({
   path: '/painel',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedDocumentosRoute = AuthenticatedDocumentosRouteImport.update({
+  id: '/documentos',
+  path: '/documentos',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedCorregedoriaRoute =
   AuthenticatedCorregedoriaRouteImport.update({
     id: '/corregedoria',
@@ -78,6 +84,7 @@ export interface FileRoutesByFullPath {
   '/denunciar': typeof DenunciarRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/corregedoria': typeof AuthenticatedCorregedoriaRoute
+  '/documentos': typeof AuthenticatedDocumentosRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/pendente': typeof AuthenticatedPendenteRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByTo {
   '/denunciar': typeof DenunciarRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/corregedoria': typeof AuthenticatedCorregedoriaRoute
+  '/documentos': typeof AuthenticatedDocumentosRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/pendente': typeof AuthenticatedPendenteRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
@@ -102,6 +110,7 @@ export interface FileRoutesById {
   '/denunciar': typeof DenunciarRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/corregedoria': typeof AuthenticatedCorregedoriaRoute
+  '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
   '/_authenticated/pendente': typeof AuthenticatedPendenteRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
     | '/denunciar'
     | '/sitemap.xml'
     | '/corregedoria'
+    | '/documentos'
     | '/painel'
     | '/pendente'
     | '/usuarios'
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/denunciar'
     | '/sitemap.xml'
     | '/corregedoria'
+    | '/documentos'
     | '/painel'
     | '/pendente'
     | '/usuarios'
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
     | '/denunciar'
     | '/sitemap.xml'
     | '/_authenticated/corregedoria'
+    | '/_authenticated/documentos'
     | '/_authenticated/painel'
     | '/_authenticated/pendente'
     | '/_authenticated/usuarios'
@@ -217,6 +229,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPainelRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/documentos': {
+      id: '/_authenticated/documentos'
+      path: '/documentos'
+      fullPath: '/documentos'
+      preLoaderRoute: typeof AuthenticatedDocumentosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/corregedoria': {
       id: '/_authenticated/corregedoria'
       path: '/corregedoria'
@@ -229,6 +248,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedCorregedoriaRoute: typeof AuthenticatedCorregedoriaRoute
+  AuthenticatedDocumentosRoute: typeof AuthenticatedDocumentosRoute
   AuthenticatedPainelRoute: typeof AuthenticatedPainelRoute
   AuthenticatedPendenteRoute: typeof AuthenticatedPendenteRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
@@ -236,6 +256,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCorregedoriaRoute: AuthenticatedCorregedoriaRoute,
+  AuthenticatedDocumentosRoute: AuthenticatedDocumentosRoute,
   AuthenticatedPainelRoute: AuthenticatedPainelRoute,
   AuthenticatedPendenteRoute: AuthenticatedPendenteRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,

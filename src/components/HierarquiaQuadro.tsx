@@ -53,9 +53,9 @@ function badgeCls(kind: "status" | "patente" | "transferido" | "cargo", value: s
     "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset whitespace-nowrap";
   if (kind === "status") {
     if (value === "Ativo")
-      return `${base} bg-emerald-500/15 text-emerald-300 ring-emerald-500/30`;
+      return `${base} bg-emerald-500/20 text-emerald-300 ring-emerald-500/40`;
     if (value === "Inativo")
-      return `${base} bg-rose-500/15 text-rose-300 ring-rose-500/30`;
+      return `${base} bg-transparent text-red-400 ring-red-500/40 font-semibold uppercase`;
     return `${base} bg-muted text-muted-foreground ring-border`;
   }
   if (kind === "patente") {

@@ -742,9 +742,18 @@ function MovMarker({ especie }: { especie: string }) {
     ipc: "bg-status-investigacao text-status-investigacao-fg",
     status: "bg-status-aguardando text-status-aguardando-fg",
     retificacao: "bg-status-aguardando text-status-aguardando-fg",
+    portaria: "bg-primary text-primary-foreground",
   };
   const Icon =
-    especie === "decisao" ? Scale : especie === "ipc" ? Gavel : especie === "retificacao" ? Pencil : FileText;
+    especie === "decisao"
+      ? Scale
+      : especie === "ipc"
+        ? Gavel
+        : especie === "retificacao"
+          ? Pencil
+          : especie === "portaria"
+            ? Stamp
+            : FileText;
 
   return (
     <div className={`grid h-8 w-8 flex-shrink-0 place-items-center rounded-full ${style[especie]}`}>

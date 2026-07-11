@@ -335,12 +335,23 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
               </span>
             </div>
           </div>
-          <button
-            onClick={() => setDialog({ kind: "status" })}
-            className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
-          >
-            Movimentar status
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setDialog({ kind: "status" })}
+              className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
+            >
+              Movimentar status
+            </button>
+            {podeExcluir && (
+              <button
+                onClick={() => setDialog({ kind: "excluir" })}
+                title="Excluir procedimento definitivamente"
+                className="inline-flex items-center gap-1 rounded-md border border-destructive/40 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-3.5 w-3.5" /> Excluir
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

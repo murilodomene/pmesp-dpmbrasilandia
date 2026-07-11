@@ -14,6 +14,7 @@ import { Route as ConsultarRouteImport } from './routes/consultar'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedPendenteRouteImport } from './routes/_authenticated/pendente'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
 import { Route as AuthenticatedCorregedoriaRouteImport } from './routes/_authenticated/corregedoria'
@@ -42,6 +43,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPendenteRoute = AuthenticatedPendenteRouteImport.update({
   id: '/pendente',
   path: '/pendente',
@@ -67,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/corregedoria': typeof AuthenticatedCorregedoriaRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/pendente': typeof AuthenticatedPendenteRoute
+  '/usuarios': typeof AuthenticatedUsuariosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/corregedoria': typeof AuthenticatedCorregedoriaRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/pendente': typeof AuthenticatedPendenteRoute
+  '/usuarios': typeof AuthenticatedUsuariosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/_authenticated/corregedoria': typeof AuthenticatedCorregedoriaRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
   '/_authenticated/pendente': typeof AuthenticatedPendenteRoute
+  '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -98,6 +107,7 @@ export interface FileRouteTypes {
     | '/corregedoria'
     | '/painel'
     | '/pendente'
+    | '/usuarios'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/corregedoria'
     | '/painel'
     | '/pendente'
+    | '/usuarios'
   id:
     | '__root__'
     | '/'
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/_authenticated/corregedoria'
     | '/_authenticated/painel'
     | '/_authenticated/pendente'
+    | '/_authenticated/usuarios'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -164,6 +176,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/usuarios': {
+      id: '/_authenticated/usuarios'
+      path: '/usuarios'
+      fullPath: '/usuarios'
+      preLoaderRoute: typeof AuthenticatedUsuariosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/pendente': {
       id: '/_authenticated/pendente'
       path: '/pendente'
@@ -192,12 +211,14 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCorregedoriaRoute: typeof AuthenticatedCorregedoriaRoute
   AuthenticatedPainelRoute: typeof AuthenticatedPainelRoute
   AuthenticatedPendenteRoute: typeof AuthenticatedPendenteRoute
+  AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCorregedoriaRoute: AuthenticatedCorregedoriaRoute,
   AuthenticatedPainelRoute: AuthenticatedPainelRoute,
   AuthenticatedPendenteRoute: AuthenticatedPendenteRoute,
+  AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

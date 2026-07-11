@@ -1286,11 +1286,36 @@ const ATO_ASSUNTO: Record<"despacho" | "decisao" | "portaria", string> = {
   portaria: "Portaria Inaugural",
 };
 
+const ATO_TIPO: Record<"despacho" | "decisao" | "portaria", "DESPACHO" | "DECISÃO" | "PORTARIA"> = {
+  despacho: "DESPACHO",
+  decisao: "DECISÃO",
+  portaria: "PORTARIA",
+};
+
 const ATO_MARKER: Record<"despacho" | "decisao" | "portaria", string> = {
   despacho: "bg-status-analise",
   decisao: "bg-destructive",
   portaria: "bg-primary",
 };
+
+/**
+ * Renderiza o corpo do ato: HTML sanitizado quando salvo como rich text,
+ * ou texto plano (com links, se portaria) para registros legados.
+ */
+function renderAtoBody(especie: "despacho" | "decisao" | "portaria", teor: string, pdf = false): React.ReactNode {
+  if (isHtmlAto(teor)) {
+    return (
+      <div
+        className={pdf ? "ato-body-pdf" : "ato-body"}
+        dangerouslySetInnerHTML={{ __html: sanitizeAtoHtml(teor) }}
+      />
+    );
+  }
+  if (especie === "portaria") {
+    return <div className="whitespace-pre-wrap">{renderTeorComLinks(teor)}</div>;
+  }
+  return <div className="whitespace-pre-wrap">{teor}</div>;
+}
 
 function TimelineAtoCard({
   especie,
@@ -1309,16 +1334,16 @@ function TimelineAtoCard({
   procedimento: string;
   denunciado: string;
 }) {
-  const ref = useDocumentRef();
+  const pdfRef = useDocumentRef();
   const [gerando, setGerando] = useState(false);
   const assunto = ATO_ASSUNTO[especie];
 
   async function exportarPdf() {
-    if (!ref.current) return;
+    if (!pdfRef.current) return;
     setGerando(true);
     try {
       const fname = `${assunto.replace(/\s+/g, "_")}_${procedimento.replace(/[^\w-]/g, "_")}.pdf`;
-      await exportDocumentToPdf(ref.current, fname);
+      await exportDocumentToPdf(pdfRef.current, fname);
     } finally {
       setGerando(false);
     }
@@ -1326,18 +1351,37 @@ function TimelineAtoCard({
 
   return (
     <div className="space-y-2">
+      {/* Exibição integrada ao sistema (tema escuro) */}
       <DocumentTemplate
-        ref={ref}
+        variant="screen"
         procedimento={procedimento}
         denunciado={denunciado}
-        assunto={assunto}
+        tipo={ATO_TIPO[especie]}
         prolatorNome={prolator}
         prolatorCargo={cargoLabelFull(cargo)}
         data={quando}
         markerClass={ATO_MARKER[especie]}
       >
-        {especie === "portaria" ? renderTeorComLinks(teor) : teor}
+        {renderAtoBody(especie, teor)}
       </DocumentTemplate>
+
+      {/* Versão para PDF, fora da tela, sem alterar o layout */}
+      <div className="pointer-events-none fixed left-[-10000px] top-0" aria-hidden>
+        <DocumentTemplate
+          ref={pdfRef}
+          variant="pdf"
+          procedimento={procedimento}
+          denunciado={denunciado}
+          assunto={assunto}
+          prolatorNome={prolator}
+          prolatorCargo={cargoLabelFull(cargo)}
+          data={quando}
+          markerClass={ATO_MARKER[especie]}
+        >
+          {renderAtoBody(especie, teor, true)}
+        </DocumentTemplate>
+      </div>
+
       <div className="flex justify-end">
         <button
           onClick={exportarPdf}
@@ -1371,7 +1415,7 @@ function VerAtoDialog({
   denunciado: string;
   onClose: () => void;
 }) {
-  const docRef = useDocumentRef();
+  const pdfRef = useDocumentRef();
   const [gerando, setGerando] = useState(false);
 
   const assunto =
@@ -1379,11 +1423,11 @@ function VerAtoDialog({
   const titulo = assunto;
 
   async function baixarPdf() {
-    if (!docRef.current) return;
+    if (!pdfRef.current) return;
     setGerando(true);
     try {
       const fname = `${assunto.replace(/\s+/g, "_")}_${procedimento.replace(/[^\w-]/g, "_")}.pdf`;
-      await exportDocumentToPdf(docRef.current, fname);
+      await exportDocumentToPdf(pdfRef.current, fname);
     } finally {
       setGerando(false);
     }
@@ -1414,17 +1458,36 @@ function VerAtoDialog({
           </div>
         </div>
 
-        <DocumentTemplate
-          ref={docRef}
-          procedimento={procedimento}
-          denunciado={denunciado}
-          assunto={assunto}
-          prolatorNome={prolator}
-          prolatorCargo={cargoLabelFull(cargo)}
-          data={quando}
-        >
-          {especie === "portaria" ? renderTeorComLinks(teor) : teor}
-        </DocumentTemplate>
+        <div className="surface p-5">
+          <DocumentTemplate
+            variant="screen"
+            procedimento={procedimento}
+            denunciado={denunciado}
+            tipo={ATO_TIPO[especie]}
+            prolatorNome={prolator}
+            prolatorCargo={cargoLabelFull(cargo)}
+            data={quando}
+            markerClass={ATO_MARKER[especie]}
+          >
+            {renderAtoBody(especie, teor)}
+          </DocumentTemplate>
+        </div>
+
+        {/* PDF invisível */}
+        <div className="pointer-events-none fixed left-[-10000px] top-0" aria-hidden>
+          <DocumentTemplate
+            ref={pdfRef}
+            variant="pdf"
+            procedimento={procedimento}
+            denunciado={denunciado}
+            assunto={assunto}
+            prolatorNome={prolator}
+            prolatorCargo={cargoLabelFull(cargo)}
+            data={quando}
+          >
+            {renderAtoBody(especie, teor, true)}
+          </DocumentTemplate>
+        </div>
       </div>
     </div>
   );

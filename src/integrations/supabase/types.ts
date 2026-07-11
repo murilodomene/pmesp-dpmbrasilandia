@@ -308,6 +308,7 @@ export type Database = {
     }
     Functions: {
       gerar_protocolo: { Args: never; Returns: string }
+      get_obs_internas: { Args: { _denuncia_id: string }; Returns: string }
       get_user_cargo: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]

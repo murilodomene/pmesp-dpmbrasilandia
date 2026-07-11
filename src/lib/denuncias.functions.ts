@@ -132,12 +132,20 @@ export const getDenuncia = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
+    // Projeta explicitamente as colunas (evita SELECT * porque obs_internas
+    // tem GRANT revogado por segurança).
+    const cols =
+      "id, numero_protocolo, denunciante_nome, denunciante_identificador, denunciante_contato, denunciante_anonimo, ocorrencia_tipo, ocorrencia_local, ocorrencia_data, ocorrencia_hora, relato, info_adicional, anexos, links, status, unidade, obs_denunciante, termo_inicial, acrescimos_dias, interrupcoes_count, created_at, instaurada_em, owner_id";
     const { data: den, error } = await context.supabase
       .from("denuncias")
-      .select("*")
+      .select(cols)
       .eq("id", data.id)
       .single();
     if (error) throw new Error(error.message);
+    // obs_internas só é retornada para staff ativo (função SECURITY DEFINER).
+    const { data: obsInt } = await context.supabase.rpc("get_obs_internas", {
+      _denuncia_id: data.id,
+    });
     const [pols, movs, ois] = await Promise.all([
       context.supabase.from("denuncia_policiais").select("*").eq("denuncia_id", data.id),
       context.supabase
@@ -148,12 +156,13 @@ export const getDenuncia = createServerFn({ method: "GET" })
       context.supabase.from("oitivas").select("*").eq("denuncia_id", data.id).order("created_at", { ascending: false }),
     ]);
     return {
-      denuncia: den,
+      denuncia: { ...den, obs_internas: (obsInt as string | null) ?? null },
       policiais: pols.data ?? [],
       movimentos: movs.data ?? [],
       oitivas: ois.data ?? [],
     };
   });
+
 
 async function getProlator(context: { supabase: ReturnType<typeof publicClient>; userId: string }) {
   const [{ data: prof }, { data: role }] = await Promise.all([

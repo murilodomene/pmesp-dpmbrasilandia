@@ -12,10 +12,12 @@ export function Header() {
   const { session, loading } = useSession();
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [cargo, setCargo] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) {
       setProfile(null);
+      setCargo(null);
       return;
     }
     supabase
@@ -24,6 +26,12 @@ export function Header() {
       .eq("id", session.user.id)
       .maybeSingle()
       .then(({ data }) => setProfile(data as Profile | null));
+    supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", session.user.id)
+      .maybeSingle()
+      .then(({ data }) => setCargo((data as { role: string } | null)?.role ?? null));
   }, [session]);
 
   async function signOut() {
@@ -32,6 +40,8 @@ export function Header() {
   }
 
   const ativo = profile?.status === "ativo";
+  const isCidadao = cargo === "cidadao";
+  const isStaff = ativo && cargo && !isCidadao;
 
   return (
     <header className="border-b border-border bg-surface/60 backdrop-blur">
@@ -52,7 +62,8 @@ export function Header() {
           <NavLink to="/">Início</NavLink>
           <NavLink to="/denunciar">Fazer Denúncia</NavLink>
           <NavLink to="/consultar">Consultar</NavLink>
-          {ativo && (
+          {isCidadao && <NavLink to="/minhas-denuncias">Minhas denúncias</NavLink>}
+          {isStaff && (
             <>
               <NavLink to="/painel">Painel Interno</NavLink>
               <NavLink to="/corregedoria">Corregedoria</NavLink>

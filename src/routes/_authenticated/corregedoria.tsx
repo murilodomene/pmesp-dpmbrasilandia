@@ -695,7 +695,36 @@ function labelEspecie(e: string): string {
         ? "IPC"
         : e === "retificacao"
           ? "Retificação"
-          : "Status";
+          : e === "portaria"
+            ? "Portaria Inaugural"
+            : "Status";
+}
+
+// Converte "art. 78", "arts. 80", "artigo 12" em links para o Manual.
+function renderTeorComLinks(teor: string): React.ReactNode {
+  const parts: React.ReactNode[] = [];
+  const re = /(art(?:s|igos?)?\.?)\s*(\d+)/gi;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  let key = 0;
+  while ((m = re.exec(teor)) !== null) {
+    if (m.index > last) parts.push(teor.slice(last, m.index));
+    const num = m[2];
+    parts.push(
+      <a
+        key={key++}
+        href={`/documentos?open=manual#art-${num}`}
+        target="_blank"
+        rel="noreferrer"
+        className="text-primary underline decoration-dotted underline-offset-2 hover:decoration-solid"
+      >
+        {m[0]}
+      </a>,
+    );
+    last = m.index + m[0].length;
+  }
+  if (last < teor.length) parts.push(teor.slice(last));
+  return parts;
 }
 
 function cargoLabel(c: string): string {

@@ -70,13 +70,6 @@ function Toolbar({ editor }: { editor: Editor }) {
 
 /** Sanitiza HTML permitindo apenas formatação básica de texto. */
 export function sanitizeAtoHtml(html: string): string {
-  if (typeof window === "undefined") {
-    // SSR: retorna string vazia; conteúdo será re-renderizado no cliente.
-    return "";
-  }
-  // Dynamic require to keep SSR safe.
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const DOMPurify = require("dompurify");
   return DOMPurify.sanitize(html, {
     ALLOWED_TAGS: ["p", "br", "strong", "b", "em", "i", "u", "span", "a"],
     ALLOWED_ATTR: ["style", "href", "target", "rel"],

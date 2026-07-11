@@ -347,7 +347,9 @@ function DocumentosPage() {
               )}
             </header>
 
-            {editando ? (
+            {isHierarquia ? (
+              <HierarquiaQuadro cargo={cargo} />
+            ) : editando ? (
               <div className="p-6">
                 <p className="mb-2 text-xs text-muted-foreground">
                   Suporta Markdown: <code>#</code> títulos, <code>**negrito**</code>, <code>*itálico*</code>, listas com <code>-</code>. Referências a "Art. N" viram âncoras.

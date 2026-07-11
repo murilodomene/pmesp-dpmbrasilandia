@@ -18,6 +18,30 @@ async function assertDelegado(context: { supabase: any; userId: string }) {
   }
 }
 
+export const excluirUsuario = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({ user_id: z.string().uuid() }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    await assertDelegado(context as never);
+    if (data.user_id === context.userId) {
+      throw new Error("Você não pode excluir a si mesmo.");
+    }
+    const { data: alvo } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", data.user_id)
+      .maybeSingle();
+    if (alvo && (DELEGADO_ROLES as readonly string[]).includes(alvo.role)) {
+      throw new Error("Delegados não podem ser excluídos por esta ação.");
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.user_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 export const getSessionInfo = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
-import { Search, Edit3, ShieldAlert, UserX, UserCheck } from "lucide-react";
+import { Search, Edit3, ShieldAlert, UserX, UserCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,7 @@ import {
   listUsuarios,
   alterarStatusUsuario,
   editarUsuarioPublico,
+  excluirUsuario,
   getSessionInfo,
 } from "@/lib/usuarios.functions";
 
@@ -84,6 +85,7 @@ function UsuariosPage() {
 
   const [editando, setEditando] = useState<Usuario | null>(null);
   const [confirmando, setConfirmando] = useState<Usuario | null>(null);
+  const [excluindo, setExcluindo] = useState<Usuario | null>(null);
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -224,6 +226,13 @@ function UsuariosPage() {
                               <><UserCheck className="mr-1 h-3.5 w-3.5" /> Ativar</>
                             )}
                           </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => setExcluindo(u)}
+                          >
+                            <Trash2 className="mr-1 h-3.5 w-3.5" /> Excluir
+                          </Button>
                         </div>
                       ) : (
                         <span className="text-xs text-muted-foreground">Não editável</span>
@@ -239,6 +248,7 @@ function UsuariosPage() {
 
       <EditarModal usuario={editando} onClose={() => setEditando(null)} />
       <StatusModal usuario={confirmando} onClose={() => setConfirmando(null)} />
+      <ExcluirModal usuario={excluindo} onClose={() => setExcluindo(null)} />
     </div>
   );
 }
@@ -358,4 +368,40 @@ function useMemoInit(dep: unknown, fn: () => void) {
     fn();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dep]);
+}
+
+function ExcluirModal({ usuario, onClose }: { usuario: Usuario | null; onClose: () => void }) {
+  const qc = useQueryClient();
+  const excluirFn = useServerFn(excluirUsuario);
+
+  const m = useMutation({
+    mutationFn: () => excluirFn({ data: { user_id: usuario!.id } }),
+    onSuccess: () => {
+      toast.success("Usuário excluído permanentemente.");
+      qc.invalidateQueries({ queryKey: ["usuarios"] });
+      onClose();
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro ao excluir."),
+  });
+
+  return (
+    <Dialog open={!!usuario} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Excluir usuário</DialogTitle>
+          <DialogDescription>
+            Esta ação é <strong>permanente</strong>. O cadastro de{" "}
+            <strong>{usuario?.nome}</strong> será removido do banco de dados junto com
+            seus dados de autenticação. Deseja continuar?
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button variant="destructive" onClick={() => m.mutate()} disabled={m.isPending}>
+            {m.isPending ? "Excluindo…" : "Excluir definitivamente"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }

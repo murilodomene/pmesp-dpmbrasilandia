@@ -70,7 +70,8 @@ function DenunciarPage() {
     const links = linksTxt
       .split("\n")
       .map((s) => s.trim())
-      .filter((s) => s.length > 0);
+      .filter((s) => s.length > 0)
+      .map((s) => (/^https?:\/\//i.test(s) ? s : `https://${s}`));
     mut.mutate({
       denunciante_anonimo: anonimo,
       denunciante_nome: form.denunciante_nome || null,

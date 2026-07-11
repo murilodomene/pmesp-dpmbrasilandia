@@ -109,6 +109,18 @@ export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps
             </div>
           </header>
 
+          {tipo && (
+            <div className="mt-3 text-center">
+              <div className="font-serif text-[15px] font-bold tracking-[0.25em] text-gray-900">
+                {tipo}
+              </div>
+              {subtitulo && (
+                <div className="mt-0.5 text-[10px] italic text-gray-600">{subtitulo}</div>
+              )}
+            </div>
+          )}
+
+
           <section className="mt-4 grid gap-2 text-[12px] sm:text-[13px]">
             {campos ? (
               campos.map((c) => (

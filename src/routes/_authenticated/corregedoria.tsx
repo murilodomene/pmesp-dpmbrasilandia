@@ -790,6 +790,64 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 </li>
               );
             }
+            if (isIpc) {
+              return (
+                <li key={m.id} className={`flex gap-3 ${canceladoEm ? "opacity-60" : ""}`}>
+                  <MovMarker especie={m.especie as string} />
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span className="font-medium uppercase tracking-wider">
+                        {labelEspecie(m.especie as string)}
+                      </span>
+                      <span className="rounded-full bg-status-investigacao/25 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-status-investigacao-fg">
+                        Decisão final
+                      </span>
+                      {canceladoBadge}
+                      <span
+                        className={`rounded-full px-2 py-0.5 ${
+                          m.ipc_publicado
+                            ? "bg-primary/20 text-primary"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {m.ipc_publicado ? "Publicado ao denunciante" : "Não publicado"}
+                      </span>
+                      <span className="ml-auto text-muted-foreground tabular">
+                        {new Date(m.criado_em).toLocaleString("pt-BR")}
+                      </span>
+                      {btnCancelar}
+                    </div>
+                    <div className={canceladoEm ? "line-through decoration-destructive/60" : ""}>
+                      <TimelineIpcCard
+                        teor={m.teor}
+                        quando={m.criado_em}
+                        prolator={m.prolator_nome}
+                        cargo={m.prolator_cargo as string}
+                        unidade={denuncia.unidade || "—"}
+                        procedimento={denuncia.numero_protocolo}
+                        identificacao={
+                          policiais.length
+                            ? policiais
+                                .map((p) => `${p.nome}${p.rg_funcional ? ` — ${p.rg_funcional}` : ""}`)
+                                .join("; ")
+                            : "Não identificado"
+                        }
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => mPublicar.mutate({ id: m.id, publicado: !m.ipc_publicado })}
+                        disabled={mPublicar.isPending}
+                        className="rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground hover:bg-surface-2 disabled:opacity-50"
+                      >
+                        {m.ipc_publicado ? "Despublicar" : "Publicar para o denunciante"}
+                      </button>
+                    </div>
+                    {canceladoFooter}
+                  </div>
+                </li>
+              );
+            }
             return (
               <li key={m.id} className={`flex gap-3 ${canceladoEm ? "opacity-60" : ""}`}>
                 <MovMarker especie={m.especie as string} />
@@ -809,17 +867,6 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                         +30 dias
                       </span>
                     )}
-                    {m.especie === "ipc" && (
-                      <span
-                        className={`rounded-full px-2 py-0.5 ${
-                          m.ipc_publicado
-                            ? "bg-primary/20 text-primary"
-                            : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {m.ipc_publicado ? "Publicado ao denunciante" : "Não publicado"}
-                      </span>
-                    )}
                     <span className="ml-auto text-muted-foreground tabular">
                       {new Date(m.criado_em).toLocaleString("pt-BR")}
                     </span>
@@ -836,15 +883,6 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                       {m.prolator_nome} · {cargoLabel(m.prolator_cargo as string)}
                     </span>
                     <div className="flex items-center gap-2">
-                      {m.especie === "ipc" && (
-                        <button
-                          onClick={() => mPublicar.mutate({ id: m.id, publicado: !m.ipc_publicado })}
-                          disabled={mPublicar.isPending}
-                          className="rounded-md border border-border px-2 py-1 hover:bg-surface-2 disabled:opacity-50"
-                        >
-                          {m.ipc_publicado ? "Despublicar" : "Publicar para o denunciante"}
-                        </button>
-                      )}
                       {btnCancelar}
                     </div>
                   </div>
@@ -852,6 +890,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 </div>
               </li>
             );
+
           })}
         </ul>
       </div>

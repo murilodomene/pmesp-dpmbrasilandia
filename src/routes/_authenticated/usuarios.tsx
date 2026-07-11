@@ -369,3 +369,39 @@ function useMemoInit(dep: unknown, fn: () => void) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dep]);
 }
+
+function ExcluirModal({ usuario, onClose }: { usuario: Usuario | null; onClose: () => void }) {
+  const qc = useQueryClient();
+  const excluirFn = useServerFn(excluirUsuario);
+
+  const m = useMutation({
+    mutationFn: () => excluirFn({ data: { user_id: usuario!.id } }),
+    onSuccess: () => {
+      toast.success("Usuário excluído permanentemente.");
+      qc.invalidateQueries({ queryKey: ["usuarios"] });
+      onClose();
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro ao excluir."),
+  });
+
+  return (
+    <Dialog open={!!usuario} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Excluir usuário</DialogTitle>
+          <DialogDescription>
+            Esta ação é <strong>permanente</strong>. O cadastro de{" "}
+            <strong>{usuario?.nome}</strong> será removido do banco de dados junto com
+            seus dados de autenticação. Deseja continuar?
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button variant="destructive" onClick={() => m.mutate()} disabled={m.isPending}>
+            {m.isPending ? "Excluindo…" : "Excluir definitivamente"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

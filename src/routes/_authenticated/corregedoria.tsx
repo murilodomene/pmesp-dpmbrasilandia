@@ -18,9 +18,11 @@ import {
   desentranharOitiva,
   atualizarObservacoes,
   atualizarUnidade,
+  retificarDenunciado,
 } from "@/lib/denuncias.functions";
+
 import { getSessionInfo } from "@/lib/usuarios.functions";
-import { Gavel, FileText, Scale, Clock, ExternalLink, X, Users } from "lucide-react";
+import { Gavel, FileText, Scale, Clock, ExternalLink, X, Users, Pencil } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/corregedoria")({
   validateSearch: z.object({ id: z.string().uuid().optional() }),
@@ -200,7 +202,7 @@ function Corregedoria() {
           </aside>
 
           {/* Autuação direita */}
-          <section>{selecionada ? <Autuacao id={selecionada} /> : <VazioAutuacao />}</section>
+          <section>{selecionada ? <Autuacao id={selecionada} cargo={session?.cargo ?? null} /> : <VazioAutuacao />}</section>
         </div>
       </div>
     </div>
@@ -215,7 +217,7 @@ function VazioAutuacao() {
   );
 }
 
-function Autuacao({ id }: { id: string }) {
+function Autuacao({ id, cargo }: { id: string; cargo: string | null }) {
   const qc = useQueryClient();
   const getFn = useServerFn(getDenuncia);
   const { data, isLoading } = useQuery({
@@ -223,13 +225,17 @@ function Autuacao({ id }: { id: string }) {
     queryFn: () => getFn({ data: { id } }),
   });
 
+  const podeRetificar = cargo === "delegado_geral" || cargo === "delegado_corregedor";
+
   const [dialog, setDialog] = useState<
     | { kind: "status" }
     | { kind: "receber" }
     | { kind: "prorrogar" }
     | { kind: "oitiva" }
+    | { kind: "retificar"; policial: { id: string; nome: string; rg_funcional: string | null } }
     | null
   >(null);
+
 
   const lancarFn = useServerFn(lancarMovimento);
   const [especie, setEspecie] = useState<"despacho" | "decisao" | "ipc">("despacho");
@@ -310,14 +316,35 @@ function Autuacao({ id }: { id: string }) {
                 : denuncia.denunciante_nome || "Não informado"}
             </Row>
             <Row k="Policiais">
-              {policiais.map((p) => (
-                <span key={p.id} className="mr-3">
-                  {p.nome}
-                  {p.rg_funcional && <span className="text-muted-foreground"> · {p.rg_funcional}</span>}
-                  {p.unidade && <span className="text-muted-foreground"> · {p.unidade}</span>}
-                </span>
-              ))}
+              <div className="flex flex-col gap-1">
+                {policiais.map((p) => (
+                  <div key={p.id} className="flex items-center gap-2">
+                    <span>
+                      {p.nome}
+                      {p.rg_funcional && <span className="text-muted-foreground"> · {p.rg_funcional}</span>}
+                      {p.unidade && <span className="text-muted-foreground"> · {p.unidade}</span>}
+                    </span>
+                    {podeRetificar && (
+                      <button
+                        type="button"
+                        title="Retificar denunciado"
+                        aria-label={`Retificar ${p.nome}`}
+                        onClick={() =>
+                          setDialog({
+                            kind: "retificar",
+                            policial: { id: p.id, nome: p.nome, rg_funcional: p.rg_funcional ?? null },
+                          })
+                        }
+                        className="rounded-md border border-border p-1 text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
             </Row>
+
             <Row k="Unidade">
               <select
                 value={denuncia.unidade ?? ""}
@@ -578,6 +605,14 @@ function Autuacao({ id }: { id: string }) {
       {dialog?.kind === "receber" && <ReceberDialog id={id} onClose={() => setDialog(null)} />}
       {dialog?.kind === "prorrogar" && <ProrrogarDialog id={id} onClose={() => setDialog(null)} />}
       {dialog?.kind === "oitiva" && <OitivaDialog id={id} onClose={() => setDialog(null)} />}
+      {dialog?.kind === "retificar" && (
+        <RetificarDialog
+          denunciaId={id}
+          policial={dialog.policial}
+          onClose={() => setDialog(null)}
+        />
+      )}
+
 
       <style>{`.input{background:var(--input);border:1px solid var(--border);border-radius:6px;padding:.55rem .7rem;font-size:.9rem;color:var(--foreground);width:100%}`}</style>
     </div>
@@ -594,8 +629,17 @@ function Row({ k, children }: { k: string; children: React.ReactNode }) {
 }
 
 function labelEspecie(e: string): string {
-  return e === "despacho" ? "Despacho" : e === "decisao" ? "Decisão" : e === "ipc" ? "IPC" : "Status";
+  return e === "despacho"
+    ? "Despacho"
+    : e === "decisao"
+      ? "Decisão"
+      : e === "ipc"
+        ? "IPC"
+        : e === "retificacao"
+          ? "Retificação"
+          : "Status";
 }
+
 function cargoLabel(c: string): string {
   return c === "delegado_geral"
     ? "Delegado Geral"
@@ -610,8 +654,11 @@ function MovMarker({ especie }: { especie: string }) {
     decisao: "bg-destructive text-destructive-foreground",
     ipc: "bg-status-investigacao text-status-investigacao-fg",
     status: "bg-status-aguardando text-status-aguardando-fg",
+    retificacao: "bg-status-aguardando text-status-aguardando-fg",
   };
-  const Icon = especie === "decisao" ? Scale : especie === "ipc" ? Gavel : FileText;
+  const Icon =
+    especie === "decisao" ? Scale : especie === "ipc" ? Gavel : especie === "retificacao" ? Pencil : FileText;
+
   return (
     <div className={`grid h-8 w-8 flex-shrink-0 place-items-center rounded-full ${style[especie]}`}>
       <Icon className="h-4 w-4" />
@@ -837,3 +884,78 @@ function OitivaDialog({ id, onClose }: { id: string; onClose: () => void }) {
     </Modal>
   );
 }
+
+function RetificarDialog({
+  denunciaId,
+  policial,
+  onClose,
+}: {
+  denunciaId: string;
+  policial: { id: string; nome: string; rg_funcional: string | null };
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const fn = useServerFn(retificarDenunciado);
+  const [nome, setNome] = useState(policial.nome);
+  const [mat, setMat] = useState(policial.rg_funcional ?? "");
+  const [motivo, setMotivo] = useState("");
+  const m = useMutation({
+    mutationFn: () =>
+      fn({
+        data: {
+          policial_id: policial.id,
+          nome,
+          rg_funcional: mat || null,
+          motivo: motivo || null,
+        },
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["denuncia", denunciaId] });
+      qc.invalidateQueries({ queryKey: ["denuncias"] });
+      onClose();
+    },
+  });
+  const semMudanca =
+    nome.trim() === policial.nome && (mat.trim() || null) === (policial.rg_funcional ?? null);
+  return (
+    <Modal title="Retificar denunciado" onClose={onClose}>
+      <label className="grid gap-1.5">
+        <span className="text-xs uppercase tracking-wider text-muted-foreground">Nome</span>
+        <input className="input" value={nome} onChange={(e) => setNome(e.target.value)} />
+      </label>
+      <label className="mt-3 grid gap-1.5">
+        <span className="text-xs uppercase tracking-wider text-muted-foreground">Matrícula</span>
+        <input className="input" value={mat} onChange={(e) => setMat(e.target.value)} />
+      </label>
+      <label className="mt-3 grid gap-1.5">
+        <span className="text-xs uppercase tracking-wider text-muted-foreground">
+          Motivo (opcional)
+        </span>
+        <textarea
+          rows={3}
+          className="input"
+          value={motivo}
+          onChange={(e) => setMotivo(e.target.value)}
+        />
+      </label>
+      {m.isError && (
+        <div className="mt-3 rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive-foreground">
+          {(m.error as Error)?.message || "Não foi possível retificar."}
+        </div>
+      )}
+      <div className="mt-4 flex justify-end gap-2">
+        <button onClick={onClose} className="rounded-md border border-border px-4 py-2 text-sm">
+          Cancelar
+        </button>
+        <button
+          onClick={() => m.mutate()}
+          disabled={!nome.trim() || semMudanca || m.isPending}
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+        >
+          Confirmar retificação
+        </button>
+      </div>
+    </Modal>
+  );
+}
+

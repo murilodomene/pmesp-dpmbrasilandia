@@ -304,7 +304,12 @@ export type Database = {
         | "em_investigacao"
         | "concluida"
         | "arquivada"
-      movimento_especie: "despacho" | "decisao" | "ipc" | "status"
+      movimento_especie:
+        | "despacho"
+        | "decisao"
+        | "ipc"
+        | "status"
+        | "retificacao"
       profile_status: "pendente" | "ativo" | "inativo"
       unidade_pc:
         | "DEIC"
@@ -452,7 +457,13 @@ export const Constants = {
         "concluida",
         "arquivada",
       ],
-      movimento_especie: ["despacho", "decisao", "ipc", "status"],
+      movimento_especie: [
+        "despacho",
+        "decisao",
+        "ipc",
+        "status",
+        "retificacao",
+      ],
       profile_status: ["pendente", "ativo", "inativo"],
       unidade_pc: [
         "DEIC",

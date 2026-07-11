@@ -36,6 +36,11 @@ interface Policial {
 
 function DenunciarPage() {
   const submitFn = useServerFn(submitDenuncia);
+  const submitCidadaoFn = useServerFn(submitDenunciaCidadao);
+  const [logado, setLogado] = useState(false);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setLogado(!!data.user));
+  }, []);
   const [anonimo, setAnonimo] = useState(false);
   const [form, setForm] = useState({
     denunciante_nome: "",

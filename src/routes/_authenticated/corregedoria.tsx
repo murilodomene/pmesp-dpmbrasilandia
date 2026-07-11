@@ -703,6 +703,23 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 </p>
                 <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
                   <span>{m.prolator_nome} · {cargoLabel(m.prolator_cargo as string)}</span>
+                  {(m.especie === "despacho" || m.especie === "decisao" || m.especie === "portaria") && (
+                    <button
+                      onClick={() =>
+                        setDialog({
+                          kind: "verAto",
+                          especie: m.especie as "despacho" | "decisao" | "portaria",
+                          teor: m.teor,
+                          quando: m.criado_em,
+                          prolator: m.prolator_nome,
+                          cargo: m.prolator_cargo as string,
+                        })
+                      }
+                      className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 hover:bg-surface-2"
+                    >
+                      <Eye className="h-3 w-3" /> Ver em papel timbrado
+                    </button>
+                  )}
                   {m.especie === "ipc" && (
                     <button
                       onClick={() => mPublicar.mutate({ id: m.id, publicado: !m.ipc_publicado })}

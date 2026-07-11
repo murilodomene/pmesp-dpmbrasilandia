@@ -884,3 +884,78 @@ function OitivaDialog({ id, onClose }: { id: string; onClose: () => void }) {
     </Modal>
   );
 }
+
+function RetificarDialog({
+  denunciaId,
+  policial,
+  onClose,
+}: {
+  denunciaId: string;
+  policial: { id: string; nome: string; rg_funcional: string | null };
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const fn = useServerFn(retificarDenunciado);
+  const [nome, setNome] = useState(policial.nome);
+  const [mat, setMat] = useState(policial.rg_funcional ?? "");
+  const [motivo, setMotivo] = useState("");
+  const m = useMutation({
+    mutationFn: () =>
+      fn({
+        data: {
+          policial_id: policial.id,
+          nome,
+          rg_funcional: mat || null,
+          motivo: motivo || null,
+        },
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["denuncia", denunciaId] });
+      qc.invalidateQueries({ queryKey: ["denuncias"] });
+      onClose();
+    },
+  });
+  const semMudanca =
+    nome.trim() === policial.nome && (mat.trim() || null) === (policial.rg_funcional ?? null);
+  return (
+    <Modal title="Retificar denunciado" onClose={onClose}>
+      <label className="grid gap-1.5">
+        <span className="text-xs uppercase tracking-wider text-muted-foreground">Nome</span>
+        <input className="input" value={nome} onChange={(e) => setNome(e.target.value)} />
+      </label>
+      <label className="mt-3 grid gap-1.5">
+        <span className="text-xs uppercase tracking-wider text-muted-foreground">Matrícula</span>
+        <input className="input" value={mat} onChange={(e) => setMat(e.target.value)} />
+      </label>
+      <label className="mt-3 grid gap-1.5">
+        <span className="text-xs uppercase tracking-wider text-muted-foreground">
+          Motivo (opcional)
+        </span>
+        <textarea
+          rows={3}
+          className="input"
+          value={motivo}
+          onChange={(e) => setMotivo(e.target.value)}
+        />
+      </label>
+      {m.isError && (
+        <div className="mt-3 rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive-foreground">
+          {(m.error as Error)?.message || "Não foi possível retificar."}
+        </div>
+      )}
+      <div className="mt-4 flex justify-end gap-2">
+        <button onClick={onClose} className="rounded-md border border-border px-4 py-2 text-sm">
+          Cancelar
+        </button>
+        <button
+          onClick={() => m.mutate()}
+          disabled={!nome.trim() || semMudanca || m.isPending}
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+        >
+          Confirmar retificação
+        </button>
+      </div>
+    </Modal>
+  );
+}
+

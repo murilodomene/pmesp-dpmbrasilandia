@@ -281,11 +281,10 @@ export function HierarquiaQuadro({ cargo }: { cargo: string | null }) {
                   )}
                 </div>
 
-                {list.length === 0 ? (
-                  <p className="px-1 py-6 text-xs italic text-muted-foreground">
-                    Nenhum membro registrado neste grupo.
-                  </p>
-                ) : (
+                <div className="-mx-6 overflow-x-auto px-6 sm:mx-0 sm:px-0">
+                  <div className="rounded-lg border border-border bg-background/40">
+                    <table className="w-full min-w-[1100px] table-fixed border-collapse text-sm">
+                      {"__separator__" && null}
                   <div className="-mx-6 overflow-x-auto px-6 sm:mx-0 sm:px-0">
                     <div className="rounded-lg border border-border bg-background/40">
                       <table className="w-full min-w-[1100px] table-fixed border-collapse text-sm">

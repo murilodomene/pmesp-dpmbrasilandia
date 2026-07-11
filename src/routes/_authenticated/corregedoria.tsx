@@ -692,7 +692,13 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
           {movimentos.length === 0 && (
             <li className="text-xs text-muted-foreground">Nenhum movimento ainda.</li>
           )}
-          {movimentos.map((mRaw) => {
+          {/* Numeração de Eventos por procedimento (permanente, por ordem de criação).
+              movimentos vem ordenado DESC por criado_em → Evento nº = total - índice. */}
+
+          {movimentos.map((mRaw, idx) => {
+            const eventoNo = movimentos.length - idx;
+            const eventoLabel = `Evento nº ${String(eventoNo).padStart(2, "0")}`;
+
             const m = mRaw as typeof mRaw & {
               cancelado_em?: string | null;
               cancelado_por_nome?: string | null;
@@ -749,9 +755,13 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                   <MovMarker especie={m.especie as string} />
                   <div className="min-w-0 flex-1 space-y-2">
                     <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span className="rounded-md border border-primary/40 bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-primary" title="Número permanente do evento no procedimento">
+                        {eventoLabel}
+                      </span>
                       <span className="font-medium uppercase tracking-wider">
                         {labelEspecie(m.especie as string)}
                       </span>
+
                       {canceladoBadge}
                       {m.interrompe && (
                         <span className="rounded-full bg-destructive/20 px-2 py-0.5 text-destructive-foreground">
@@ -796,9 +806,13 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                   <MovMarker especie={m.especie as string} />
                   <div className="min-w-0 flex-1 space-y-2">
                     <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span className="rounded-md border border-primary/40 bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-primary" title="Número permanente do evento no procedimento">
+                        {eventoLabel}
+                      </span>
                       <span className="font-medium uppercase tracking-wider">
                         {labelEspecie(m.especie as string)}
                       </span>
+
                       <span className="rounded-full bg-status-investigacao/25 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-status-investigacao-fg">
                         Decisão final
                       </span>
@@ -853,9 +867,13 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 <MovMarker especie={m.especie as string} />
                 <div className="flex-1 rounded-md border border-border/60 p-3">
                   <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <span className="rounded-md border border-primary/40 bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-primary" title="Número permanente do evento no procedimento">
+                      {eventoLabel}
+                    </span>
                     <span className="font-medium uppercase tracking-wider">
                       {labelEspecie(m.especie as string)}
                     </span>
+
                     {canceladoBadge}
                     {m.interrompe && (
                       <span className="rounded-full bg-destructive/20 px-2 py-0.5 text-destructive-foreground">

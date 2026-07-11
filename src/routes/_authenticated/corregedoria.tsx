@@ -298,7 +298,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
             nome: p.nome,
             rg_funcional: p.rg_funcional ?? null,
           })),
-          relato: teor,
+          relato: sanitizeAtoHtml(teor),
         });
       } else {
         teorFinal = sanitizeAtoHtml(teor);

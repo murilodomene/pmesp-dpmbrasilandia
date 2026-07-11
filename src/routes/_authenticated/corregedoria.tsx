@@ -255,6 +255,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     | { kind: "oitiva" }
     | { kind: "retificar"; policial: { id: string; nome: string; rg_funcional: string | null } }
     | { kind: "excluir" }
+    | { kind: "cancelarMov"; movimento_id: string; resumo: string }
     | null
   >(null);
 

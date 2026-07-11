@@ -20,7 +20,12 @@ import {
   retificarDenunciado,
   lavrarPortaria,
   alternarPublicacaoIpc,
+  listMembrosMp,
+  listAcessosMp,
+  concederAcessoMp,
+  revogarAcessoMp,
 } from "@/lib/denuncias.functions";
+
 
 import { getSessionInfo } from "@/lib/usuarios.functions";
 import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye } from "lucide-react";

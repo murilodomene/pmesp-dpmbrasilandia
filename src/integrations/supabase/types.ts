@@ -484,6 +484,8 @@ export type Database = {
         | "em_investigacao"
         | "concluida"
         | "arquivada"
+        | "ag_decurso_prazo"
+        | "transito_julgado"
       movimento_especie:
         | "despacho"
         | "decisao"
@@ -492,6 +494,8 @@ export type Database = {
         | "retificacao"
         | "portaria"
         | "cancelamento"
+        | "certidao"
+        | "evento"
       profile_status: "pendente" | "ativo" | "inativo"
       unidade_pc:
         | "DEIC"
@@ -644,6 +648,8 @@ export const Constants = {
         "em_investigacao",
         "concluida",
         "arquivada",
+        "ag_decurso_prazo",
+        "transito_julgado",
       ],
       movimento_especie: [
         "despacho",
@@ -653,6 +659,8 @@ export const Constants = {
         "retificacao",
         "portaria",
         "cancelamento",
+        "certidao",
+        "evento",
       ],
       profile_status: ["pendente", "ativo", "inativo"],
       unidade_pc: [

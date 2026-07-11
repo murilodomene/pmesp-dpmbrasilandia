@@ -302,6 +302,16 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
       publicarFn({ data: { movimento_id: args.id, publicado: args.publicado } }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["denuncia", id] }),
   });
+  const excluirFn = useServerFn(excluirDenuncia);
+  const mExcluir = useMutation({
+    mutationFn: (protocolo: string) => excluirFn({ data: { id, confirmar_protocolo: protocolo } }),
+    onSuccess: () => {
+      setDialog(null);
+      qc.invalidateQueries({ queryKey: ["denuncias"] });
+      qc.removeQueries({ queryKey: ["denuncia", id] });
+      onDeleted?.();
+    },
+  });
 
   if (isLoading || !data) {
     return <div className="surface p-8 text-sm text-muted-foreground">Carregando autos...</div>;

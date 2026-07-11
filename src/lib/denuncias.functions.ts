@@ -225,13 +225,14 @@ export const alterarStatus = createServerFn({ method: "POST" })
       .single();
     if (!atual) throw new Error("Denúncia não encontrada.");
 
-    const patch: Record<string, unknown> = { status: data.novo_status };
+    const patch: {
+      status: typeof data.novo_status;
+      concluido_em: string | null;
+      certidao_gerada?: boolean;
+    } = { status: data.novo_status, concluido_em: null };
     if (data.novo_status === "ag_decurso_prazo") {
       patch.concluido_em = new Date().toISOString();
       patch.certidao_gerada = false;
-    } else {
-      // qualquer outra transição limpa o marcador de conclusão
-      patch.concluido_em = null;
     }
 
     const { error: updErr } = await context.supabase

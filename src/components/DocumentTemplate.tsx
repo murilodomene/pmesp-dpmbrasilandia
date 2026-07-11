@@ -218,14 +218,24 @@ export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps
         {/* Bloco de identificação */}
         <dl className="grid gap-1.5 py-3 text-xs sm:text-sm">
           {campos ? (
-            campos.map((c) => (
-              <div key={c.label} className="flex flex-wrap gap-x-2">
-                <dt className="font-semibold uppercase tracking-wider text-primary">
-                  {c.label}:
-                </dt>
-                <dd className="min-w-0 flex-1 text-foreground">{c.valor}</dd>
-              </div>
-            ))
+            campos.map((c) =>
+              c.block ? (
+                <div key={c.label}>
+                  <dt className="font-semibold uppercase tracking-wider text-primary">
+                    {c.label}:
+                  </dt>
+                  <dd className="mt-1 text-foreground ato-body">{c.valor}</dd>
+                </div>
+              ) : (
+                <div key={c.label} className="flex flex-wrap gap-x-2">
+                  <dt className="font-semibold uppercase tracking-wider text-primary">
+                    {c.label}:
+                  </dt>
+                  <dd className="min-w-0 flex-1 text-foreground">{c.valor}</dd>
+                </div>
+              ),
+            )
+
           ) : (
             <>
               <div className="flex flex-wrap gap-x-2">

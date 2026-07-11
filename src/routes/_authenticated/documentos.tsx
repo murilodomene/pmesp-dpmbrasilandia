@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { Header } from "@/components/Header";
-import { Search, Save, Pencil, X, FileText } from "lucide-react";
+import { Search, Save, Pencil, X, FileText, ChevronUp, ChevronDown } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/documentos")({
   component: DocumentosPage,

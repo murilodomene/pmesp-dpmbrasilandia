@@ -9,6 +9,8 @@ import { getSessionInfo } from "@/lib/usuarios.functions";
 import { supabase } from "@/integrations/supabase/client";
 import type { DenunciaStatus } from "@/lib/prescricao";
 import { FileText } from "lucide-react";
+import { isHtmlAto, sanitizeAtoHtml } from "@/components/RichTextEditor";
+
 
 export const Route = createFileRoute("/_authenticated/minhas-denuncias")({
   beforeLoad: async () => {

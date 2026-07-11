@@ -276,15 +276,20 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
 
   const mLancar = useMutation({
     mutationFn: () => {
-      const teorFinal = especie === "ipc" ? montarTeorIpc({
-        unidade: (data?.denuncia.unidade as string | null) ?? null,
-        protocolo: data?.denuncia.numero_protocolo ?? "",
-        policiais: (data?.policiais ?? []).map((p) => ({
-          nome: p.nome,
-          rg_funcional: p.rg_funcional ?? null,
-        })),
-        relato: teor,
-      }) : teor;
+      let teorFinal: string;
+      if (especie === "ipc") {
+        teorFinal = montarTeorIpc({
+          unidade: (data?.denuncia.unidade as string | null) ?? null,
+          protocolo: data?.denuncia.numero_protocolo ?? "",
+          policiais: (data?.policiais ?? []).map((p) => ({
+            nome: p.nome,
+            rg_funcional: p.rg_funcional ?? null,
+          })),
+          relato: teor,
+        });
+      } else {
+        teorFinal = sanitizeAtoHtml(teor);
+      }
       return lancarFn({ data: { denuncia_id: id, especie, teor: teorFinal } });
     },
     onSuccess: () => {

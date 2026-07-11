@@ -53,9 +53,9 @@ function badgeCls(kind: "status" | "patente" | "transferido" | "cargo", value: s
     "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset whitespace-nowrap";
   if (kind === "status") {
     if (value === "Ativo")
-      return `${base} bg-emerald-500/15 text-emerald-300 ring-emerald-500/30`;
+      return `${base} bg-emerald-500/20 text-emerald-300 ring-emerald-500/40`;
     if (value === "Inativo")
-      return `${base} bg-rose-500/15 text-rose-300 ring-rose-500/30`;
+      return `${base} bg-transparent text-red-400 ring-red-500/40 font-semibold uppercase`;
     return `${base} bg-muted text-muted-foreground ring-border`;
   }
   if (kind === "patente") {
@@ -97,15 +97,11 @@ function badgeCls(kind: "status" | "patente" | "transferido" | "cargo", value: s
 const COLS: { key: keyof Membro; label: string; badge?: "status" | "patente" | "transferido" | "cargo"; options?: string[] }[] = [
   { key: "nome", label: "Nome" },
   { key: "rg", label: "RG" },
-  { key: "edital", label: "Edital" },
   { key: "patente", label: "Patente", badge: "patente", options: PATENTES },
-  { key: "transferido", label: "Transferido", badge: "transferido", options: TRANSFERIDOS },
+  { key: "transferido", label: "Transferência", badge: "transferido", options: TRANSFERIDOS },
   { key: "status", label: "Status", badge: "status", options: STATUSES },
   { key: "cargo", label: "Cargo", badge: "cargo", options: CARGOS },
   { key: "instrutor", label: "Instrutor", options: INSTRUTORES },
-  { key: "promocao", label: "Promoção" },
-  { key: "pad", label: "PAD" },
-  { key: "atividade", label: "Atividade" },
 ];
 
 export function HierarquiaQuadro({ cargo }: { cargo: string | null }) {
@@ -263,113 +259,108 @@ export function HierarquiaQuadro({ cargo }: { cargo: string | null }) {
           <div className="h-24 bg-surface-2 rounded" />
         </div>
       ) : (
-        <div className="space-y-8">
-          {GRUPOS.map((g) => {
-            const list = porGrupo.get(g.key) ?? [];
-            return (
-              <section key={g.key}>
-                <div className="mb-3 flex items-center justify-between border-b border-border/60 pb-2">
-                  <h4 className="font-serif text-lg text-foreground">{g.label}</h4>
-                  {podeEditar && (
-                    <button
-                      onClick={() => adicionar(g.key)}
-                      disabled={busy}
-                      className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs hover:bg-surface-2 disabled:opacity-50"
-                    >
-                      <Plus className="h-3.5 w-3.5" /> Adicionar
-                    </button>
-                  )}
-                </div>
-
-                <div className="-mx-6 overflow-x-auto px-6 sm:mx-0 sm:px-0">
-                  <div className="rounded-lg border border-border bg-background/40">
-                    <table className="w-full min-w-[1100px] table-fixed border-collapse text-sm">
-                      <colgroup>
-                        <col style={{ width: "180px" }} />
-                        <col style={{ width: "72px" }} />
-                        <col style={{ width: "72px" }} />
-                        <col style={{ width: "160px" }} />
-                        <col style={{ width: "130px" }} />
-                        <col style={{ width: "90px" }} />
-                        <col style={{ width: "150px" }} />
-                        <col style={{ width: "160px" }} />
-                        <col style={{ width: "100px" }} />
-                        <col style={{ width: "70px" }} />
-                        <col style={{ width: "90px" }} />
-                        {podeEditar && <col style={{ width: "96px" }} />}
-                      </colgroup>
-                      <thead>
-                        <tr className="border-b border-border bg-surface-2/60 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                          {COLS.map((c) => (
-                            <th key={c.key} className="whitespace-nowrap px-3 py-2 font-medium">{c.label}</th>
-                          ))}
-                          {podeEditar && <th className="whitespace-nowrap px-3 py-2 text-right font-medium">Ações</th>}
+        <div className="-mx-6 overflow-x-auto px-6 sm:mx-0 sm:px-0">
+          <div className="overflow-hidden rounded-lg border border-[#1f3a5f] bg-[#0a1a2e] shadow-inner">
+            <table className="w-full min-w-[980px] table-fixed border-collapse text-sm">
+              <colgroup>
+                <col style={{ width: "200px" }} />
+                <col style={{ width: "80px" }} />
+                <col style={{ width: "180px" }} />
+                <col style={{ width: "140px" }} />
+                <col style={{ width: "100px" }} />
+                <col style={{ width: "150px" }} />
+                <col style={{ width: "170px" }} />
+                {podeEditar && <col style={{ width: "96px" }} />}
+              </colgroup>
+              <thead>
+                <tr className="border-b border-[#1f3a5f] bg-[#0a1a2e] text-left text-[11px] font-bold uppercase tracking-wider text-yellow-400">
+                  {COLS.map((c) => (
+                    <th key={c.key} className="whitespace-nowrap px-3 py-3">{c.label}</th>
+                  ))}
+                  {podeEditar && <th className="whitespace-nowrap px-3 py-3 text-right">Ações</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {GRUPOS.map((g) => {
+                  const list = porGrupo.get(g.key) ?? [];
+                  const colspan = COLS.length + (podeEditar ? 1 : 0);
+                  return (
+                    <>
+                      <tr key={`hdr-${g.key}`} className="bg-[#6b7a2f]/90 border-y border-[#4a5620]">
+                        <td colSpan={colspan} className="px-3 py-1.5 text-center text-[13px] font-bold uppercase tracking-wider text-white">
+                          <div className="flex items-center justify-center gap-3">
+                            <span>{g.label} ({list.length})</span>
+                            {podeEditar && (
+                              <button
+                                onClick={() => adicionar(g.key)}
+                                disabled={busy}
+                                className="inline-flex items-center gap-1 rounded border border-white/30 bg-black/20 px-2 py-0.5 text-[11px] font-normal normal-case text-white hover:bg-black/40 disabled:opacity-50"
+                              >
+                                <Plus className="h-3 w-3" /> Adicionar
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                      {list.length === 0 ? (
+                        <tr key={`empty-${g.key}`} className="border-b border-[#1f3a5f]/60">
+                          <td colSpan={colspan} className="px-3 py-4 text-center text-xs italic text-slate-400">
+                            Nenhum membro registrado.
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {list.length === 0 ? (
-                          <tr>
-                            <td
-                              colSpan={COLS.length + (podeEditar ? 1 : 0)}
-                              className="px-3 py-6 text-center text-xs italic text-muted-foreground"
-                            >
-                              Nenhum membro registrado neste grupo.
-                            </td>
+                      ) : (
+                        list.map((m) => (
+                          <tr key={m.id} className="border-b border-[#1f3a5f]/60 text-slate-100 hover:bg-[#12253d]">
+                            {COLS.map((c) => (
+                              <td key={c.key} className="whitespace-nowrap px-3 py-2 align-middle">
+                                {renderCelula(m, c)}
+                              </td>
+                            ))}
+                            {podeEditar && (
+                              <td className="whitespace-nowrap px-3 py-2 text-right">
+                                {editId === m.id ? (
+                                  <div className="flex justify-end gap-1">
+                                    <button
+                                      onClick={salvar}
+                                      disabled={busy}
+                                      className="inline-flex items-center rounded-md bg-primary px-2 py-1 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                                    >
+                                      <Save className="h-3.5 w-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={cancelarEdicao}
+                                      className="inline-flex items-center rounded-md border border-[#1f3a5f] px-2 py-1 text-xs text-slate-200 hover:bg-[#12253d]"
+                                    >
+                                      <X className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="flex justify-end gap-1">
+                                    <button
+                                      onClick={() => iniciarEdicao(m)}
+                                      className="inline-flex items-center rounded-md border border-[#1f3a5f] px-2 py-1 text-xs text-slate-200 hover:bg-[#12253d]"
+                                    >
+                                      <Pencil className="h-3.5 w-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={() => remover(m.id)}
+                                      className="inline-flex items-center rounded-md border border-[#1f3a5f] px-2 py-1 text-xs text-red-400 hover:bg-red-500/10"
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                )}
+                              </td>
+                            )}
                           </tr>
-                        ) : (
-                          list.map((m) => (
-                            <tr key={m.id} className="border-b border-border/40 last:border-0 hover:bg-surface/60">
-                              {COLS.map((c) => (
-                                <td key={c.key} className="whitespace-nowrap px-3 py-2 align-middle">
-                                  {renderCelula(m, c)}
-                                </td>
-                              ))}
-                              {podeEditar && (
-                                <td className="whitespace-nowrap px-3 py-2 text-right">
-                                  {editId === m.id ? (
-                                    <div className="flex justify-end gap-1">
-                                      <button
-                                        onClick={salvar}
-                                        disabled={busy}
-                                        className="inline-flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-                                      >
-                                        <Save className="h-3.5 w-3.5" />
-                                      </button>
-                                      <button
-                                        onClick={cancelarEdicao}
-                                        className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-surface-2"
-                                      >
-                                        <X className="h-3.5 w-3.5" />
-                                      </button>
-                                    </div>
-                                  ) : (
-                                    <div className="flex justify-end gap-1">
-                                      <button
-                                        onClick={() => iniciarEdicao(m)}
-                                        className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-surface-2"
-                                      >
-                                        <Pencil className="h-3.5 w-3.5" />
-                                      </button>
-                                      <button
-                                        onClick={() => remover(m.id)}
-                                        className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-rose-300 hover:bg-rose-500/10"
-                                      >
-                                        <Trash2 className="h-3.5 w-3.5" />
-                                      </button>
-                                    </div>
-                                  )}
-                                </td>
-                              )}
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </section>
-            );
-          })}
+                        ))
+                      )}
+                    </>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

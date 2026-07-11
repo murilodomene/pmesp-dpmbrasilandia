@@ -36,8 +36,7 @@ function ConsultarPage() {
     setLoading(true);
     setResult(null);
     try {
-      const p = protocolo.trim().startsWith("#") ? protocolo.trim() : `#${protocolo.trim()}`;
-      const r = await consultar({ data: { protocolo: p } });
+      const r = await consultar({ data: { protocolo: protocolo.trim() } });
       setResult((r as Result | null) ?? "notfound");
     } finally {
       setLoading(false);

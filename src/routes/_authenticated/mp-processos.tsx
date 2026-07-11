@@ -8,8 +8,9 @@ import { RelogioPrescricao } from "@/components/RelogioPrescricao";
 import { type DenunciaStatus } from "@/lib/prescricao";
 import { listMeusProcessosMp, getDenuncia } from "@/lib/denuncias.functions";
 import { getSessionInfo } from "@/lib/usuarios.functions";
-import { FileText, Gavel, Scale, Stamp, ExternalLink } from "lucide-react";
+import { FileText, Gavel, Scale, Stamp, ExternalLink, Download } from "lucide-react";
 import { isHtmlAto, sanitizeAtoHtml } from "@/components/RichTextEditor";
+import { exportProcessoCompleto } from "@/lib/exportProcesso";
 
 
 export const Route = createFileRoute("/_authenticated/mp-processos")({

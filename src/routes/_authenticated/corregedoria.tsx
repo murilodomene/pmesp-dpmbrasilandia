@@ -365,7 +365,13 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
 
   const { denuncia, policiais, movimentos, oitivas } = data;
   const status = denuncia.status as DenunciaStatus;
-  const suspenso = status === "concluida" || status === "arquivada";
+  const suspenso = isEncerrado(status);
+  const decurso =
+    status === "ag_decurso_prazo" ? calcularDecursoPrazo(denuncia.concluido_em ?? null) : null;
+  const podeRegistrarRecurso =
+    status === "ag_decurso_prazo" &&
+    !denuncia.certidao_gerada &&
+    (cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor");
 
   return (
     <div className="space-y-4">

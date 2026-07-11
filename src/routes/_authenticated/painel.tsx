@@ -338,7 +338,7 @@ function TriagemModal({ id, onClose }: { id: string; onClose: () => void }) {
               onChange={(e) => setNovoStatus(e.target.value as DenunciaStatus)}
             >
               <option value="">Selecionar...</option>
-              {STATUS_LIST.map((s) => (
+              {STATUS_LIST_MANUAL.map((s) => (
                 <option key={s} value={s} disabled={s === d.status}>
                   {STATUS_LABEL[s]}
                 </option>

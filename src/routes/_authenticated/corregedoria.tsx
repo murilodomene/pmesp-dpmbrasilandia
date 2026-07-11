@@ -225,7 +225,7 @@ function VazioAutuacao() {
   );
 }
 
-function Autuacao({ id, cargo }: { id: string; cargo: string | null }) {
+function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; onDeleted?: () => void }) {
   const qc = useQueryClient();
   const getFn = useServerFn(getDenuncia);
   const { data, isLoading } = useQuery({

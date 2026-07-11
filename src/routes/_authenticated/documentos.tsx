@@ -130,14 +130,28 @@ function DocumentosPage() {
     return { html: finalHtml, toc: withAnchors.toc, count };
   }, [selected, buscaAtiva]);
 
-  // Auto-scroll to first match when searching inside a document
+  // Sequential navigation between matches
+  const [currentIndex, setCurrentIndex] = useState(0);
+  useEffect(() => { setCurrentIndex(0); }, [buscaAtiva, selectedId]);
+
   useEffect(() => {
-    if (!selectedId || !buscaAtiva.trim()) return;
-    const t = setTimeout(() => {
-      contentRef.current?.querySelector("mark")?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 120);
-    return () => clearTimeout(t);
-  }, [buscaAtiva, selectedId, rendered.html]);
+    if (!contentRef.current) return;
+    const marks = contentRef.current.querySelectorAll<HTMLElement>("mark");
+    marks.forEach((m, i) => {
+      if (i === currentIndex) {
+        m.classList.remove("bg-yellow-300");
+        m.classList.add("bg-orange-400", "ring-2", "ring-blue-500");
+      } else {
+        m.classList.add("bg-yellow-300");
+        m.classList.remove("bg-orange-400", "ring-2", "ring-blue-500");
+      }
+    });
+    marks[currentIndex]?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [currentIndex, rendered.html]);
+
+  const total = rendered.count;
+  function goNext() { if (total > 1) setCurrentIndex((i) => (i + 1) % total); }
+  function goPrev() { if (total > 1) setCurrentIndex((i) => (i - 1 + total) % total); }
 
   const searchResults = useMemo(() => {
     const q = busca.trim().toLowerCase();

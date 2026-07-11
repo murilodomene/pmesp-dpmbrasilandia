@@ -652,8 +652,11 @@ function MovMarker({ especie }: { especie: string }) {
     decisao: "bg-destructive text-destructive-foreground",
     ipc: "bg-status-investigacao text-status-investigacao-fg",
     status: "bg-status-aguardando text-status-aguardando-fg",
+    retificacao: "bg-status-aguardando text-status-aguardando-fg",
   };
-  const Icon = especie === "decisao" ? Scale : especie === "ipc" ? Gavel : FileText;
+  const Icon =
+    especie === "decisao" ? Scale : especie === "ipc" ? Gavel : especie === "retificacao" ? Pencil : FileText;
+
   return (
     <div className={`grid h-8 w-8 flex-shrink-0 place-items-center rounded-full ${style[especie]}`}>
       <Icon className="h-4 w-4" />

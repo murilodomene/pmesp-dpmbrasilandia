@@ -20,7 +20,7 @@ import {
   atualizarUnidade,
 } from "@/lib/denuncias.functions";
 import { getSessionInfo } from "@/lib/usuarios.functions";
-import { Gavel, FileText, Scale, Clock, ExternalLink, X, Users } from "lucide-react";
+import { Gavel, FileText, Scale, Clock, ExternalLink, X, Users, Pencil } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/corregedoria")({
   validateSearch: z.object({ id: z.string().uuid().optional() }),

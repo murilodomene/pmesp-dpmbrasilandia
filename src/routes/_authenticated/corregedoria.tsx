@@ -1582,13 +1582,18 @@ function TimelineIpcCard({
   const [gerando, setGerando] = useState(false);
   const relato = extrairRelatoIpc(teor);
 
+  const relatoParas = relato.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
   const relatoNode = isHtmlAto(relato) ? (
     <div
       className="ato-body"
       dangerouslySetInnerHTML={{ __html: sanitizeAtoHtml(relato) }}
     />
   ) : (
-    <div className="whitespace-pre-wrap">{relato}</div>
+    <div className="ato-body">
+      {relatoParas.map((p, i) => (
+        <p key={i} className="whitespace-pre-wrap">{p}</p>
+      ))}
+    </div>
   );
   const relatoNodePdf = isHtmlAto(relato) ? (
     <div
@@ -1596,8 +1601,13 @@ function TimelineIpcCard({
       dangerouslySetInnerHTML={{ __html: sanitizeAtoHtml(relato) }}
     />
   ) : (
-    <div className="whitespace-pre-wrap">{relato}</div>
+    <div className="ato-body-pdf">
+      {relatoParas.map((p, i) => (
+        <p key={i} className="whitespace-pre-wrap">{p}</p>
+      ))}
+    </div>
   );
+
 
   const camposBase = [
     { label: "Unidade", valor: unidade },

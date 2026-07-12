@@ -548,75 +548,14 @@ function DocumentosPage() {
                     </button>
                   </div>
                 ) : (
-                  <div className="grid gap-6 p-6 md:grid-cols-[220px_1fr]">
-                    {rendered.toc.length > 0 && (
-                      <nav className="md:sticky md:top-24 md:self-start rounded-md border border-border bg-background/50 p-3">
-                        <div className="mb-2 text-xs uppercase tracking-widest text-muted-foreground">Sumário</div>
-                        {rendered.legal ? (
-                          <div className="space-y-3 text-sm">
-                            {(() => {
-                              const groups: { chapter?: string; items: TocEntry[] }[] = [];
-                              for (const t of rendered.toc) {
-                                const last = groups[groups.length - 1];
-                                if (last && last.chapter === t.chapter) last.items.push(t);
-                                else groups.push({ chapter: t.chapter, items: [t] });
-                              }
-                              return groups.map((g, gi) => (
-                                <div key={gi}>
-                                  {g.chapter && (
-                                    <div className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-primary/80">
-                                      {g.chapter}
-                                    </div>
-                                  )}
-                                  <ul className="space-y-0.5">
-                                    {g.items.map((t) => (
-                                      <li key={t.id}>
-                                        <a
-                                          href={`#${t.id}`}
-                                          onClick={(e) => {
-                                            e.preventDefault();
-                                            document.getElementById(t.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-                                            history.replaceState(null, "", `#${t.id}`);
-                                          }}
-                                          className="block rounded px-2 py-1 text-muted-foreground hover:bg-surface-2 hover:text-foreground"
-                                        >
-                                          {t.label}
-                                        </a>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              ));
-                            })()}
-                          </div>
-                        ) : (
-                          <ul className="space-y-1 text-sm">
-                            {rendered.toc.map((t) => (
-                              <li key={t.id}>
-                                <a
-                                  href={`#${t.id}`}
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    document.getElementById(t.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-                                    history.replaceState(null, "", `#${t.id}`);
-                                  }}
-                                  className="block rounded px-2 py-1 text-muted-foreground hover:bg-surface-2 hover:text-foreground"
-                                >
-                                  {t.label}
-                                </a>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </nav>
-                    )}
+                  <div className="px-4 py-6 sm:px-6 md:px-8">
                     <div
                       key={buscaAtiva}
                       ref={contentRef}
                       className={
                         rendered.legal
-                          ? "max-w-none animate-fade-in text-[15px] text-foreground/90"
-                          : "prose prose-invert max-w-none animate-fade-in prose-headings:font-serif prose-h1:text-2xl prose-h2:text-xl prose-p:leading-relaxed"
+                          ? "mx-auto max-w-[850px] animate-fade-in text-[15px] text-foreground/90"
+                          : "prose prose-invert mx-auto max-w-[850px] animate-fade-in prose-headings:font-serif prose-h1:text-2xl prose-h2:text-xl prose-p:leading-relaxed"
                       }
                       dangerouslySetInnerHTML={{ __html: rendered.html }}
                     />

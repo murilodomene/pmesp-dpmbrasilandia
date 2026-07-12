@@ -33,6 +33,7 @@ import {
   excluirDenuncia,
   cancelarMovimento,
   registrarRecurso,
+  certificarResultadoRecurso,
 } from "@/lib/denuncias.functions";
 
 

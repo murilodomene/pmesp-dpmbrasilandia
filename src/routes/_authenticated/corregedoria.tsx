@@ -470,6 +470,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     | { kind: "excluir" }
     | { kind: "cancelarMov"; movimento_id: string; resumo: string }
     | { kind: "recurso" }
+    | { kind: "intimar" }
     | null
   >(null);
 

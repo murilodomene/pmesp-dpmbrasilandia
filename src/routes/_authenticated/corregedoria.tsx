@@ -21,6 +21,7 @@ import {
   juntarOitiva,
   desentranharOitiva,
   atualizarObservacoes,
+  atualizarNatureza,
   atualizarUnidade,
   retificarDenunciado,
   lavrarPortaria,
@@ -563,9 +564,12 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
             <div className="tabular text-xs text-muted-foreground">{denuncia.numero_protocolo}</div>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <StatusBadge status={status} />
-              <span className="text-sm text-muted-foreground">
-                {denuncia.ocorrencia_tipo || "Sem natureza"}
-              </span>
+              <NaturezaInline
+                denunciaId={denuncia.id}
+                valor={denuncia.ocorrencia_tipo ?? null}
+                podeEditar={cargo === "delegado_geral" || cargo === "delegado_corregedor"}
+              />
+
               {decurso && (
                 <span className="inline-flex items-center gap-1 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs text-amber-200">
                   {decurso.vencido
@@ -2541,4 +2545,80 @@ function ExportarProcessoBtn({
     </button>
   );
 }
+
+function NaturezaInline({
+  denunciaId,
+  valor,
+  podeEditar,
+}: {
+  denunciaId: string;
+  valor: string | null;
+  podeEditar: boolean;
+}) {
+  const qc = useQueryClient();
+  const fn = useServerFn(atualizarNatureza);
+  const [editando, setEditando] = useState(false);
+  const [txt, setTxt] = useState(valor ?? "");
+  useEffect(() => setTxt(valor ?? ""), [valor]);
+
+  const m = useMutation({
+    mutationFn: (novo: string) => fn({ data: { denuncia_id: denunciaId, ocorrencia_tipo: novo } }),
+    onSuccess: () => {
+      setEditando(false);
+      qc.invalidateQueries({ queryKey: ["denuncia", denunciaId] });
+      qc.invalidateQueries({ queryKey: ["denuncias"] });
+      toast.success("Natureza atualizada.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  if (!podeEditar || !editando) {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+        {valor || "Sem natureza"}
+        {podeEditar && (
+          <button
+            type="button"
+            onClick={() => setEditando(true)}
+            title="Editar natureza"
+            className="text-muted-foreground/70 hover:text-foreground"
+          >
+            <Pencil className="h-3 w-3" />
+          </button>
+        )}
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1">
+      <input
+        autoFocus
+        value={txt}
+        onChange={(e) => setTxt(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && txt.trim()) m.mutate(txt.trim());
+          if (e.key === "Escape") { setTxt(valor ?? ""); setEditando(false); }
+        }}
+        className="min-w-[220px] rounded-md border border-border bg-input px-2 py-1 text-sm"
+      />
+      <button
+        type="button"
+        disabled={m.isPending || !txt.trim()}
+        onClick={() => m.mutate(txt.trim())}
+        className="rounded-md border border-border px-2 py-1 text-xs hover:bg-surface-2 disabled:opacity-50"
+      >
+        Salvar
+      </button>
+      <button
+        type="button"
+        onClick={() => { setTxt(valor ?? ""); setEditando(false); }}
+        className="rounded-md border border-border px-2 py-1 text-xs hover:bg-surface-2"
+      >
+        Cancelar
+      </button>
+    </span>
+  );
+}
+
 

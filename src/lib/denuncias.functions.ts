@@ -444,6 +444,46 @@ export const atualizarUnidade = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const atualizarNatureza = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        denuncia_id: z.string().uuid(),
+        ocorrencia_tipo: z.string().trim().min(1).max(200),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const p = await getProlator(context);
+    if (p.prolator_cargo !== "delegado_geral" && p.prolator_cargo !== "delegado_corregedor") {
+      throw new Error("Apenas Delegado Geral ou Delegado Corregedor podem editar a natureza.");
+    }
+    const { data: atual } = await context.supabase
+      .from("denuncias")
+      .select("ocorrencia_tipo")
+      .eq("id", data.denuncia_id)
+      .single();
+    const antigo = atual?.ocorrencia_tipo ?? null;
+    const novo = data.ocorrencia_tipo.trim();
+    if (antigo === novo) return { changed: false };
+
+    const { error } = await context.supabase
+      .from("denuncias")
+      .update({ ocorrencia_tipo: novo })
+      .eq("id", data.denuncia_id);
+    if (error) throw new Error(error.message);
+
+    await context.supabase.from("movimentos").insert({
+      denuncia_id: data.denuncia_id,
+      especie: "retificacao",
+      teor: `Natureza retificada de "${antigo ?? "—"}" para "${novo}".`,
+      ...p,
+    });
+    return { changed: true };
+  });
+
+
 export const retificarDenunciado = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>

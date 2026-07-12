@@ -69,42 +69,16 @@ const submitSchema = z.object({
 export const submitDenuncia = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => submitSchema.parse(data))
   .handler(async ({ data }) => {
-    // Canal público (anônimo): usa o cliente admin para gravar sem exigir
-    // policies de anon nas tabelas — mantém RLS estrita para usuários normais.
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const unidadeDenuncia =
-      data.policiais.map((p) => p.unidade).find((u) => u) ?? null;
-    const { data: den, error } = await supabaseAdmin
-      .from("denuncias")
-      .insert({
-        denunciante_nome: data.denunciante_anonimo ? null : data.denunciante_nome,
-        denunciante_identificador: data.denunciante_anonimo ? null : data.denunciante_identificador,
-        denunciante_contato: data.denunciante_anonimo ? null : data.denunciante_contato,
-        denunciante_anonimo: data.denunciante_anonimo,
-        ocorrencia_tipo: data.ocorrencia_tipo,
-        ocorrencia_local: data.ocorrencia_local,
-        ocorrencia_data: data.ocorrencia_data || null,
-        ocorrencia_hora: data.ocorrencia_hora || null,
-        relato: data.relato,
-        info_adicional: data.info_adicional,
-        links: data.links,
-        unidade: unidadeDenuncia,
-      })
-      .select("id, numero_protocolo")
-      .single();
+    // A função de banco grava tudo atomicamente e devolve apenas o protocolo.
+    // Isso evita que o INSERT dependa de uma política pública de SELECT.
+    const sb = publicClient();
+    const { data: protocolo, error } = await sb.rpc(
+      "submeter_denuncia_anonima",
+      { _payload: data },
+    );
     if (error) throw new Error(error.message);
-
-    if (data.policiais.length) {
-      const rows = data.policiais.map((p) => ({
-        denuncia_id: den.id,
-        nome: p.nome,
-        rg_funcional: p.rg_funcional ?? null,
-        unidade: null,
-      }));
-      await supabaseAdmin.from("denuncia_policiais").insert(rows);
-    }
-
-    return { protocolo: den.numero_protocolo };
+    if (!protocolo) throw new Error("Não foi possível gerar o protocolo da denúncia.");
+    return { protocolo };
   });
 
 

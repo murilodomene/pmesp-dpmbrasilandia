@@ -1726,6 +1726,82 @@ function RecursoDialog({ id, onClose }: { id: string; onClose: () => void }) {
   );
 }
 
+type ResultadoRecurso = "provido" | "parcialmente_provido" | "indeferido" | "nao_conhecido";
+const RESULTADO_LABELS: Record<ResultadoRecurso, string> = {
+  provido: "Provido",
+  parcialmente_provido: "Parcialmente provido",
+  indeferido: "Indeferido",
+  nao_conhecido: "Não conhecido",
+};
+
+function ResultadoRecursoDialog({ id, onClose }: { id: string; onClose: () => void }) {
+  const qc = useQueryClient();
+  const fn = useServerFn(certificarResultadoRecurso);
+  const [resultado, setResultado] = useState<ResultadoRecurso | "">("");
+  const m = useMutation({
+    mutationFn: () =>
+      fn({ data: { denuncia_id: id, resultado: resultado as ResultadoRecurso } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["denuncia", id] });
+      qc.invalidateQueries({ queryKey: ["denuncias"] });
+      onClose();
+    },
+  });
+  const encerra = resultado === "indeferido" || resultado === "nao_conhecido";
+  return (
+    <Modal title="Certificar resultado do recurso" onClose={onClose}>
+      <p className="text-xs text-muted-foreground">
+        Uma certidão será juntada aos autos com o resultado do julgamento do recurso administrativo.
+        Se Indeferido ou Não conhecido, o procedimento é arquivado automaticamente.
+      </p>
+      <div className="mt-3 grid gap-2">
+        {(Object.keys(RESULTADO_LABELS) as ResultadoRecurso[]).map((r) => (
+          <label
+            key={r}
+            className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm ${
+              resultado === r ? "border-primary bg-primary/10" : "border-border hover:bg-surface-2"
+            }`}
+          >
+            <input
+              type="radio"
+              name="resultado"
+              value={r}
+              checked={resultado === r}
+              onChange={() => setResultado(r)}
+            />
+            <span>{RESULTADO_LABELS[r]}</span>
+            {(r === "indeferido" || r === "nao_conhecido") && (
+              <span className="ml-auto text-[10px] uppercase tracking-wider text-muted-foreground">
+                encerra o processo
+              </span>
+            )}
+          </label>
+        ))}
+      </div>
+      {encerra && (
+        <p className="mt-3 text-xs text-amber-300">
+          Ao confirmar, o procedimento será movido para Concluídas.
+        </p>
+      )}
+      {m.error instanceof Error && (
+        <p className="mt-2 text-xs text-destructive">{m.error.message}</p>
+      )}
+      <div className="mt-4 flex justify-end gap-2">
+        <button onClick={onClose} className="rounded-md border border-border px-4 py-2 text-sm">
+          Cancelar
+        </button>
+        <button
+          onClick={() => m.mutate()}
+          disabled={m.isPending || !resultado}
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+        >
+          {m.isPending ? "Certificando..." : "Certificar"}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
 function cargoLabelFull(c: string | null | undefined): string {
   if (!c) return "";
   return c === "delegado_geral"

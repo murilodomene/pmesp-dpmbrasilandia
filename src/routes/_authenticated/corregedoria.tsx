@@ -45,6 +45,8 @@ import { exportProcessoCompleto } from "@/lib/exportProcesso";
 import { AtoAnexosUploader, type AtoAnexo } from "@/components/AtoAnexosUploader";
 import { AtoAnexosLinks } from "@/components/AtoAnexosLinks";
 import { IntimarDialog } from "@/components/IntimarDialog";
+import { TarjasManager, TarjasStrip, type CorTarja } from "@/components/Tarja";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -316,7 +318,10 @@ interface ItemKanban {
   updated_at?: string | null;
   created_at?: string | null;
   denuncia_policiais?: { nome: string; unidade: string | null }[] | null;
+  denuncia_tarjas?: { id: string; cor: string; texto: string }[] | null;
 }
+
+
 
 function ListaProcessos({
   itens,
@@ -418,10 +423,12 @@ function LinhaProcesso({
   return (
     <tr
       onClick={() => onSelect(d.id)}
-      className="cursor-pointer border-b border-border/60 transition hover:bg-surface-2 last:border-0"
+      className="relative cursor-pointer border-b border-border/60 transition hover:bg-surface-2 last:border-0"
     >
-      <td className="px-3 py-2.5 tabular text-xs text-muted-foreground whitespace-nowrap">
+      <td className="relative px-3 py-2.5 tabular text-xs text-muted-foreground whitespace-nowrap">
+        <TarjasStrip tarjas={(d.denuncia_tarjas ?? []) as { id: string; cor: CorTarja; texto: string }[]} />
         {d.numero_protocolo}
+
       </td>
       <td className="px-3 py-2.5">
         <div className="line-clamp-1 font-medium">{d.ocorrencia_tipo || "Sem natureza"}</div>
@@ -592,6 +599,18 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 </span>
               )}
             </div>
+            <div className="mt-2">
+              <TarjasManager
+                denunciaId={denuncia.id}
+                tarjas={((data.tarjas ?? []) as { id: string; cor: string; texto: string }[]).map((t) => ({
+                  id: t.id,
+                  cor: t.cor as CorTarja,
+                  texto: t.texto,
+                }))}
+                podeEditar={cargo === "delegado_corregedor" || cargo === "corregedor"}
+              />
+            </div>
+
           </div>
           <div className="flex items-center gap-2">
             <button

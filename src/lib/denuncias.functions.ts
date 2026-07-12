@@ -529,6 +529,19 @@ export const atualizarNatureza = createServerFn({ method: "POST" })
   });
 
 
+export const CARGOS_POLICIAIS = [
+  "ACADEPOL",
+  "Agente de 3º Classe",
+  "Agente de 2º Classe",
+  "Agente de 1º Classe",
+  "Agente de Classe Especial",
+  "Investigador",
+  "Investigador-Chefe",
+  "Perito",
+  "Escrivão",
+  "Delegado",
+] as const;
+
 export const retificarDenunciado = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
@@ -538,14 +551,19 @@ export const retificarDenunciado = createServerFn({ method: "POST" })
         nome: z.string().trim().min(1).max(200),
         rg_funcional: z.string().trim().max(50).optional().nullable(),
         unidade: z.enum(UNIDADES).optional().nullable(),
+        cargo: z.enum(CARGOS_POLICIAIS).optional().nullable(),
         motivo: z.string().trim().max(2000).optional().nullable(),
       })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
     const p = await getProlator(context);
-    if (p.prolator_cargo !== "delegado_geral" && p.prolator_cargo !== "delegado_corregedor") {
-      throw new Error("Apenas Delegado Geral ou Delegado Corregedor podem retificar o denunciado.");
+    const podeRetificar =
+      p.prolator_cargo === "delegado_geral" ||
+      p.prolator_cargo === "delegado_corregedor" ||
+      p.prolator_cargo === "corregedor";
+    if (!podeRetificar) {
+      throw new Error("Apenas Delegado Geral, Delegado Corregedor ou Corregedor podem retificar o denunciado.");
     }
 
     const { data: pol, error: polErr } = await context.supabase
@@ -558,25 +576,41 @@ export const retificarDenunciado = createServerFn({ method: "POST" })
     const novoNome = data.nome.trim();
     const novaMat = (data.rg_funcional ?? "").trim() || null;
     const novaUnidade = data.unidade ?? null;
+    const novoCargo = data.cargo ?? null;
     const antigoNome = pol.nome;
     const antigaMat = pol.rg_funcional ?? null;
     const antigaUnidade = pol.unidade ?? null;
+    const antigoCargo = (pol as { cargo?: string | null }).cargo ?? null;
 
-    if (novoNome === antigoNome && novaMat === antigaMat && novaUnidade === antigaUnidade) {
+    const cargoMudou = novoCargo !== antigoCargo;
+    if (
+      novoNome === antigoNome &&
+      novaMat === antigaMat &&
+      novaUnidade === antigaUnidade &&
+      !cargoMudou
+    ) {
       return { changed: false };
+    }
+
+    if (
+      cargoMudou &&
+      p.prolator_cargo !== "delegado_corregedor" &&
+      p.prolator_cargo !== "corregedor"
+    ) {
+      throw new Error("Apenas Delegado Corregedor ou Corregedor podem alterar o cargo do denunciado.");
     }
 
     const { error: updErr } = await context.supabase
       .from("denuncia_policiais")
-      .update({ nome: novoNome, rg_funcional: novaMat, unidade: novaUnidade })
+      .update({ nome: novoNome, rg_funcional: novaMat, unidade: novaUnidade, cargo: novoCargo })
       .eq("id", data.policial_id);
     if (updErr) throw new Error(updErr.message);
 
-    const fmt = (n: string, m: string | null, u: string | null) =>
-      `"${n} (${m ?? "sem matrícula"}${u ? `, ${u}` : ""})"`;
+    const fmt = (n: string, m: string | null, u: string | null, c: string | null) =>
+      `"${n} (${m ?? "sem matrícula"}${u ? `, ${u}` : ""}${c ? `, ${c}` : ""})"`;
     const motivoTxt = data.motivo?.trim() ? ` Motivo: ${data.motivo.trim()}.` : "";
     const teor =
-      `Denunciado retificado de ${fmt(antigoNome, antigaMat, antigaUnidade)} para ${fmt(novoNome, novaMat, novaUnidade)}.` +
+      `Denunciado retificado de ${fmt(antigoNome, antigaMat, antigaUnidade, antigoCargo)} para ${fmt(novoNome, novaMat, novaUnidade, novoCargo)}.` +
       motivoTxt;
 
 
@@ -590,6 +624,7 @@ export const retificarDenunciado = createServerFn({ method: "POST" })
 
     return { changed: true };
   });
+
 
 export const lavrarPortaria = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

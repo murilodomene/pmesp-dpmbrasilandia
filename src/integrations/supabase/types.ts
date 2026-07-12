@@ -676,6 +676,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      submeter_denuncia_anonima: { Args: { _payload: Json }; Returns: string }
       transitar_denuncia: { Args: { _denuncia_id: string }; Returns: boolean }
       transitar_pendentes: { Args: never; Returns: number }
     }

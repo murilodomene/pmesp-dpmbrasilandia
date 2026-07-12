@@ -24,6 +24,7 @@ import { Route as AuthenticatedPdoRouteImport } from './routes/_authenticated/pd
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
 import { Route as AuthenticatedMpProcessosRouteImport } from './routes/_authenticated/mp-processos'
 import { Route as AuthenticatedMinhasDenunciasRouteImport } from './routes/_authenticated/minhas-denuncias'
+import { Route as AuthenticatedManutencaoRouteImport } from './routes/_authenticated/manutencao'
 import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated/documentos'
 import { Route as AuthenticatedCorregedoriaRouteImport } from './routes/_authenticated/corregedoria'
 import { Route as AuthenticatedAvisosRouteImport } from './routes/_authenticated/avisos'
@@ -104,6 +105,11 @@ const AuthenticatedMinhasDenunciasRoute =
     path: '/minhas-denuncias',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedManutencaoRoute = AuthenticatedManutencaoRouteImport.update({
+  id: '/manutencao',
+  path: '/manutencao',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDocumentosRoute = AuthenticatedDocumentosRouteImport.update({
   id: '/documentos',
   path: '/documentos',
@@ -133,6 +139,7 @@ export interface FileRoutesByFullPath {
   '/avisos': typeof AuthenticatedAvisosRoute
   '/corregedoria': typeof AuthenticatedCorregedoriaRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
+  '/manutencao': typeof AuthenticatedManutencaoRoute
   '/minhas-denuncias': typeof AuthenticatedMinhasDenunciasRoute
   '/mp-processos': typeof AuthenticatedMpProcessosRoute
   '/painel': typeof AuthenticatedPainelRoute
@@ -152,6 +159,7 @@ export interface FileRoutesByTo {
   '/avisos': typeof AuthenticatedAvisosRoute
   '/corregedoria': typeof AuthenticatedCorregedoriaRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
+  '/manutencao': typeof AuthenticatedManutencaoRoute
   '/minhas-denuncias': typeof AuthenticatedMinhasDenunciasRoute
   '/mp-processos': typeof AuthenticatedMpProcessosRoute
   '/painel': typeof AuthenticatedPainelRoute
@@ -173,6 +181,7 @@ export interface FileRoutesById {
   '/_authenticated/avisos': typeof AuthenticatedAvisosRoute
   '/_authenticated/corregedoria': typeof AuthenticatedCorregedoriaRoute
   '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
+  '/_authenticated/manutencao': typeof AuthenticatedManutencaoRoute
   '/_authenticated/minhas-denuncias': typeof AuthenticatedMinhasDenunciasRoute
   '/_authenticated/mp-processos': typeof AuthenticatedMpProcessosRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
@@ -194,6 +203,7 @@ export interface FileRouteTypes {
     | '/avisos'
     | '/corregedoria'
     | '/documentos'
+    | '/manutencao'
     | '/minhas-denuncias'
     | '/mp-processos'
     | '/painel'
@@ -213,6 +223,7 @@ export interface FileRouteTypes {
     | '/avisos'
     | '/corregedoria'
     | '/documentos'
+    | '/manutencao'
     | '/minhas-denuncias'
     | '/mp-processos'
     | '/painel'
@@ -233,6 +244,7 @@ export interface FileRouteTypes {
     | '/_authenticated/avisos'
     | '/_authenticated/corregedoria'
     | '/_authenticated/documentos'
+    | '/_authenticated/manutencao'
     | '/_authenticated/minhas-denuncias'
     | '/_authenticated/mp-processos'
     | '/_authenticated/painel'
@@ -360,6 +372,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMinhasDenunciasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/manutencao': {
+      id: '/_authenticated/manutencao'
+      path: '/manutencao'
+      fullPath: '/manutencao'
+      preLoaderRoute: typeof AuthenticatedManutencaoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/documentos': {
       id: '/_authenticated/documentos'
       path: '/documentos'
@@ -388,6 +407,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAvisosRoute: typeof AuthenticatedAvisosRoute
   AuthenticatedCorregedoriaRoute: typeof AuthenticatedCorregedoriaRoute
   AuthenticatedDocumentosRoute: typeof AuthenticatedDocumentosRoute
+  AuthenticatedManutencaoRoute: typeof AuthenticatedManutencaoRoute
   AuthenticatedMinhasDenunciasRoute: typeof AuthenticatedMinhasDenunciasRoute
   AuthenticatedMpProcessosRoute: typeof AuthenticatedMpProcessosRoute
   AuthenticatedPainelRoute: typeof AuthenticatedPainelRoute
@@ -400,6 +420,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAvisosRoute: AuthenticatedAvisosRoute,
   AuthenticatedCorregedoriaRoute: AuthenticatedCorregedoriaRoute,
   AuthenticatedDocumentosRoute: AuthenticatedDocumentosRoute,
+  AuthenticatedManutencaoRoute: AuthenticatedManutencaoRoute,
   AuthenticatedMinhasDenunciasRoute: AuthenticatedMinhasDenunciasRoute,
   AuthenticatedMpProcessosRoute: AuthenticatedMpProcessosRoute,
   AuthenticatedPainelRoute: AuthenticatedPainelRoute,

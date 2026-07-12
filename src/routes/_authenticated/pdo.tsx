@@ -1,7 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 import { Header } from "@/components/Header";
 import { getSessionInfo } from "@/lib/usuarios.functions";
 import {
@@ -9,8 +10,9 @@ import {
   listPdos,
   getPdo,
   gerarProcedimentoDoPdo,
+  excluirPdo,
 } from "@/lib/pdo.functions";
-import { Plus, ArrowRight, X } from "lucide-react";
+import { Plus, ArrowRight, X, Trash2, Loader2, Search } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/pdo")({
   component: PdoPage,

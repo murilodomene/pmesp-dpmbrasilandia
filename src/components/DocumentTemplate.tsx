@@ -2,7 +2,7 @@ import { forwardRef, useRef } from "react";
 import { ShieldCheck } from "lucide-react";
 import { isHtmlAto, sanitizeAtoHtml } from "./RichTextEditor";
 
-export type AtoTipo = "DESPACHO" | "DECISÃO" | "PORTARIA" | "IPC";
+export type AtoTipo = "DESPACHO" | "DECISÃO" | "PORTARIA" | "IPC" | "CERTIDÃO";
 
 export interface DocumentTemplateCampo {
   label: string;

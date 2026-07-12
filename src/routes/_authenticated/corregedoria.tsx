@@ -1032,6 +1032,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
             const isAto =
               m.especie === "despacho" || m.especie === "decisao" || m.especie === "portaria";
             const isIpc = m.especie === "ipc";
+            const isCertidao = m.especie === "certidao";
 
             const canceladoEm = m.cancelado_em ?? null;
             const podeCancelar =
@@ -1187,6 +1188,45 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                       >
                         {m.ipc_publicado ? "Despublicar" : "Publicar para o denunciante"}
                       </button>
+                    </div>
+                    {canceladoFooter}
+                  </div>
+                </li>
+              );
+            }
+            if (isCertidao) {
+              return (
+                <li key={m.id} className={`flex gap-3 ${canceladoEm ? "opacity-60" : ""}`}>
+                  <MovMarker especie={m.especie as string} />
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span className="rounded-md border border-primary/40 bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-primary" title="Número permanente do evento no procedimento">
+                        {eventoLabel}
+                      </span>
+                      <span className="font-medium uppercase tracking-wider">
+                        {labelEspecie(m.especie as string)}
+                      </span>
+                      {canceladoBadge}
+                      <span className="ml-auto text-muted-foreground tabular">
+                        {new Date(m.criado_em).toLocaleString("pt-BR")}
+                      </span>
+                      {btnCancelar}
+                    </div>
+                    <div className={canceladoEm ? "line-through decoration-destructive/60" : ""}>
+                      <TimelineCertidaoCard
+                        teor={m.teor}
+                        quando={m.criado_em}
+                        prolator={m.prolator_nome}
+                        cargo={(m.prolator_cargo as string) ?? "delegado_corregedor"}
+                        procedimento={denuncia.numero_protocolo}
+                        denunciado={
+                          policiais.length
+                            ? policiais
+                                .map((p) => `${p.nome}${p.rg_funcional ? ` — ${p.rg_funcional}` : ""}`)
+                                .join("; ")
+                            : "Não identificado"
+                        }
+                      />
                     </div>
                     {canceladoFooter}
                   </div>
@@ -2003,6 +2043,81 @@ function TimelineAtoCard({
           markerClass={ATO_MARKER[especie]}
         >
           {renderAtoBody(especie, teor, true)}
+        </DocumentTemplate>
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          onClick={exportarPdf}
+          disabled={gerando}
+          className="inline-flex items-center gap-1 rounded-md border border-border bg-surface px-3 py-1.5 text-xs hover:bg-surface-2 disabled:opacity-50"
+        >
+          <Download className="h-3.5 w-3.5" /> {gerando ? "Gerando..." : "Exportar PDF"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function TimelineCertidaoCard({
+  teor,
+  quando,
+  prolator,
+  cargo,
+  procedimento,
+  denunciado,
+}: {
+  teor: string;
+  quando: string;
+  prolator: string;
+  cargo: string;
+  procedimento: string;
+  denunciado: string;
+}) {
+  const pdfRef = useDocumentRef();
+  const [gerando, setGerando] = useState(false);
+
+  async function exportarPdf() {
+    if (!pdfRef.current) return;
+    setGerando(true);
+    try {
+      const fname = `Certidao_${procedimento.replace(/[^\w-]/g, "_")}.pdf`;
+      await exportDocumentToPdf(pdfRef.current, fname);
+    } finally {
+      setGerando(false);
+    }
+  }
+
+  const body = <div className="whitespace-pre-wrap">{renderTeorComLinks(teor)}</div>;
+
+  return (
+    <div className="space-y-2">
+      <DocumentTemplate
+        variant="screen"
+        procedimento={procedimento}
+        denunciado={denunciado}
+        tipo="CERTIDÃO"
+        prolatorNome={prolator}
+        prolatorCargo={cargoLabelFull(cargo)}
+        data={quando}
+        markerClass="bg-emerald-600"
+      >
+        {body}
+      </DocumentTemplate>
+
+      <div className="pointer-events-none fixed left-[-10000px] top-0" aria-hidden>
+        <DocumentTemplate
+          ref={pdfRef}
+          variant="pdf"
+          procedimento={procedimento}
+          denunciado={denunciado}
+          assunto="Certidão"
+          prolatorNome={prolator}
+          prolatorCargo={cargoLabelFull(cargo)}
+          data={quando}
+          markerClass="bg-emerald-600"
+        >
+          <div className="whitespace-pre-wrap">{renderTeorComLinks(teor)}</div>
         </DocumentTemplate>
       </div>
 

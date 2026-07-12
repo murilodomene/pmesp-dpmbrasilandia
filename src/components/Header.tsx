@@ -91,36 +91,23 @@ export function Header() {
           {isCidadao && <NavLink to="/minhas-denuncias">Minhas denúncias</NavLink>}
           {isMp && <NavLink to="/mp-processos">Meus processos</NavLink>}
 
-          {/* Larger screens: internal links inline */}
+          {/* Internal links always collapsed into a dropdown to avoid overflow */}
           {internalLinks.length > 0 && (
-            <div className="hidden xl:flex xl:items-center xl:gap-0.5">
-              {internalLinks.map((l) => (
-                <NavLink key={l.to} to={l.to}>
-                  {l.label}
-                </NavLink>
-              ))}
-            </div>
-          )}
-
-          {/* Medium screens: internal links collapsed into a dropdown */}
-          {internalLinks.length > 0 && (
-            <div className="xl:hidden">
-              <DropdownMenu>
-                <DropdownMenuTrigger className="flex items-center gap-1 whitespace-nowrap rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground">
-                  Área interna
-                  <ChevronDown className="h-3.5 w-3.5" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="min-w-[180px]">
-                  {internalLinks.map((l) => (
-                    <DropdownMenuItem key={l.to} asChild>
-                      <Link to={l.to} className="w-full whitespace-nowrap cursor-pointer">
-                        {l.label}
-                      </Link>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-1 whitespace-nowrap rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground">
+                Área interna
+                <ChevronDown className="h-3.5 w-3.5" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-[200px]">
+                {internalLinks.map((l) => (
+                  <DropdownMenuItem key={l.to} asChild>
+                    <Link to={l.to} className="w-full whitespace-nowrap cursor-pointer">
+                      {l.label}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </nav>
 

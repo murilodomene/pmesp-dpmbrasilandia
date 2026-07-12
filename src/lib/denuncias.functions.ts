@@ -135,7 +135,7 @@ export const getDenuncia = createServerFn({ method: "GET" })
     const { data: obsInt } = await context.supabase.rpc("get_obs_internas", {
       _denuncia_id: data.id,
     });
-    const [pols, movs, ois] = await Promise.all([
+    const [pols, movs, ois, tarj] = await Promise.all([
       context.supabase.from("denuncia_policiais").select("*").eq("denuncia_id", data.id),
       context.supabase
         .from("movimentos")
@@ -143,14 +143,21 @@ export const getDenuncia = createServerFn({ method: "GET" })
         .eq("denuncia_id", data.id)
         .order("criado_em", { ascending: false }),
       context.supabase.from("oitivas").select("*").eq("denuncia_id", data.id).order("created_at", { ascending: false }),
+      context.supabase
+        .from("denuncia_tarjas")
+        .select("id, cor, texto, created_at")
+        .eq("denuncia_id", data.id)
+        .order("created_at", { ascending: true }),
     ]);
     return {
       denuncia: { ...den, obs_internas: (obsInt as string | null) ?? null },
       policiais: pols.data ?? [],
       movimentos: movs.data ?? [],
       oitivas: ois.data ?? [],
+      tarjas: tarj.data ?? [],
     };
   });
+
 
 
 async function getProlator(context: { supabase: ReturnType<typeof publicClient>; userId: string }) {

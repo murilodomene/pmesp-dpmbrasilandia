@@ -105,6 +105,12 @@ export const getPdo = createServerFn({ method: "GET" })
     return row as any;
   });
 
+const denunciadoSchema = z.object({
+  nome: z.string().trim().min(1).max(200),
+  matricula: z.string().trim().max(80).default(""),
+  cargo: z.string().trim().max(80).default(""),
+});
+
 // Gera procedimento (denúncia) a partir de um PDO com desfecho "gera_procedimento".
 export const gerarProcedimentoDoPdo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -114,12 +120,15 @@ export const gerarProcedimentoDoPdo = createServerFn({ method: "POST" })
         pdo_id: z.string().uuid(),
         unidade: z.string().trim().max(80).optional().nullable(),
         relato: z.string().trim().min(1).max(8000),
-        abordado_index: z.number().int().min(0).max(3).optional(),
+        denunciados: z.array(denunciadoSchema).min(1).max(20),
       })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    await requireStaff(context as any);
+    const me = await requireStaff(context as any);
+    if (!["delegado_corregedor", "delegado_geral", "corregedor"].includes(me.cargo)) {
+      throw new Error("Sem permissão para gerar procedimento.");
+    }
     const sb = context.supabase as any;
 
     const { data: pdo, error: e1 } = await sb.from("pdos").select("*").eq("id", data.pdo_id).single();
@@ -127,10 +136,6 @@ export const gerarProcedimentoDoPdo = createServerFn({ method: "POST" })
     if (pdo.desfecho !== "gera_procedimento")
       throw new Error("Só o desfecho 'Irregularidade que origina procedimento' pode gerar denúncia.");
     if (pdo.procedimento_id) throw new Error("Este PDO já originou um procedimento.");
-
-    const abordados = Array.isArray(pdo.abordados) ? pdo.abordados : [];
-    const idx = data.abordado_index ?? 0;
-    const alvo = abordados[idx];
 
     const { data: den, error: e2 } = await sb
       .from("denuncias")
@@ -147,14 +152,14 @@ export const gerarProcedimentoDoPdo = createServerFn({ method: "POST" })
       .single();
     if (e2) throw new Error(e2.message);
 
-    if (alvo?.nome) {
-      await sb.from("denuncia_policiais").insert({
-        denuncia_id: den.id,
-        nome: alvo.nome,
-        rg_funcional: alvo.matricula || null,
-        unidade: pdo.vtr_unidade || null,
-      });
-    }
+    const rows = data.denunciados.map((p) => ({
+      denuncia_id: den.id,
+      nome: p.nome,
+      rg_funcional: p.matricula || null,
+      unidade: pdo.vtr_unidade || null,
+    }));
+    const { error: e4 } = await sb.from("denuncia_policiais").insert(rows);
+    if (e4) throw new Error(e4.message);
 
     const { error: e3 } = await sb
       .from("pdos")
@@ -163,4 +168,17 @@ export const gerarProcedimentoDoPdo = createServerFn({ method: "POST" })
     if (e3) throw new Error(e3.message);
 
     return { protocolo: den.numero_protocolo as string, denuncia_id: den.id as string };
+  });
+
+export const excluirPdo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const me = await requireStaff(context as any);
+    if (me.cargo !== "delegado_corregedor") {
+      throw new Error("Apenas o Delegado Corregedor pode excluir PDOs.");
+    }
+    const { error } = await (context.supabase as any).from("pdos").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });

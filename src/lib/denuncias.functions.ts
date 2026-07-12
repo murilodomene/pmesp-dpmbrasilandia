@@ -69,10 +69,12 @@ const submitSchema = z.object({
 export const submitDenuncia = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => submitSchema.parse(data))
   .handler(async ({ data }) => {
-    const sb = publicClient();
+    // Canal público (anônimo): usa o cliente admin para gravar sem exigir
+    // policies de anon nas tabelas — mantém RLS estrita para usuários normais.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const unidadeDenuncia =
       data.policiais.map((p) => p.unidade).find((u) => u) ?? null;
-    const { data: den, error } = await sb
+    const { data: den, error } = await supabaseAdmin
       .from("denuncias")
       .insert({
         denunciante_nome: data.denunciante_anonimo ? null : data.denunciante_nome,
@@ -99,11 +101,12 @@ export const submitDenuncia = createServerFn({ method: "POST" })
         rg_funcional: p.rg_funcional ?? null,
         unidade: null,
       }));
-      await sb.from("denuncia_policiais").insert(rows);
+      await supabaseAdmin.from("denuncia_policiais").insert(rows);
     }
 
     return { protocolo: den.numero_protocolo };
   });
+
 
 export const consultarPublica = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) => z.object({ protocolo: z.string().trim().min(3).max(40) }).parse(data))

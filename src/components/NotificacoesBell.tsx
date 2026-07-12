@@ -46,6 +46,15 @@ export function NotificacoesBell() {
     },
   });
 
+  const marcarTodas = useMutation({
+    mutationFn: () => marcarTodasFn(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["notif-count"] });
+      qc.invalidateQueries({ queryKey: ["notif-list"] });
+    },
+  });
+
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>

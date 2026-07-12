@@ -2565,10 +2565,12 @@ function OitivaDialog({ id, onClose }: { id: string; onClose: () => void }) {
 function RetificarDialog({
   denunciaId,
   policial,
+  podeEditarCargo,
   onClose,
 }: {
   denunciaId: string;
-  policial: { id: string; nome: string; rg_funcional: string | null; unidade: string | null };
+  policial: { id: string; nome: string; rg_funcional: string | null; unidade: string | null; cargo: string | null };
+  podeEditarCargo: boolean;
   onClose: () => void;
 }) {
   const qc = useQueryClient();
@@ -2576,6 +2578,7 @@ function RetificarDialog({
   const [nome, setNome] = useState(policial.nome);
   const [mat, setMat] = useState(policial.rg_funcional ?? "");
   const [unidade, setUnidade] = useState<string>(policial.unidade ?? "");
+  const [cargoPol, setCargoPol] = useState<string>(policial.cargo ?? "");
   const [motivo, setMotivo] = useState("");
   const m = useMutation({
     mutationFn: () =>
@@ -2585,6 +2588,7 @@ function RetificarDialog({
           nome,
           rg_funcional: mat || null,
           unidade: (unidade || null) as typeof UNIDADES[number] | null,
+          cargo: (cargoPol || null) as typeof CARGOS_POLICIAIS[number] | null,
           motivo: motivo || null,
         },
       }),
@@ -2597,7 +2601,8 @@ function RetificarDialog({
   const semMudanca =
     nome.trim() === policial.nome &&
     (mat.trim() || null) === (policial.rg_funcional ?? null) &&
-    (unidade || null) === (policial.unidade ?? null);
+    (unidade || null) === (policial.unidade ?? null) &&
+    (cargoPol || null) === (policial.cargo ?? null);
   return (
     <Modal title="Retificar denunciado" onClose={onClose}>
       <label className="grid gap-1.5">
@@ -2619,6 +2624,24 @@ function RetificarDialog({
           {UNIDADES.map((u) => (
             <option key={u} value={u}>
               {u}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="mt-3 grid gap-1.5">
+        <span className="text-xs uppercase tracking-wider text-muted-foreground">
+          Cargo{!podeEditarCargo && " (somente Delegado Corregedor ou Corregedor)"}
+        </span>
+        <select
+          className="input"
+          value={cargoPol}
+          disabled={!podeEditarCargo}
+          onChange={(e) => setCargoPol(e.target.value)}
+        >
+          <option value="">Selecionar...</option>
+          {CARGOS_POLICIAIS.map((c) => (
+            <option key={c} value={c}>
+              {c}
             </option>
           ))}
         </select>
@@ -2655,6 +2678,7 @@ function RetificarDialog({
     </Modal>
   );
 }
+
 
 // ============ Acesso do Ministério Público ============
 function AcessoMpSection({ denunciaId }: { denunciaId: string }) {

@@ -42,6 +42,8 @@ import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Tra
 import { DocumentTemplate, exportDocumentToPdf, useDocumentRef } from "@/components/DocumentTemplate";
 import { RichTextEditor, isHtmlAto, sanitizeAtoHtml } from "@/components/RichTextEditor";
 import { exportProcessoCompleto } from "@/lib/exportProcesso";
+import { AtoAnexosUploader, type AtoAnexo } from "@/components/AtoAnexosUploader";
+import { AtoAnexosLinks } from "@/components/AtoAnexosLinks";
 import {
   AlertDialog,
   AlertDialogAction,

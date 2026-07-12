@@ -440,3 +440,52 @@ function ExcluirModal({ usuario, onClose }: { usuario: Usuario | null; onClose: 
     </Dialog>
   );
 }
+
+function AprovarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: () => void }) {
+  const qc = useQueryClient();
+  const aprovarFn = useServerFn(aprovarUsuario);
+  const [cargo, setCargo] = useState<"cidadao" | "corregedor" | "delegado_geral" | "mp">("cidadao");
+
+  const m = useMutation({
+    mutationFn: () => aprovarFn({ data: { user_id: usuario!.id, cargo } }),
+    onSuccess: () => {
+      toast.success("Cadastro aprovado.");
+      qc.invalidateQueries({ queryKey: ["usuarios"] });
+      onClose();
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro ao aprovar."),
+  });
+
+  return (
+    <Dialog open={!!usuario} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Aprovar cadastro</DialogTitle>
+          <DialogDescription>
+            Defina o cargo de <strong>{usuario?.nome}</strong> ao aprovar o cadastro.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label>Cargo</Label>
+            <Select value={cargo} onValueChange={(v) => setCargo(v as typeof cargo)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cidadao">Cidadão</SelectItem>
+                <SelectItem value="mp">Ministério Público</SelectItem>
+                <SelectItem value="corregedor">Corregedor</SelectItem>
+                <SelectItem value="delegado_geral">Delegado Geral</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button onClick={() => m.mutate()} disabled={m.isPending}>
+            {m.isPending ? "Aprovando…" : "Aprovar cadastro"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

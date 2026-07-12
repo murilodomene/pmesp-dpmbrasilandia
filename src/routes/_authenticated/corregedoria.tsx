@@ -491,7 +491,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     }
   }, [data?.denuncia]);
 
-  const unidadeFn = useServerFn(atualizarUnidade);
+  
 
   const mLancar = useMutation({
     mutationFn: () => {

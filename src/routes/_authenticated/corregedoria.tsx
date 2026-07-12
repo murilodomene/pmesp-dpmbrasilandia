@@ -910,16 +910,18 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                   </select>
                 </div>
                 <IpcCampoAuto label="1º Processo número" valor={denuncia.numero_protocolo} />
-                <IpcCampoAuto
-                  label="2º Identificação do policial"
-                  valor={
-                    policiais.length
-                      ? policiais
-                          .map((p) => `${p.nome}${p.rg_funcional ? ` — ${p.rg_funcional}` : ""}`)
-                          .join("; ")
-                      : "Não identificado"
-                  }
-                />
+                <div>
+                  <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                    2º Identificação do policial
+                  </span>
+                  <textarea
+                    value={ipcIdent}
+                    onChange={(ev) => setIpcIdent(ev.target.value)}
+                    rows={2}
+                    placeholder="Nome — RG; Nome — RG"
+                    className="mt-1 w-full rounded-md border border-border bg-surface-2 px-2 py-1.5 text-sm"
+                  />
+                </div>
                 <div>
                   <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
                     3º Relato do fato

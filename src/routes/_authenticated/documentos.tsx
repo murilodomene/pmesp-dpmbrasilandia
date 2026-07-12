@@ -85,14 +85,19 @@ function DocumentosPage() {
   }, [selectedId]);
 
   const podeVerHierarquia = cargo !== null && HIERARQUIA_ROLES.has(cargo);
-  const visibleDocs = useMemo(
-    () => docs.filter((d) => d.id !== "hierarquia" || podeVerHierarquia),
-    [docs, podeVerHierarquia],
-  );
+  const podeVerFluxo = cargo !== null && FLUXO_ROLES.has(cargo);
+  const visibleDocs = useMemo(() => {
+    const base = docs.filter((d) => d.id !== "hierarquia" || podeVerHierarquia);
+    const withFluxo = podeVerFluxo ? [...base, FLUXO_DOC] : base;
+    return withFluxo.sort(
+      (a, b) => DOC_ORDER.indexOf(a.id) - DOC_ORDER.indexOf(b.id),
+    );
+  }, [docs, podeVerHierarquia, podeVerFluxo]);
 
   const selected = visibleDocs.find((d) => d.id === selectedId) ?? null;
   const isHierarquia = selected?.id === "hierarquia";
-  const isLegal = !!selected && !isHierarquia && isLegalDoc(selected.conteudo);
+  const isFluxo = selected?.id === "fluxo";
+  const isLegal = !!selected && !isHierarquia && !isFluxo && isLegalDoc(selected.conteudo);
 
   const rendered = useMemo(() => {
     if (!selected) return { html: "", toc: [] as TocEntry[], count: 0, legal: false };

@@ -5,8 +5,9 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
 const STATUS_VALUES = [
-  "recebida",
+  "novo",
   "aguardando_analise",
+  "recebida",
   "em_analise",
   "em_investigacao",
   "ag_decurso_prazo",

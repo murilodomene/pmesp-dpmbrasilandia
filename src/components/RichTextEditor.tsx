@@ -20,6 +20,7 @@ export function RichTextEditor({ value, onChange, placeholder, minHeight = 180 }
       StarterKit.configure({ heading: false, codeBlock: false, blockquote: false, horizontalRule: false }),
       Underline,
       TextAlign.configure({ types: ["paragraph"], alignments: ["left", "center", "right", "justify"] }),
+      Link.configure({ openOnClick: false, autolink: true, HTMLAttributes: { rel: "noopener noreferrer nofollow", target: "_blank", class: "text-primary underline decoration-dotted underline-offset-2" } }),
     ],
     content: value || "",
     editorProps: {

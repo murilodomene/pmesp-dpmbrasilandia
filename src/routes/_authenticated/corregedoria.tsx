@@ -695,6 +695,9 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                       {p.nome}
                       {p.rg_funcional && <span className="text-muted-foreground"> · {p.rg_funcional}</span>}
                       {p.unidade && <span className="text-muted-foreground"> · {p.unidade}</span>}
+                      {(p as { cargo?: string | null }).cargo && (
+                        <span className="text-muted-foreground"> · {(p as { cargo?: string | null }).cargo}</span>
+                      )}
                     </span>
                     {podeRetificar && (
                       <button
@@ -709,6 +712,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                               nome: p.nome,
                               rg_funcional: p.rg_funcional ?? null,
                               unidade: p.unidade ?? null,
+                              cargo: (p as { cargo?: string | null }).cargo ?? null,
                             },
                           })
                         }

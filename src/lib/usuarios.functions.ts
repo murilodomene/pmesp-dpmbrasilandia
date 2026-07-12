@@ -35,8 +35,8 @@ export const excluirUsuario = createServerFn({ method: "POST" })
       .select("role")
       .eq("user_id", data.user_id)
       .maybeSingle();
-    if (alvo && (DELEGADO_ROLES as readonly string[]).includes(alvo.role)) {
-      throw new Error("Delegados não podem ser excluídos por esta ação.");
+    if (alvo && alvo.role === "delegado_corregedor") {
+      throw new Error("O Delegado Corregedor não pode ser excluído por esta ação.");
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.auth.admin.deleteUser(data.user_id);

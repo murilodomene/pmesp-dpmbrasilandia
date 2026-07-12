@@ -281,6 +281,7 @@ function UsuariosPage() {
       <EditarModal usuario={editando} onClose={() => setEditando(null)} />
       <StatusModal usuario={confirmando} onClose={() => setConfirmando(null)} />
       <ExcluirModal usuario={excluindo} onClose={() => setExcluindo(null)} />
+      <AprovarModal usuario={aprovando} onClose={() => setAprovando(null)} />
     </div>
   );
 }

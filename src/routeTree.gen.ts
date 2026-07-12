@@ -26,7 +26,6 @@ import { Route as AuthenticatedMpProcessosRouteImport } from './routes/_authenti
 import { Route as AuthenticatedMinhasDenunciasRouteImport } from './routes/_authenticated/minhas-denuncias'
 import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated/documentos'
 import { Route as AuthenticatedCorregedoriaRouteImport } from './routes/_authenticated/corregedoria'
-import { Route as AuthenticatedAvisosRouteImport } from './routes/_authenticated/avisos'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -115,11 +114,6 @@ const AuthenticatedCorregedoriaRoute =
     path: '/corregedoria',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAvisosRoute = AuthenticatedAvisosRouteImport.update({
-  id: '/avisos',
-  path: '/avisos',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -130,7 +124,6 @@ export interface FileRoutesByFullPath {
   '/manual': typeof ManualRoute
   '/mp': typeof MpRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/avisos': typeof AuthenticatedAvisosRoute
   '/corregedoria': typeof AuthenticatedCorregedoriaRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
   '/minhas-denuncias': typeof AuthenticatedMinhasDenunciasRoute
@@ -149,7 +142,6 @@ export interface FileRoutesByTo {
   '/manual': typeof ManualRoute
   '/mp': typeof MpRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/avisos': typeof AuthenticatedAvisosRoute
   '/corregedoria': typeof AuthenticatedCorregedoriaRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
   '/minhas-denuncias': typeof AuthenticatedMinhasDenunciasRoute
@@ -170,7 +162,6 @@ export interface FileRoutesById {
   '/manual': typeof ManualRoute
   '/mp': typeof MpRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/_authenticated/avisos': typeof AuthenticatedAvisosRoute
   '/_authenticated/corregedoria': typeof AuthenticatedCorregedoriaRoute
   '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
   '/_authenticated/minhas-denuncias': typeof AuthenticatedMinhasDenunciasRoute
@@ -191,7 +182,6 @@ export interface FileRouteTypes {
     | '/manual'
     | '/mp'
     | '/sitemap.xml'
-    | '/avisos'
     | '/corregedoria'
     | '/documentos'
     | '/minhas-denuncias'
@@ -210,7 +200,6 @@ export interface FileRouteTypes {
     | '/manual'
     | '/mp'
     | '/sitemap.xml'
-    | '/avisos'
     | '/corregedoria'
     | '/documentos'
     | '/minhas-denuncias'
@@ -230,7 +219,6 @@ export interface FileRouteTypes {
     | '/manual'
     | '/mp'
     | '/sitemap.xml'
-    | '/_authenticated/avisos'
     | '/_authenticated/corregedoria'
     | '/_authenticated/documentos'
     | '/_authenticated/minhas-denuncias'
@@ -374,18 +362,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCorregedoriaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/avisos': {
-      id: '/_authenticated/avisos'
-      path: '/avisos'
-      fullPath: '/avisos'
-      preLoaderRoute: typeof AuthenticatedAvisosRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAvisosRoute: typeof AuthenticatedAvisosRoute
   AuthenticatedCorregedoriaRoute: typeof AuthenticatedCorregedoriaRoute
   AuthenticatedDocumentosRoute: typeof AuthenticatedDocumentosRoute
   AuthenticatedMinhasDenunciasRoute: typeof AuthenticatedMinhasDenunciasRoute
@@ -397,7 +377,6 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAvisosRoute: AuthenticatedAvisosRoute,
   AuthenticatedCorregedoriaRoute: AuthenticatedCorregedoriaRoute,
   AuthenticatedDocumentosRoute: AuthenticatedDocumentosRoute,
   AuthenticatedMinhasDenunciasRoute: AuthenticatedMinhasDenunciasRoute,

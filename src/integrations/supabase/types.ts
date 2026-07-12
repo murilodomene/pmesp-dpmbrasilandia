@@ -14,57 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      aviso_contador: {
-        Row: {
-          ano: number
-          ultimo: number
-        }
-        Insert: {
-          ano: number
-          ultimo?: number
-        }
-        Update: {
-          ano?: number
-          ultimo?: number
-        }
-        Relationships: []
-      }
-      avisos: {
-        Row: {
-          autor_cargo: Database["public"]["Enums"]["app_role"]
-          autor_id: string
-          autor_nome: string
-          corpo: string
-          created_at: string
-          id: string
-          numero: string
-          titulo: string
-          updated_at: string
-        }
-        Insert: {
-          autor_cargo: Database["public"]["Enums"]["app_role"]
-          autor_id: string
-          autor_nome: string
-          corpo: string
-          created_at?: string
-          id?: string
-          numero?: string
-          titulo: string
-          updated_at?: string
-        }
-        Update: {
-          autor_cargo?: Database["public"]["Enums"]["app_role"]
-          autor_id?: string
-          autor_nome?: string
-          corpo?: string
-          created_at?: string
-          id?: string
-          numero?: string
-          titulo?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       denuncia_policiais: {
         Row: {
           created_at: string
@@ -365,62 +314,6 @@ export type Database = {
           },
         ]
       }
-      notificacoes: {
-        Row: {
-          aviso_id: string | null
-          created_at: string
-          denuncia_id: string | null
-          id: string
-          lida_em: string | null
-          lido: boolean
-          remetente_cargo: Database["public"]["Enums"]["app_role"] | null
-          remetente_id: string | null
-          remetente_nome: string | null
-          teor: string | null
-          tipo: Database["public"]["Enums"]["notificacao_tipo"]
-          titulo: string
-          user_id: string
-        }
-        Insert: {
-          aviso_id?: string | null
-          created_at?: string
-          denuncia_id?: string | null
-          id?: string
-          lida_em?: string | null
-          lido?: boolean
-          remetente_cargo?: Database["public"]["Enums"]["app_role"] | null
-          remetente_id?: string | null
-          remetente_nome?: string | null
-          teor?: string | null
-          tipo: Database["public"]["Enums"]["notificacao_tipo"]
-          titulo: string
-          user_id: string
-        }
-        Update: {
-          aviso_id?: string | null
-          created_at?: string
-          denuncia_id?: string | null
-          id?: string
-          lida_em?: string | null
-          lido?: boolean
-          remetente_cargo?: Database["public"]["Enums"]["app_role"] | null
-          remetente_id?: string | null
-          remetente_nome?: string | null
-          teor?: string | null
-          tipo?: Database["public"]["Enums"]["notificacao_tipo"]
-          titulo?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "notificacoes_denuncia_id_fkey"
-            columns: ["denuncia_id"]
-            isOneToOne: false
-            referencedRelation: "denuncias"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       oitivas: {
         Row: {
           ativa: boolean
@@ -616,23 +509,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      buscar_internos: {
-        Args: { _termo: string }
-        Returns: {
-          cargo: Database["public"]["Enums"]["app_role"]
-          id: string
-          nome: string
-        }[]
-      }
       cancelar_movimento: {
         Args: { _motivo: string; _movimento_id: string }
         Returns: undefined
       }
-      criar_intimacao: {
-        Args: { _denuncia_id: string; _destinatario_id: string; _teor: string }
-        Returns: string
-      }
-      gerar_numero_aviso: { Args: never; Returns: string }
       gerar_numero_pdo: { Args: never; Returns: string }
       gerar_protocolo: { Args: never; Returns: string }
       get_obs_internas: { Args: { _denuncia_id: string }; Returns: string }
@@ -649,22 +529,9 @@ export type Database = {
       }
       is_active_staff: { Args: { _user_id: string }; Returns: boolean }
       is_delegado: { Args: { _user_id: string }; Returns: boolean }
-      marcar_notificacao_lida: {
-        Args: { _notif_id: string }
-        Returns: undefined
-      }
       mp_tem_acesso: {
         Args: { _denuncia_id: string; _user_id: string }
         Returns: boolean
-      }
-      notificar_delegados: {
-        Args: {
-          _autor_id: string
-          _denuncia_id: string
-          _teor: string
-          _titulo: string
-        }
-        Returns: undefined
       }
       pode_conceder_mp: { Args: { _user_id: string }; Returns: boolean }
       pode_excluir_denuncia: { Args: { _user_id: string }; Returns: boolean }
@@ -705,7 +572,6 @@ export type Database = {
         | "cancelamento"
         | "certidao"
         | "evento"
-      notificacao_tipo: "auto" | "intimacao" | "aviso"
       profile_status: "pendente" | "ativo" | "inativo"
       unidade_pc:
         | "DEIC"
@@ -872,7 +738,6 @@ export const Constants = {
         "certidao",
         "evento",
       ],
-      notificacao_tipo: ["auto", "intimacao", "aviso"],
       profile_status: ["pendente", "ativo", "inativo"],
       unidade_pc: [
         "DEIC",

@@ -2,7 +2,6 @@ import { Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
-import { NotificationBell } from "@/components/NotificationBell";
 
 interface Profile {
   nome: string;
@@ -77,7 +76,6 @@ export function Header() {
               <NavLink to="/painel">Painel Interno</NavLink>
               <NavLink to="/corregedoria">Corregedoria</NavLink>
               <NavLink to="/pdo">PDO</NavLink>
-              <NavLink to="/avisos">Avisos</NavLink>
               <NavLink to="/documentos">Documentos</NavLink>
               {isDelegadoCorregedor && <NavLink to="/usuarios">Gestão de Usuários</NavLink>}
             </>
@@ -88,7 +86,6 @@ export function Header() {
         <div className="flex items-center gap-2">
           {loading ? null : session ? (
             <div className="flex items-center gap-2 text-sm">
-              {isStaff && <NotificationBell />}
               <span className="hidden text-muted-foreground sm:inline">{profile?.nome ?? session.user.email}</span>
               <button
                 onClick={signOut}

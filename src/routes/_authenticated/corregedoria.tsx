@@ -38,7 +38,6 @@ import {
 
 
 import { getSessionInfo } from "@/lib/usuarios.functions";
-import { criarIntimacao, buscarInternos } from "@/lib/notificacoes.functions";
 import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2, Download, ShieldCheck, Bell } from "lucide-react";
 import { DocumentTemplate, exportDocumentToPdf, useDocumentRef } from "@/components/DocumentTemplate";
 import { RichTextEditor, isHtmlAto, sanitizeAtoHtml } from "@/components/RichTextEditor";
@@ -471,7 +470,6 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     | { kind: "excluir" }
     | { kind: "cancelarMov"; movimento_id: string; resumo: string }
     | { kind: "recurso" }
-    | { kind: "intimar" }
     | null
   >(null);
 
@@ -598,14 +596,6 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
             >
               Movimentar status
             </button>
-            {(cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor") && (
-              <button
-                onClick={() => setDialog({ kind: "intimar" })}
-                className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
-              >
-                Intimar
-              </button>
-            )}
             {podeRegistrarRecurso && (
               <button
                 onClick={() => setDialog({ kind: "recurso" })}
@@ -1308,11 +1298,6 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
       )}
 
 
-
-
-      {dialog?.kind === "intimar" && (
-        <IntimarDialog denunciaId={id} cargo={cargo} onClose={() => setDialog(null)} />
-      )}
 
 
       <style>{`.input{background:var(--input);border:1px solid var(--border);border-radius:6px;padding:.55rem .7rem;font-size:.9rem;color:var(--foreground);width:100%}`}</style>
@@ -2712,119 +2697,4 @@ function NaturezaInline({
   );
 }
 
-
-
-function IntimarDialog({
-  denunciaId,
-  cargo,
-  onClose,
-}: {
-  denunciaId: string;
-  cargo: string | null;
-  onClose: () => void;
-}) {
-  const qc = useQueryClient();
-  const criarFn = useServerFn(criarIntimacao);
-  const buscarFn = useServerFn(buscarInternos);
-  const [termo, setTermo] = useState("");
-  const [teor, setTeor] = useState("");
-  const [dest, setDest] = useState<{ id: string; nome: string; cargo: string } | null>(null);
-
-  const { data: sugestoes } = useQuery({
-    queryKey: ["buscar-internos", termo],
-    queryFn: () => buscarFn({ data: { termo } }),
-    enabled: !dest,
-  });
-
-  const rank: Record<string, number> = {
-    delegado_geral: 3,
-    delegado_corregedor: 2,
-    corregedor: 1,
-  };
-  const meuRank = cargo ? rank[cargo] ?? 0 : 0;
-  const opcoes = ((sugestoes ?? []) as Array<{ id: string; nome: string; cargo: string }>)
-    .filter((u) => (rank[u.cargo] ?? 0) <= meuRank);
-
-  const m = useMutation({
-    mutationFn: () =>
-      criarFn({ data: { denuncia_id: denunciaId, destinatario_id: dest!.id, teor } }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["denuncia", denunciaId] });
-      qc.invalidateQueries({ queryKey: ["notificacoes"] });
-      toast.success("Intimação enviada.");
-      onClose();
-    },
-    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao intimar."),
-  });
-
-  return (
-    <Modal title="Expedir intimação" onClose={onClose}>
-      <div className="space-y-3">
-        <div>
-          <label className="mb-1 block text-xs text-muted-foreground">Destinatário</label>
-          {dest ? (
-            <div className="flex items-center justify-between rounded-md border border-border bg-surface-2 px-3 py-2 text-sm">
-              <span>{dest.nome} <span className="text-xs text-muted-foreground">— {cargoLabel(dest.cargo)}</span></span>
-              <button
-                onClick={() => setDest(null)}
-                className="text-xs text-muted-foreground hover:text-foreground"
-              >
-                Trocar
-              </button>
-            </div>
-          ) : (
-            <>
-              <input
-                autoFocus
-                className="input"
-                placeholder="Digite o nome do usuário interno"
-                value={termo}
-                onChange={(e) => setTermo(e.target.value)}
-              />
-              {opcoes.length > 0 && (
-                <div className="mt-1 max-h-48 overflow-y-auto rounded-md border border-border">
-                  {opcoes.map((u) => (
-                    <button
-                      key={u.id}
-                      onClick={() => setDest(u)}
-                      className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-surface-2"
-                    >
-                      <span>{u.nome}</span>
-                      <span className="text-xs text-muted-foreground">{cargoLabel(u.cargo)}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {termo && opcoes.length === 0 && (
-                <div className="mt-1 text-xs text-muted-foreground">Nenhum usuário elegível.</div>
-              )}
-            </>
-          )}
-        </div>
-        <div>
-          <label className="mb-1 block text-xs text-muted-foreground">Teor da intimação</label>
-          <textarea
-            rows={5}
-            className="input"
-            placeholder='Ex.: "Proceda com a oitiva das testemunhas."'
-            value={teor}
-            onChange={(e) => setTeor(e.target.value)}
-          />
-        </div>
-      </div>
-      <div className="mt-4 flex justify-end gap-2">
-        <button onClick={onClose} className="rounded-md border border-border px-4 py-2 text-sm">
-          Cancelar
-        </button>
-        <button
-          onClick={() => m.mutate()}
-          disabled={!dest || teor.trim().length < 1 || m.isPending}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
-        >
-          {m.isPending ? "Enviando..." : "Enviar intimação"}
-        </button>
-      </div>
-    </Modal>
-  );
-}
 

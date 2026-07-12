@@ -1735,7 +1735,7 @@ function PortariaDialog({
   });
 
   return (
-    <Modal title="Portaria Inaugural" onClose={onClose}>
+    <Modal title="Portaria Inaugural" onClose={onClose} size="3xl">
       <div className="mb-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs">
         Ao confirmar, a portaria é lançada na linha do tempo, a data de instauração é
         preenchida e a <strong>prescrição é interrompida</strong> (relógio reinicia em 15 dias).

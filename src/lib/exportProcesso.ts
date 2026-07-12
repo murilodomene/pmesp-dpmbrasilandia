@@ -8,6 +8,7 @@
  */
 import { calcularPrescricao, type DenunciaStatus, formatarDiasRestantes } from "@/lib/prescricao";
 import { sanitizeAtoHtml, isHtmlAto } from "@/components/RichTextEditor";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface ExportPolicial {
   id: string;

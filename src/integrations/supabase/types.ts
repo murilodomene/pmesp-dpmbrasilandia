@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      aviso_contador: {
+        Row: {
+          ano: number
+          ultimo: number
+        }
+        Insert: {
+          ano: number
+          ultimo?: number
+        }
+        Update: {
+          ano?: number
+          ultimo?: number
+        }
+        Relationships: []
+      }
+      avisos: {
+        Row: {
+          autor_cargo: Database["public"]["Enums"]["app_role"]
+          autor_id: string
+          autor_nome: string
+          corpo: string
+          created_at: string
+          id: string
+          numero: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          autor_cargo: Database["public"]["Enums"]["app_role"]
+          autor_id: string
+          autor_nome: string
+          corpo: string
+          created_at?: string
+          id?: string
+          numero?: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          autor_cargo?: Database["public"]["Enums"]["app_role"]
+          autor_id?: string
+          autor_nome?: string
+          corpo?: string
+          created_at?: string
+          id?: string
+          numero?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       denuncia_policiais: {
         Row: {
           created_at: string
@@ -316,8 +367,9 @@ export type Database = {
       }
       notificacoes: {
         Row: {
+          aviso_id: string | null
           created_at: string
-          denuncia_id: string
+          denuncia_id: string | null
           id: string
           lida_em: string | null
           lido: boolean
@@ -330,8 +382,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          aviso_id?: string | null
           created_at?: string
-          denuncia_id: string
+          denuncia_id?: string | null
           id?: string
           lida_em?: string | null
           lido?: boolean
@@ -344,8 +397,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          aviso_id?: string | null
           created_at?: string
-          denuncia_id?: string
+          denuncia_id?: string | null
           id?: string
           lida_em?: string | null
           lido?: boolean
@@ -578,6 +632,7 @@ export type Database = {
         Args: { _denuncia_id: string; _destinatario_id: string; _teor: string }
         Returns: string
       }
+      gerar_numero_aviso: { Args: never; Returns: string }
       gerar_numero_pdo: { Args: never; Returns: string }
       gerar_protocolo: { Args: never; Returns: string }
       get_obs_internas: { Args: { _denuncia_id: string }; Returns: string }
@@ -650,7 +705,7 @@ export type Database = {
         | "cancelamento"
         | "certidao"
         | "evento"
-      notificacao_tipo: "auto" | "intimacao"
+      notificacao_tipo: "auto" | "intimacao" | "aviso"
       profile_status: "pendente" | "ativo" | "inativo"
       unidade_pc:
         | "DEIC"
@@ -817,7 +872,7 @@ export const Constants = {
         "certidao",
         "evento",
       ],
-      notificacao_tipo: ["auto", "intimacao"],
+      notificacao_tipo: ["auto", "intimacao", "aviso"],
       profile_status: ["pendente", "ativo", "inativo"],
       unidade_pc: [
         "DEIC",

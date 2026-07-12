@@ -20,7 +20,7 @@ export const listNotificacoes = createServerFn({ method: "GET" })
     if (!cargo || !(INTERNOS as readonly string[]).includes(cargo)) return [];
     const { data, error } = await context.supabase
       .from("notificacoes")
-      .select("id, denuncia_id, tipo, titulo, teor, remetente_nome, remetente_cargo, lido, lida_em, created_at, denuncias(numero_protocolo)")
+      .select("id, denuncia_id, aviso_id, tipo, titulo, teor, remetente_nome, remetente_cargo, lido, lida_em, created_at, denuncias(numero_protocolo)")
       .eq("user_id", context.userId)
       .order("created_at", { ascending: false })
       .limit(50);

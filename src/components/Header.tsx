@@ -77,6 +77,7 @@ export function Header() {
               <NavLink to="/painel">Painel Interno</NavLink>
               <NavLink to="/corregedoria">Corregedoria</NavLink>
               <NavLink to="/pdo">PDO</NavLink>
+              <NavLink to="/avisos">Avisos</NavLink>
               <NavLink to="/documentos">Documentos</NavLink>
               {isDelegadoCorregedor && <NavLink to="/usuarios">Gestão de Usuários</NavLink>}
             </>

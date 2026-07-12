@@ -676,6 +676,7 @@ export const submitDenunciaCidadao = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => submitSchema.parse(data))
   .handler(async ({ data, context }) => {
     const anon = data.denunciante_anonimo;
+    const unidadeAuto = data.policiais.find((p) => p.unidade)?.unidade ?? null;
     const { data: den, error } = await context.supabase
       .from("denuncias")
       .insert({
@@ -691,6 +692,7 @@ export const submitDenunciaCidadao = createServerFn({ method: "POST" })
         relato: data.relato,
         info_adicional: data.info_adicional,
         links: data.links,
+        unidade: unidadeAuto,
       })
       .select("id, numero_protocolo")
       .single();

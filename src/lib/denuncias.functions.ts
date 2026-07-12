@@ -97,7 +97,7 @@ export const submitDenuncia = createServerFn({ method: "POST" })
         denuncia_id: den.id,
         nome: p.nome,
         rg_funcional: p.rg_funcional ?? null,
-        unidade: p.unidade ?? null,
+        unidade: null,
       }));
       await sb.from("denuncia_policiais").insert(rows);
     }

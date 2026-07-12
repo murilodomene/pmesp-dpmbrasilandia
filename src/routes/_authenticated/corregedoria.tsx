@@ -1391,6 +1391,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
         <RetificarDialog
           denunciaId={id}
           policial={dialog.policial}
+          podeEditarCargo={podeEditarCargo}
           onClose={() => setDialog(null)}
         />
       )}

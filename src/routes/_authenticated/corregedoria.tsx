@@ -887,7 +887,21 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
           <>
             {especie === "ipc" ? (
               <div className="mt-3 space-y-2">
-                <IpcCampoAuto label="Unidade" valor={denuncia.unidade || "—"} />
+                <div>
+                  <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                    Unidade
+                  </span>
+                  <select
+                    value={ipcUnidade}
+                    onChange={(ev) => setIpcUnidade(ev.target.value)}
+                    className="mt-1 w-full rounded-md border border-border bg-surface-2 px-2 py-1.5 text-sm"
+                  >
+                    <option value="">— selecione —</option>
+                    {UNIDADES.map((u) => (
+                      <option key={u} value={u}>{u}</option>
+                    ))}
+                  </select>
+                </div>
                 <IpcCampoAuto label="1º Processo número" valor={denuncia.numero_protocolo} />
                 <IpcCampoAuto
                   label="2º Identificação do policial"

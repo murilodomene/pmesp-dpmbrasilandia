@@ -100,6 +100,44 @@ export type Database = {
           },
         ]
       }
+      denuncia_tarjas: {
+        Row: {
+          cor: string
+          created_at: string
+          criado_por: string | null
+          denuncia_id: string
+          id: string
+          texto: string
+          updated_at: string
+        }
+        Insert: {
+          cor: string
+          created_at?: string
+          criado_por?: string | null
+          denuncia_id: string
+          id?: string
+          texto: string
+          updated_at?: string
+        }
+        Update: {
+          cor?: string
+          created_at?: string
+          criado_por?: string | null
+          denuncia_id?: string
+          id?: string
+          texto?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "denuncia_tarjas_denuncia_id_fkey"
+            columns: ["denuncia_id"]
+            isOneToOne: false
+            referencedRelation: "denuncias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       denuncias: {
         Row: {
           acrescimos_dias: number

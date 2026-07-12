@@ -127,8 +127,16 @@ function Corregedoria() {
     const tramitacao: DenunciaStatus[] = ["recebida", "aguardando_analise", "em_analise", "em_investigacao"];
     const decurso: DenunciaStatus[] = ["ag_decurso_prazo"];
     const concluidos: DenunciaStatus[] = ["transito_julgado", "arquivada"];
+    const tram = listaFiltrada
+      .filter((d) => tramitacao.includes(d.status as DenunciaStatus))
+      .slice()
+      .sort((a, b) => {
+        const pa = calcularPrescricao({ termo_inicial: a.termo_inicial, acrescimos_dias: a.acrescimos_dias, status: a.status as DenunciaStatus });
+        const pb = calcularPrescricao({ termo_inicial: b.termo_inicial, acrescimos_dias: b.acrescimos_dias, status: b.status as DenunciaStatus });
+        return pa.diasRestantes - pb.diasRestantes;
+      });
     return {
-      tramitacao: listaFiltrada.filter((d) => tramitacao.includes(d.status as DenunciaStatus)),
+      tramitacao: tram,
       decurso: listaFiltrada.filter((d) => decurso.includes(d.status as DenunciaStatus)),
       concluidos: listaFiltrada.filter((d) => concluidos.includes(d.status as DenunciaStatus)),
     };

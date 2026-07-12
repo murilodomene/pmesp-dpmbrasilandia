@@ -72,12 +72,25 @@ export function NotificacoesBell() {
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[360px] p-0">
-        <div className="border-b border-border p-3">
-          <div className="font-serif text-sm">Avisos</div>
-          <div className="text-[11px] text-muted-foreground">
-            {count > 0 ? `${count} não lido${count === 1 ? "" : "s"}` : "Nenhum aviso não lido"}
+        <div className="flex items-start justify-between gap-2 border-b border-border p-3">
+          <div className="min-w-0">
+            <div className="font-serif text-sm">Avisos</div>
+            <div className="text-[11px] text-muted-foreground">
+              {count > 0 ? `${count} não lido${count === 1 ? "" : "s"}` : "Nenhum aviso não lido"}
+            </div>
           </div>
+          {count > 0 && (
+            <button
+              type="button"
+              onClick={() => marcarTodas.mutate()}
+              disabled={marcarTodas.isPending}
+              className="shrink-0 rounded-md border border-border px-2 py-1 text-[11px] hover:bg-surface-2 disabled:opacity-50"
+            >
+              {marcarTodas.isPending ? "Marcando..." : "Ler todos"}
+            </button>
+          )}
         </div>
+
         <div className="max-h-[70vh] overflow-y-auto">
           {items.length === 0 ? (
             <div className="p-4 text-xs text-muted-foreground">Sem avisos.</div>

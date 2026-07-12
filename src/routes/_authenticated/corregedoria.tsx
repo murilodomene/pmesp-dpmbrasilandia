@@ -1280,6 +1280,9 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
       )}
       {dialog?.kind === "prorrogar" && <ProrrogarDialog id={id} onClose={() => setDialog(null)} />}
       {dialog?.kind === "oitiva" && <OitivaDialog id={id} onClose={() => setDialog(null)} />}
+      {dialog?.kind === "intimar" && (
+        <IntimarDialog denunciaId={id} onClose={() => setDialog(null)} />
+      )}
       {dialog?.kind === "retificar" && (
         <RetificarDialog
           denunciaId={id}

@@ -74,10 +74,11 @@ function cargoLabel(c: string) {
 
 function ObservacoesPage() {
   const { session } = useSession();
+  const search = Route.useSearch();
   const [cargo, setCargo] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
-  const [tab, setTab] = useState<"policial" | "geral">("policial");
-  const [busca, setBusca] = useState("");
+  const [tab, setTab] = useState<"policial" | "geral">(search.q ? "geral" : "policial");
+  const [busca, setBusca] = useState(search.q ?? "");
   const [aberto, setAberto] = useState<Observacao | null>(null);
   const [editando, setEditando] = useState<Observacao | null>(null);
   const [criando, setCriando] = useState(false);

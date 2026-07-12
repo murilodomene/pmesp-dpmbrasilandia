@@ -869,7 +869,16 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 } else {
                   setTeor("");
                   setAnexos([]);
-                  if (e.v === "ipc") setIpcUnidade((denuncia.unidade as string | null) ?? "");
+                  if (e.v === "ipc") {
+                    setIpcUnidade((denuncia.unidade as string | null) ?? "");
+                    setIpcIdent(
+                      policiais.length
+                        ? policiais
+                            .map((p) => `${p.nome}${p.rg_funcional ? ` — ${p.rg_funcional}` : ""}`)
+                            .join("; ")
+                        : "",
+                    );
+                  }
                   setEspecie(e.v);
                 }
               }}

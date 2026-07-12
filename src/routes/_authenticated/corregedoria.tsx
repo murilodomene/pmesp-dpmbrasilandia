@@ -1808,7 +1808,7 @@ function PortariaDialog({
               ? ""
               : "Clique em «Usar modelo pré-formatado» ou digite a portaria livremente."
           }
-          minHeight={280}
+          minHeight={200}
         />
       </div>
 

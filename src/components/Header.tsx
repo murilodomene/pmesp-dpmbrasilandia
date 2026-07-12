@@ -9,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { NotificacoesBell } from "@/components/NotificacoesBell";
 
 interface Profile {
   nome: string;
@@ -123,6 +124,7 @@ export function Header() {
         <div className="flex shrink-0 items-center gap-2">
           {loading ? null : session ? (
             <div className="flex items-center gap-2 text-sm">
+              {isStaff && <NotificacoesBell />}
               <span className="hidden max-w-[160px] truncate text-muted-foreground sm:inline">
                 {profile?.nome ?? session.user.email}
               </span>

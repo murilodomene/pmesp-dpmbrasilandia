@@ -318,7 +318,9 @@ interface ItemKanban {
   updated_at?: string | null;
   created_at?: string | null;
   denuncia_policiais?: { nome: string; unidade: string | null }[] | null;
+  denuncia_tarjas?: { id: string; cor: CorTarja; texto: string }[] | null;
 }
+
 
 function ListaProcessos({
   itens,

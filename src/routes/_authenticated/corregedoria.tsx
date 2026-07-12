@@ -2263,13 +2263,14 @@ function RetificarDialog({
   onClose,
 }: {
   denunciaId: string;
-  policial: { id: string; nome: string; rg_funcional: string | null };
+  policial: { id: string; nome: string; rg_funcional: string | null; unidade: string | null };
   onClose: () => void;
 }) {
   const qc = useQueryClient();
   const fn = useServerFn(retificarDenunciado);
   const [nome, setNome] = useState(policial.nome);
   const [mat, setMat] = useState(policial.rg_funcional ?? "");
+  const [unidade, setUnidade] = useState<string>(policial.unidade ?? "");
   const [motivo, setMotivo] = useState("");
   const m = useMutation({
     mutationFn: () =>
@@ -2278,6 +2279,7 @@ function RetificarDialog({
           policial_id: policial.id,
           nome,
           rg_funcional: mat || null,
+          unidade: (unidade || null) as typeof UNIDADES[number] | null,
           motivo: motivo || null,
         },
       }),
@@ -2288,7 +2290,9 @@ function RetificarDialog({
     },
   });
   const semMudanca =
-    nome.trim() === policial.nome && (mat.trim() || null) === (policial.rg_funcional ?? null);
+    nome.trim() === policial.nome &&
+    (mat.trim() || null) === (policial.rg_funcional ?? null) &&
+    (unidade || null) === (policial.unidade ?? null);
   return (
     <Modal title="Retificar denunciado" onClose={onClose}>
       <label className="grid gap-1.5">
@@ -2299,6 +2303,22 @@ function RetificarDialog({
         <span className="text-xs uppercase tracking-wider text-muted-foreground">Matrícula</span>
         <input className="input" value={mat} onChange={(e) => setMat(e.target.value)} />
       </label>
+      <label className="mt-3 grid gap-1.5">
+        <span className="text-xs uppercase tracking-wider text-muted-foreground">Unidade</span>
+        <select
+          className="input"
+          value={unidade}
+          onChange={(e) => setUnidade(e.target.value)}
+        >
+          <option value="">Selecionar...</option>
+          {UNIDADES.map((u) => (
+            <option key={u} value={u}>
+              {u}
+            </option>
+          ))}
+        </select>
+      </label>
+
       <label className="mt-3 grid gap-1.5">
         <span className="text-xs uppercase tracking-wider text-muted-foreground">
           Motivo (opcional)

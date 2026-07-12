@@ -175,92 +175,109 @@ function Corregedoria() {
     navigate({ search: {} });
   }
 
+  const abas: { key: "tramitacao" | "decurso" | "concluidos"; label: string; itens: ItemKanban[]; vazio: string; modo: "prescricao" | "decurso" | "suspenso" }[] = [
+    { key: "tramitacao", label: "Em Tramitação", itens: grupos.tramitacao, vazio: "Nada em tramitação.", modo: "prescricao" },
+    { key: "decurso", label: "Ag. Decurso do Prazo", itens: grupos.decurso, vazio: "Nenhum procedimento aguardando decurso.", modo: "decurso" },
+    { key: "concluidos", label: "Concluídas", itens: grupos.concluidos, vazio: "Nenhum procedimento concluído.", modo: "suspenso" },
+  ];
+  const abaCorrente = abas.find((a) => a.key === abaAtiva)!;
+
   return (
     <div className="min-h-screen">
       <Header />
       <div className="mx-auto max-w-[1400px] px-4 py-6">
-        <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
-          <div>
-            <div className="eyebrow">Autos</div>
-            <h1 className="mt-1 font-serif text-3xl">Corregedoria</h1>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span>{denuncias?.length ?? 0} procedimentos</span>
-            {isDelegado && (
-              <Link
-                to="/usuarios"
-                className="ml-2 flex items-center gap-1 rounded-md border border-border px-2 py-1 hover:bg-surface-2"
+        {selecionada ? (
+          <>
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={onVoltar}
+                className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-surface-2"
               >
-                <Users className="h-3.5 w-3.5" /> Usuários
-              </Link>
-            )}
-          </div>
-        </div>
+                ← Voltar
+              </button>
+              {isDelegado && (
+                <Link
+                  to="/usuarios"
+                  className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-surface-2"
+                >
+                  <Users className="h-3.5 w-3.5" /> Usuários
+                </Link>
+              )}
+            </div>
+            <Autuacao id={selecionada} cargo={session?.cargo ?? null} onDeleted={onVoltar} />
+          </>
+        ) : (
+          <>
+            <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+              <div>
+                <div className="eyebrow">Autos</div>
+                <h1 className="mt-1 font-serif text-3xl">Corregedoria</h1>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>{denuncias?.length ?? 0} procedimentos</span>
+                {isDelegado && (
+                  <Link
+                    to="/usuarios"
+                    className="ml-2 flex items-center gap-1 rounded-md border border-border px-2 py-1 hover:bg-surface-2"
+                  >
+                    <Users className="h-3.5 w-3.5" /> Usuários
+                  </Link>
+                )}
+              </div>
+            </div>
 
-        {/* Busca e filtros rápidos */}
-        <div className="surface mb-4 flex flex-wrap items-center gap-2 p-3">
-          <input
-            placeholder="Buscar por protocolo, denunciante, policial, natureza..."
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            className="min-w-[220px] flex-1 rounded-md border border-border bg-input px-3 py-2 text-sm"
-          />
-          <div className="flex flex-wrap gap-1">
-            <FiltroChip label="Todos" ativo={filtro === ""} onClick={() => setFiltro("")} />
-            {STATUS_LIST.map((s) => (
-              <FiltroChip
-                key={s}
-                label={STATUS_LABEL[s]}
-                ativo={filtro === s}
-                onClick={() => setFiltro(filtro === s ? "" : s)}
+            {/* Busca e filtros rápidos */}
+            <div className="surface mb-4 flex flex-wrap items-center gap-2 p-3">
+              <input
+                placeholder="Buscar por protocolo, denunciante, policial, natureza..."
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                className="min-w-[220px] flex-1 rounded-md border border-border bg-input px-3 py-2 text-sm"
               />
-            ))}
-          </div>
-        </div>
+              <div className="flex flex-wrap gap-1">
+                <FiltroChip label="Todos" ativo={filtro === ""} onClick={() => setFiltro("")} />
+                {STATUS_LIST.map((s) => (
+                  <FiltroChip
+                    key={s}
+                    label={STATUS_LABEL[s]}
+                    ativo={filtro === s}
+                    onClick={() => setFiltro(filtro === s ? "" : s)}
+                  />
+                ))}
+              </div>
+            </div>
 
-        {/* Kanban 3 colunas */}
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <ColunaKanban
-            titulo="Em Tramitação"
-            tom="azul"
-            count={grupos.tramitacao.length}
-            carregando={carregando}
-            vazioLabel="Nada em tramitação."
-            itens={grupos.tramitacao}
-            selecionada={selecionada}
-            onSelect={onSelect}
-          />
-          <ColunaKanban
-            titulo="Ag. Decurso do Prazo"
-            tom="amarelo"
-            count={grupos.decurso.length}
-            carregando={carregando}
-            vazioLabel="Nenhum procedimento aguardando decurso."
-            itens={grupos.decurso}
-            selecionada={selecionada}
-            onSelect={onSelect}
-            mostrarDecurso
-          />
-          <ColunaKanban
-            titulo="Concluídos"
-            tom="verde"
-            count={grupos.concluidos.length}
-            carregando={carregando}
-            vazioLabel="Nenhum procedimento concluído."
-            itens={grupos.concluidos}
-            selecionada={selecionada}
-            onSelect={onSelect}
-          />
-        </div>
+            {/* Abas */}
+            <div className="mb-3 flex flex-wrap items-center gap-1 border-b border-border">
+              {abas.map((a) => (
+                <button
+                  key={a.key}
+                  type="button"
+                  onClick={() => setAbaAtiva(a.key)}
+                  className={`-mb-px flex items-center gap-2 border-b-2 px-4 py-2 text-sm transition ${
+                    abaAtiva === a.key
+                      ? "border-primary text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {a.label}
+                  <span className="tabular rounded-full bg-surface-2 px-2 py-0.5 text-[11px]">
+                    {a.itens.length}
+                  </span>
+                </button>
+              ))}
+            </div>
 
-        {/* Autuação */}
-        <section id="autuacao-detalhe" className="mt-6">
-          {selecionada ? (
-            <Autuacao id={selecionada} cargo={session?.cargo ?? null} onDeleted={() => setSelecionada(null)} />
-          ) : (
-            <VazioAutuacao />
-          )}
-        </section>
+            <ListaProcessos
+              itens={abaCorrente.itens}
+              carregando={carregando}
+              vazioLabel={abaCorrente.vazio}
+              modo={abaCorrente.modo}
+              onSelect={onSelect}
+            />
+          </>
+        )}
       </div>
     </div>
   );

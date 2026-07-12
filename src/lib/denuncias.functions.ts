@@ -932,4 +932,67 @@ export const cancelarMovimento = createServerFn({ method: "POST" })
   });
 
 
+// ============ TARJAS DE SINALIZAÇÃO ============
+
+const CORES_TARJA = ["vermelho", "amarelo", "verde", "azul"] as const;
+
+export const adicionarTarja = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        denuncia_id: z.string().uuid(),
+        cor: z.enum(CORES_TARJA),
+        texto: z.string().trim().min(1).max(26),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: row, error } = await context.supabase
+      .from("denuncia_tarjas")
+      .insert({
+        denuncia_id: data.denuncia_id,
+        cor: data.cor,
+        texto: data.texto,
+        criado_por: context.userId,
+      })
+      .select("id, cor, texto")
+      .single();
+    if (error) throw new Error(error.message);
+    return row;
+  });
+
+export const editarTarja = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        cor: z.enum(CORES_TARJA),
+        texto: z.string().trim().min(1).max(26),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("denuncia_tarjas")
+      .update({ cor: data.cor, texto: data.texto })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const removerTarja = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("denuncia_tarjas")
+      .delete()
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+
 

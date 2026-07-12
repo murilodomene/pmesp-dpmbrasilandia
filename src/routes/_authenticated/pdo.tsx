@@ -1,7 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 import { Header } from "@/components/Header";
 import { getSessionInfo } from "@/lib/usuarios.functions";
 import {
@@ -9,8 +10,9 @@ import {
   listPdos,
   getPdo,
   gerarProcedimentoDoPdo,
+  excluirPdo,
 } from "@/lib/pdo.functions";
-import { Plus, ArrowRight, X } from "lucide-react";
+import { Plus, ArrowRight, X, Trash2, Loader2, Search } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/pdo")({
   component: PdoPage,
@@ -51,9 +53,13 @@ function PdoPage() {
   const [aberto, setAberto] = useState<string | null>(null);
   const [novo, setNovo] = useState(false);
   const [busca, setBusca] = useState("");
+  const [excluir, setExcluir] = useState<{ id: string; numero: string } | null>(null);
 
   const cargo = session?.cargo ?? null;
   const isStaff = cargo && cargo !== "cidadao" && cargo !== "mp";
+  const canDelete = cargo === "delegado_corregedor";
+  const canGenerate =
+    cargo === "delegado_corregedor" || cargo === "delegado_geral" || cargo === "corregedor";
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -114,31 +120,47 @@ function PdoPage() {
             <div className="p-6 text-sm text-muted-foreground">Nenhum PDO registrado.</div>
           )}
           {filtrados.map((p: any) => (
-            <button
+            <div
               key={p.id}
-              onClick={() => setAberto(p.id)}
-              className="flex w-full items-center justify-between gap-3 p-3 text-left text-sm hover:bg-surface-2"
+              className="flex items-center gap-2 p-3 text-sm hover:bg-surface-2"
             >
-              <div className="min-w-0">
-                <div className="tabular text-xs text-muted-foreground">{p.numero}</div>
-                <div className="truncate">
-                  {new Date(p.abordagem_em).toLocaleString("pt-BR")} · {p.local}
-                </div>
-                <div className="truncate text-xs text-muted-foreground">
-                  VTR {p.vtr_prefixo || "—"}
-                  {p.vtr_placa ? ` · ${p.vtr_placa}` : ""}
-                  {p.vtr_unidade ? ` · ${p.vtr_unidade}` : ""}
-                </div>
-              </div>
-              <div className="shrink-0 text-right">
-                <DesfechoBadge d={p.desfecho} />
-                {p.procedimento_numero && (
-                  <div className="mt-1 text-[10px] text-muted-foreground tabular">
-                    → {p.procedimento_numero}
+              <button
+                onClick={() => setAberto(p.id)}
+                className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left"
+              >
+                <div className="min-w-0">
+                  <div className="tabular text-xs text-muted-foreground">{p.numero}</div>
+                  <div className="truncate">
+                    {new Date(p.abordagem_em).toLocaleString("pt-BR")} · {p.local}
                   </div>
-                )}
-              </div>
-            </button>
+                  <div className="truncate text-xs text-muted-foreground">
+                    VTR {p.vtr_prefixo || "—"}
+                    {p.vtr_placa ? ` · ${p.vtr_placa}` : ""}
+                    {p.vtr_unidade ? ` · ${p.vtr_unidade}` : ""}
+                  </div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <DesfechoBadge d={p.desfecho} />
+                  {p.procedimento_numero && (
+                    <div className="mt-1 text-[10px] text-muted-foreground tabular">
+                      → {p.procedimento_numero}
+                    </div>
+                  )}
+                </div>
+              </button>
+              {canDelete && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setExcluir({ id: p.id, numero: p.numero });
+                  }}
+                  aria-label={`Excluir ${p.numero}`}
+                  className="rounded-md p-2 text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
+            </div>
           ))}
         </div>
       </div>
@@ -153,10 +175,30 @@ function PdoPage() {
           }}
         />
       )}
-      {aberto && <VerPdoDialog id={aberto} onClose={() => setAberto(null)} />}
+      {aberto && (
+        <VerPdoDialog
+          id={aberto}
+          canDelete={canDelete}
+          canGenerate={canGenerate}
+          onClose={() => setAberto(null)}
+          onRequestDelete={(id, numero) => setExcluir({ id, numero })}
+        />
+      )}
+      {excluir && (
+        <ConfirmarExclusaoDialog
+          id={excluir.id}
+          numero={excluir.numero}
+          onDone={() => {
+            setExcluir(null);
+            if (aberto === excluir.id) setAberto(null);
+          }}
+          onClose={() => setExcluir(null)}
+        />
+      )}
     </div>
   );
 }
+
 
 function DesfechoBadge({ d }: { d: string }) {
   const map: Record<string, { l: string; cls: string }> = {
@@ -477,33 +519,25 @@ function atualiza<T>(setter: React.Dispatch<React.SetStateAction<T[]>>, i: numbe
   setter((arr) => arr.map((x, j) => (j === i ? { ...x, [k]: v } : x)));
 }
 
-function VerPdoDialog({ id, onClose }: { id: string; onClose: () => void }) {
+function VerPdoDialog({
+  id,
+  canDelete,
+  canGenerate,
+  onClose,
+  onRequestDelete,
+}: {
+  id: string;
+  canDelete: boolean;
+  canGenerate: boolean;
+  onClose: () => void;
+  onRequestDelete: (id: string, numero: string) => void;
+}) {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const getFn = useServerFn(getPdo);
   const gerarFn = useServerFn(gerarProcedimentoDoPdo);
   const { data: pdo } = useQuery({ queryKey: ["pdo", id], queryFn: () => getFn({ data: { id } }) });
   const [gerando, setGerando] = useState(false);
-  const [relatoGerar, setRelatoGerar] = useState("");
-  const [alvoIdx, setAlvoIdx] = useState(0);
-  const [unidadeGerar, setUnidadeGerar] = useState("");
-
-  const m = useMutation({
-    mutationFn: () =>
-      gerarFn({
-        data: {
-          pdo_id: id,
-          relato: relatoGerar,
-          abordado_index: alvoIdx,
-          unidade: unidadeGerar || null,
-        },
-      }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["pdos"] });
-      qc.invalidateQueries({ queryKey: ["pdo", id] });
-      qc.invalidateQueries({ queryKey: ["denuncias"] });
-      setGerando(false);
-    },
-  });
 
   if (!pdo) return null;
   const abordados = Array.isArray(pdo.abordados) ? pdo.abordados : [];
@@ -589,86 +623,275 @@ function VerPdoDialog({ id, onClose }: { id: string; onClose: () => void }) {
                   Procedimento gerado:{" "}
                   <span className="tabular font-medium">{pdo.procedimento_numero}</span>
                 </span>
-                <Link
-                  to="/corregedoria"
-                  search={{ id: pdo.procedimento_id }}
+                <button
+                  onClick={() => navigate({ to: "/corregedoria", search: { id: pdo.procedimento_id } })}
                   className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
                 >
                   Abrir <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
+                </button>
               </div>
-            ) : !gerando ? (
+            ) : canGenerate ? (
               <button
-                onClick={() => {
-                  setRelatoGerar(pdo.relato ?? "");
-                  setUnidadeGerar(pdo.vtr_unidade ?? "");
-                  setGerando(true);
-                }}
-                className="rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground"
+                onClick={() => setGerando(true)}
+                className="rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground transition-opacity hover:opacity-90"
               >
                 Gerar procedimento a partir deste PDO
               </button>
             ) : (
-              <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">
-                  Revise e confirme os dados que serão pré-preenchidos na nova denúncia.
-                </p>
-                {abordados.length > 0 && (
-                  <Field label="Denunciado (abordado)">
-                    <select
-                      value={alvoIdx}
-                      onChange={(e) => setAlvoIdx(Number(e.target.value))}
-                      className="input"
-                    >
-                      {abordados.map((a: any, i: number) => (
-                        <option key={i} value={i}>
-                          P{i + 1} · {a.nome || "(sem nome)"}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                )}
-                <Field label="Unidade">
-                  <input
-                    value={unidadeGerar}
-                    onChange={(e) => setUnidadeGerar(e.target.value)}
-                    className="input"
-                  />
-                </Field>
-                <Field label="Relato">
-                  <textarea
-                    value={relatoGerar}
-                    onChange={(e) => setRelatoGerar(e.target.value)}
-                    rows={4}
-                    className="input"
-                  />
-                </Field>
-                {m.error && (
-                  <p className="text-xs text-destructive">
-                    {m.error instanceof Error ? m.error.message : "Erro ao gerar."}
-                  </p>
-                )}
-                <div className="flex justify-end gap-2">
-                  <button
-                    onClick={() => setGerando(false)}
-                    className="rounded-md border border-border px-3 py-1.5 text-xs"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    disabled={!relatoGerar.trim() || m.isPending}
-                    onClick={() => m.mutate()}
-                    className="rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground disabled:opacity-40"
-                  >
-                    {m.isPending ? "Gerando..." : "Confirmar geração"}
-                  </button>
-                </div>
-              </div>
+              <p className="text-xs text-muted-foreground">
+                Somente Delegado Corregedor, Delegado Geral ou Corregedor podem gerar o procedimento.
+              </p>
             )}
           </div>
         )}
 
+        <div className="flex justify-between border-t border-border pt-3">
+          {canDelete ? (
+            <button
+              onClick={() => onRequestDelete(id, pdo.numero)}
+              className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
+            >
+              <Trash2 className="h-3.5 w-3.5" /> Excluir PDO
+            </button>
+          ) : (
+            <span />
+          )}
+          <button
+            onClick={onClose}
+            className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
+          >
+            Fechar
+          </button>
+        </div>
+
         <style>{`.input{background:var(--input);border:1px solid var(--border);border-radius:6px;padding:.5rem .7rem;font-size:.9rem;color:var(--foreground);width:100%}`}</style>
+      </div>
+
+      {gerando && (
+        <GerarProcedimentoDialog
+          pdoId={id}
+          abordados={abordados}
+          defaultRelato={pdo.relato ?? ""}
+          defaultUnidade={pdo.vtr_unidade ?? ""}
+          gerarFn={gerarFn}
+          onClose={() => setGerando(false)}
+          onSuccess={(denuncia_id, protocolo) => {
+            qc.invalidateQueries({ queryKey: ["pdos"] });
+            qc.invalidateQueries({ queryKey: ["pdo", id] });
+            qc.invalidateQueries({ queryKey: ["denuncias"] });
+            setGerando(false);
+            toast.success(`Procedimento ${protocolo} gerado.`);
+            onClose();
+            navigate({ to: "/corregedoria", search: { id: denuncia_id } });
+          }}
+        />
+      )}
+    </Modal>
+  );
+}
+
+function GerarProcedimentoDialog({
+  pdoId,
+  abordados,
+  defaultRelato,
+  defaultUnidade,
+  gerarFn,
+  onClose,
+  onSuccess,
+}: {
+  pdoId: string;
+  abordados: any[];
+  defaultRelato: string;
+  defaultUnidade: string;
+  gerarFn: ReturnType<typeof useServerFn<typeof gerarProcedimentoDoPdo>>;
+  onClose: () => void;
+  onSuccess: (denuncia_id: string, protocolo: string) => void;
+}) {
+  const [busca, setBusca] = useState("");
+  const [selecionados, setSelecionados] = useState<number[]>([]);
+  const [relato, setRelato] = useState(defaultRelato);
+  const [unidade, setUnidade] = useState(defaultUnidade);
+
+  const pool = useMemo(
+    () =>
+      abordados
+        .map((a: any, i: number) => ({ i, ...a }))
+        .filter((a: any) => (a.nome ?? "").trim()),
+    [abordados],
+  );
+  const filtrados = useMemo(() => {
+    const q = busca.trim().toLowerCase();
+    if (!q) return pool;
+    return pool.filter(
+      (a: any) =>
+        a.nome?.toLowerCase().includes(q) ||
+        a.matricula?.toLowerCase().includes(q) ||
+        a.cargo?.toLowerCase().includes(q),
+    );
+  }, [pool, busca]);
+
+  const m = useMutation({
+    mutationFn: () =>
+      gerarFn({
+        data: {
+          pdo_id: pdoId,
+          relato,
+          unidade: unidade || null,
+          denunciados: selecionados.map((i) => ({
+            nome: abordados[i].nome,
+            matricula: abordados[i].matricula ?? "",
+            cargo: abordados[i].cargo ?? "",
+          })),
+        },
+      }),
+    onSuccess: (r) => onSuccess(r.denuncia_id, r.protocolo),
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro ao gerar procedimento."),
+  });
+
+  const toggle = (i: number) =>
+    setSelecionados((s) => (s.includes(i) ? s.filter((x) => x !== i) : [...s, i]));
+
+  return (
+    <Modal title="Gerar Procedimento" onClose={onClose}>
+      <div className="space-y-4 text-sm">
+        <div>
+          <label className="text-xs uppercase tracking-wider text-muted-foreground">
+            Selecione os policiais denunciados
+          </label>
+          <div className="mt-2 flex items-center gap-2 rounded-md border border-border bg-input px-2">
+            <Search className="h-3.5 w-3.5 text-muted-foreground" />
+            <input
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar por nome, matrícula ou cargo..."
+              className="w-full bg-transparent py-2 text-sm outline-none"
+            />
+          </div>
+
+          {selecionados.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {selecionados.map((i) => (
+                <span
+                  key={i}
+                  className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs text-primary"
+                >
+                  {abordados[i]?.nome}
+                  <button
+                    onClick={() => toggle(i)}
+                    aria-label={`Remover ${abordados[i]?.nome}`}
+                    className="hover:opacity-80"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-2 max-h-60 overflow-y-auto rounded-md border border-border">
+            {filtrados.length === 0 ? (
+              <div className="p-3 text-xs text-muted-foreground">Nenhum policial encontrado.</div>
+            ) : (
+              filtrados.map((a: any) => {
+                const checked = selecionados.includes(a.i);
+                return (
+                  <button
+                    key={a.i}
+                    onClick={() => toggle(a.i)}
+                    className={`flex w-full items-start gap-2 border-b border-border/50 p-2 text-left text-sm transition-colors last:border-b-0 hover:bg-surface-2 ${
+                      checked ? "bg-primary/5" : ""
+                    }`}
+                  >
+                    <input type="checkbox" checked={checked} readOnly className="mt-1" />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate">{a.nome}</div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        {a.cargo || "—"}
+                        {a.matricula ? ` · ${a.matricula}` : ""}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        <Field label="Unidade">
+          <input value={unidade} onChange={(e) => setUnidade(e.target.value)} className="input" />
+        </Field>
+        <Field label="Relato">
+          <textarea value={relato} onChange={(e) => setRelato(e.target.value)} rows={4} className="input" />
+        </Field>
+
+        <div className="flex items-center justify-end gap-2 border-t border-border pt-3">
+          <button
+            onClick={onClose}
+            disabled={m.isPending}
+            className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
+          >
+            Cancelar
+          </button>
+          <button
+            disabled={selecionados.length === 0 || !relato.trim() || m.isPending}
+            onClick={() => m.mutate()}
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40"
+          >
+            {m.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {m.isPending ? "Gerando..." : "Confirmar Geração"}
+          </button>
+        </div>
+        <style>{`.input{background:var(--input);border:1px solid var(--border);border-radius:6px;padding:.5rem .7rem;font-size:.9rem;color:var(--foreground);width:100%}`}</style>
+      </div>
+    </Modal>
+  );
+}
+
+function ConfirmarExclusaoDialog({
+  id,
+  numero,
+  onDone,
+  onClose,
+}: {
+  id: string;
+  numero: string;
+  onDone: () => void;
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const excluirFn = useServerFn(excluirPdo);
+  const m = useMutation({
+    mutationFn: () => excluirFn({ data: { id } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["pdos"] });
+      toast.success(`${numero} excluído.`);
+      onDone();
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro ao excluir PDO."),
+  });
+  return (
+    <Modal title="Excluir PDO" onClose={onClose}>
+      <div className="space-y-4 text-sm">
+        <p>
+          Deseja realmente excluir <strong>{numero}</strong>? Esta ação é irreversível.
+        </p>
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={onClose}
+            disabled={m.isPending}
+            className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={() => m.mutate()}
+            disabled={m.isPending}
+            className="inline-flex items-center gap-1.5 rounded-md bg-red-600 px-3 py-1.5 text-xs text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            {m.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {m.isPending ? "Excluindo..." : "Excluir"}
+          </button>
+        </div>
       </div>
     </Modal>
   );

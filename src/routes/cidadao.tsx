@@ -17,7 +17,7 @@ export const Route = createFileRoute("/cidadao")({
   component: CidadaoPage,
 });
 
-type Mode = "login" | "signup";
+type Mode = "login" | "signup" | "forgot";
 
 function CidadaoPage() {
   const navigate = useNavigate();

@@ -3066,4 +3066,24 @@ function NaturezaInline({
   );
 }
 
+function ObservacoesIndicador({ denunciaId, numero }: { denunciaId: string; numero: string }) {
+  const fn = useServerFn(contarObservacoesPorPad);
+  const { data } = useQuery({
+    queryKey: ["obs-pad-count", denunciaId],
+    queryFn: () => fn({ data: { denuncia_id: denunciaId } }) as Promise<{ count: number }>,
+  });
+  if (!data || data.count === 0) return null;
+  return (
+    <Link
+      to="/observacoes"
+      search={{ q: numero }}
+      className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 px-2 py-0.5 text-xs text-primary hover:bg-primary/20"
+      title="Observações internas relacionadas a este PAD"
+    >
+      <Eye className="h-3 w-3" />
+      {data.count} observaç{data.count === 1 ? "ão" : "ões"}
+    </Link>
+  );
+}
+
 

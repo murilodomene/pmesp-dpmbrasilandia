@@ -586,6 +586,8 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
   const podeCertificarResultado =
     status === "em_recurso" &&
     (cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor");
+  const isInternoCorregedoria =
+    cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor";
 
   return (
     <div className="space-y-4">

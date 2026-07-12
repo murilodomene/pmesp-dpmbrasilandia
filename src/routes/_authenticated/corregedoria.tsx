@@ -2819,11 +2819,12 @@ function IntimarDialog({
         <button
           onClick={() => m.mutate()}
           disabled={!dest || teor.trim().length < 1 || m.isPending}
-  return c === "delegado_geral"
-    ? "Delegado Geral"
-    : c === "delegado_corregedor"
-    ? "Delegado Corregedor"
-    : c === "corregedor"
-    ? "Corregedor"
-    : c;
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+        >
+          {m.isPending ? "Enviando..." : "Enviar intimação"}
+        </button>
+      </div>
+    </Modal>
+  );
 }
+

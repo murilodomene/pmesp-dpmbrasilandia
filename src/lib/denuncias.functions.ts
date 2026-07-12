@@ -835,14 +835,10 @@ export const concederAcessoMp = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const sb = context.supabase as unknown as ReturnType<typeof publicClient>;
-    // A RLS impede quem não é delegado_geral/delegado_corregedor; aqui só delegamos.
-    const { error } = await sb
-      .from("mp_acessos" as never)
-      .insert({
-        denuncia_id: data.denuncia_id,
-        mp_user_id: data.mp_user_id,
-        concedido_por: context.userId,
-      } as never);
+    const { error } = await sb.rpc("conceder_acesso_mp" as never, {
+      _denuncia_id: data.denuncia_id,
+      _mp_user_id: data.mp_user_id,
+    } as never);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

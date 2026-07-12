@@ -599,6 +599,18 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 </span>
               )}
             </div>
+            <div className="mt-2">
+              <TarjasManager
+                denunciaId={denuncia.id}
+                tarjas={((data.tarjas ?? []) as { id: string; cor: string; texto: string }[]).map((t) => ({
+                  id: t.id,
+                  cor: t.cor as CorTarja,
+                  texto: t.texto,
+                }))}
+                podeEditar={cargo === "delegado_corregedor" || cargo === "corregedor"}
+              />
+            </div>
+
           </div>
           <div className="flex items-center gap-2">
             <button

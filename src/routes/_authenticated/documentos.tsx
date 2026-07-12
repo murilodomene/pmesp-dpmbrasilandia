@@ -258,12 +258,14 @@ function DocumentosPage() {
                   className="group flex w-full items-start gap-4 rounded-lg border border-border bg-surface p-5 text-left shadow-sm transition hover:border-primary hover:bg-surface-2"
                 >
                   <div className="grid h-10 w-10 place-items-center rounded-md bg-primary/10 text-primary">
-                    <FileText className="h-5 w-5" />
+                    {d.id === "fluxo" ? <GitBranch className="h-5 w-5" /> : <FileText className="h-5 w-5" />}
                   </div>
                   <div className="flex-1">
                     <div className="font-serif text-lg">{d.titulo}</div>
                     <div className="mt-1 text-xs text-muted-foreground">
-                      Atualizado em {new Date(d.atualizado_em).toLocaleString("pt-BR")}
+                      {d.id === "fluxo"
+                        ? "Referência visual — somente leitura"
+                        : `Atualizado em ${new Date(d.atualizado_em).toLocaleString("pt-BR")}`}
                     </div>
                   </div>
                 </button>

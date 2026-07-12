@@ -118,14 +118,14 @@ export const alterarStatusUsuario = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertDelegado(context as never);
-    // Verifica se alvo é editável (cidadão/mp) — delegados não alteram delegados
+    // Corregedor não altera o próprio cargo
     const { data: alvo } = await context.supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", data.user_id)
       .maybeSingle();
-    if (alvo && (DELEGADO_ROLES as readonly string[]).includes(alvo.role)) {
-      throw new Error("Delegados não podem alterar o status de outros Delegados.");
+    if (alvo && alvo.role === "delegado_corregedor") {
+      throw new Error("O Delegado Corregedor não pode ter seu status alterado por esta ação.");
     }
     const { error } = await context.supabase
       .from("profiles")

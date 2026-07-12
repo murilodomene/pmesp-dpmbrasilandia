@@ -423,10 +423,12 @@ function LinhaProcesso({
   return (
     <tr
       onClick={() => onSelect(d.id)}
-      className="cursor-pointer border-b border-border/60 transition hover:bg-surface-2 last:border-0"
+      className="relative cursor-pointer border-b border-border/60 transition hover:bg-surface-2 last:border-0"
     >
-      <td className="px-3 py-2.5 tabular text-xs text-muted-foreground whitespace-nowrap">
+      <td className="relative px-3 py-2.5 tabular text-xs text-muted-foreground whitespace-nowrap">
+        <TarjasStrip tarjas={(d.denuncia_tarjas ?? []) as { id: string; cor: CorTarja; texto: string }[]} />
         {d.numero_protocolo}
+
       </td>
       <td className="px-3 py-2.5">
         <div className="line-clamp-1 font-medium">{d.ocorrencia_tipo || "Sem natureza"}</div>

@@ -462,6 +462,84 @@ export type Database = {
           },
         ]
       }
+      observacao_pads: {
+        Row: {
+          created_at: string
+          denuncia_id: string
+          observacao_id: string
+        }
+        Insert: {
+          created_at?: string
+          denuncia_id: string
+          observacao_id: string
+        }
+        Update: {
+          created_at?: string
+          denuncia_id?: string
+          observacao_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "observacao_pads_denuncia_id_fkey"
+            columns: ["denuncia_id"]
+            isOneToOne: false
+            referencedRelation: "denuncias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "observacao_pads_observacao_id_fkey"
+            columns: ["observacao_id"]
+            isOneToOne: false
+            referencedRelation: "observacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      observacoes: {
+        Row: {
+          anexos: Json
+          autor_cargo: Database["public"]["Enums"]["app_role"]
+          autor_id: string
+          autor_nome: string
+          corpo: string
+          created_at: string
+          id: string
+          policial_cargo: string | null
+          policial_matricula: string | null
+          policial_nome: string
+          policial_unidade: string | null
+          updated_at: string
+        }
+        Insert: {
+          anexos?: Json
+          autor_cargo: Database["public"]["Enums"]["app_role"]
+          autor_id: string
+          autor_nome: string
+          corpo: string
+          created_at?: string
+          id?: string
+          policial_cargo?: string | null
+          policial_matricula?: string | null
+          policial_nome: string
+          policial_unidade?: string | null
+          updated_at?: string
+        }
+        Update: {
+          anexos?: Json
+          autor_cargo?: Database["public"]["Enums"]["app_role"]
+          autor_id?: string
+          autor_nome?: string
+          corpo?: string
+          created_at?: string
+          id?: string
+          policial_cargo?: string | null
+          policial_matricula?: string | null
+          policial_nome?: string
+          policial_unidade?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       oitivas: {
         Row: {
           ativa: boolean

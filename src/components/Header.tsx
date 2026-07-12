@@ -1,7 +1,14 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Profile {
   nome: string;
@@ -45,77 +52,108 @@ export function Header() {
   const isStaff = ativo && cargo && !isCidadao && !isMp;
   const isDelegadoCorregedor = ativo && cargo === "delegado_corregedor";
 
+  const internalLinks: { to: string; label: string }[] = isStaff
+    ? [
+        { to: "/painel", label: "Painel Interno" },
+        { to: "/corregedoria", label: "Corregedoria" },
+        { to: "/pdo", label: "PDO" },
+        { to: "/documentos", label: "Documentos" },
+        ...(isDelegadoCorregedor ? [{ to: "/usuarios", label: "Gestão de Usuários" }] : []),
+      ]
+    : [];
 
   return (
     <header className="border-b border-border bg-surface/60 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
-        <Link to="/" className="flex items-center gap-2">
+      <div className="mx-auto flex max-w-7xl flex-nowrap items-center justify-between gap-3 px-4 py-3">
+        <Link to="/" className="flex shrink-0 items-center gap-2">
           <img
             src="/brasao-pcsp.png"
             alt="Brasão da Polícia Civil de São Paulo"
             className="h-9 w-auto"
           />
-
           <div className="leading-tight">
-            <div className="font-serif text-sm">Corregedoria</div>
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+            <div className="font-serif text-sm whitespace-nowrap">Corregedoria</div>
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground whitespace-nowrap">
               Polícia Civil
             </div>
           </div>
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav className="hidden min-w-0 flex-nowrap items-center gap-0.5 md:flex">
           <NavLink to="/">Início</NavLink>
           <NavLink to="/denunciar">Fazer Denúncia</NavLink>
           <NavLink to="/consultar">Consultar</NavLink>
           <NavLink to="/manual">Manual</NavLink>
           {isCidadao && <NavLink to="/minhas-denuncias">Minhas denúncias</NavLink>}
           {isMp && <NavLink to="/mp-processos">Meus processos</NavLink>}
-          {isStaff && (
-            <>
-              <NavLink to="/painel">Painel Interno</NavLink>
-              <NavLink to="/corregedoria">Corregedoria</NavLink>
-              <NavLink to="/pdo">PDO</NavLink>
-              <NavLink to="/documentos">Documentos</NavLink>
-              {isDelegadoCorregedor && <NavLink to="/usuarios">Gestão de Usuários</NavLink>}
-            </>
+
+          {/* Larger screens: internal links inline */}
+          {internalLinks.length > 0 && (
+            <div className="hidden xl:flex xl:items-center xl:gap-0.5">
+              {internalLinks.map((l) => (
+                <NavLink key={l.to} to={l.to}>
+                  {l.label}
+                </NavLink>
+              ))}
+            </div>
           )}
 
+          {/* Medium screens: internal links collapsed into a dropdown */}
+          {internalLinks.length > 0 && (
+            <div className="xl:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex items-center gap-1 whitespace-nowrap rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground">
+                  Área interna
+                  <ChevronDown className="h-3.5 w-3.5" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-[180px]">
+                  {internalLinks.map((l) => (
+                    <DropdownMenuItem key={l.to} asChild>
+                      <Link to={l.to} className="w-full whitespace-nowrap cursor-pointer">
+                        {l.label}
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {loading ? null : session ? (
             <div className="flex items-center gap-2 text-sm">
-              <span className="hidden text-muted-foreground sm:inline">{profile?.nome ?? session.user.email}</span>
+              <span className="hidden max-w-[160px] truncate text-muted-foreground sm:inline">
+                {profile?.nome ?? session.user.email}
+              </span>
               <button
                 onClick={signOut}
-                className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
+                className="whitespace-nowrap rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
               >
                 Sair
               </button>
             </div>
           ) : (
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex flex-nowrap items-center gap-1.5">
               <Link
                 to="/cidadao"
-                className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
+                className="whitespace-nowrap rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
               >
                 Área do Cidadão
               </Link>
               <Link
                 to="/mp"
-                className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
+                className="whitespace-nowrap rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
               >
                 Ministério Público
               </Link>
               <Link
                 to="/auth"
-                className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
+                className="whitespace-nowrap rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
               >
                 Acesso interno
               </Link>
             </div>
-
           )}
         </div>
       </div>
@@ -130,7 +168,7 @@ function NavLink({ to, children }: { to: string; children: React.ReactNode }) {
       activeProps={{ className: "text-foreground bg-surface-2" }}
       inactiveProps={{ className: "text-muted-foreground hover:text-foreground" }}
       activeOptions={{ exact: to === "/" }}
-      className="rounded-md px-3 py-1.5 text-sm transition-colors"
+      className="whitespace-nowrap rounded-md px-2.5 py-1.5 text-sm transition-colors"
     >
       {children}
     </Link>

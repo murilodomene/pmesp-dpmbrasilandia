@@ -860,7 +860,10 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
               key={e.v}
               type="button"
               onClick={() => {
-                if (e.v !== especie) setTeor("");
+                if (e.v !== especie) {
+                  setTeor("");
+                  setAnexos([]);
+                }
                 setEspecie(e.v);
               }}
               className={`flex items-center gap-1 rounded-md border px-3 py-1.5 text-xs ${

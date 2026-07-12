@@ -18,6 +18,9 @@ import { AtoAnexosUploader, type AtoAnexo } from "@/components/AtoAnexosUploader
 import { AtoAnexosLinks } from "@/components/AtoAnexosLinks";
 
 export const Route = createFileRoute("/_authenticated/observacoes")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    q: typeof search.q === "string" ? search.q : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Observações — Corregedoria" },

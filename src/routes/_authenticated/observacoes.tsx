@@ -373,10 +373,12 @@ function ObservacaoViewer({
             </div>
             <div className="h-px w-full bg-border/60" />
             <dl className="grid gap-1.5 py-3 text-xs sm:text-sm">
-              <div className="flex flex-wrap gap-x-2">
-                <dt className="font-semibold uppercase tracking-wider text-primary">Policial:</dt>
-                <dd className="text-foreground">{obs.policial_nome}</dd>
-              </div>
+              {obs.policial_nome && (
+                <div className="flex flex-wrap gap-x-2">
+                  <dt className="font-semibold uppercase tracking-wider text-primary">Policial:</dt>
+                  <dd className="text-foreground">{obs.policial_nome}</dd>
+                </div>
+              )}
               {obs.policial_matricula && (
                 <div className="flex flex-wrap gap-x-2">
                   <dt className="font-semibold uppercase tracking-wider text-primary">Matrícula:</dt>

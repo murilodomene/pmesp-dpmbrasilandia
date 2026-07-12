@@ -1313,31 +1313,65 @@ function labelEspecie(e: string): string {
             : "Status";
 }
 
-// Converte "art. 78", "arts. 80", "artigo 12" em links para o Manual.
+// Reconhece referências a artigos do Manual — incluindo incisos, parágrafos e
+// citações combinadas ("arts. X e Y", "art. X c/c Y") — e transforma cada
+// artigo citado em link para a âncora correspondente na aba Manual.
+const ART_MAIN_SRC =
+  "(art(?:s|igo|igos)?\\.?)\\s*(\\d+)([ºo°]?)((?:\\s*,\\s*(?:(?:inciso[s]?\\s+)?[IVXLCDM]+(?:\\s*(?:e|,)\\s*[IVXLCDM]+)*|§\\s*\\d+[ºo°]?|parágrafo\\s+único))*)(?:\\s+e\\s+seguintes)?";
+const ART_CONN_RE = /^(\s+(?:e|c\/c)\s+)(\d+)([ºo°]?)/i;
+
+const artLinkClass =
+  "text-primary underline decoration-dotted underline-offset-2 hover:decoration-solid";
+
 function renderTeorComLinks(teor: string): React.ReactNode {
   const parts: React.ReactNode[] = [];
-  const re = /(art(?:s|igos?)?\.?)\s*(\d+)/gi;
+  const RE = new RegExp(ART_MAIN_SRC, "gi");
   let last = 0;
-  let m: RegExpExecArray | null;
   let key = 0;
-  while ((m = re.exec(teor)) !== null) {
+  let m: RegExpExecArray | null;
+  const mkLink = (label: string, num: string) => (
+    <a
+      key={key++}
+      href={`/documentos?open=manual#art-${num}`}
+      target="_blank"
+      rel="noreferrer"
+      className={artLinkClass}
+    >
+      {label}
+    </a>
+  );
+  while ((m = RE.exec(teor)) !== null) {
     if (m.index > last) parts.push(teor.slice(last, m.index));
-    const num = m[2];
-    parts.push(
-      <a
-        key={key++}
-        href={`/documentos?open=manual#art-${num}`}
-        target="_blank"
-        rel="noreferrer"
-        className="text-primary underline decoration-dotted underline-offset-2 hover:decoration-solid"
-      >
-        {m[0]}
-      </a>,
-    );
+    parts.push(mkLink(m[0], m[2]));
     last = m.index + m[0].length;
+    let cm = ART_CONN_RE.exec(teor.slice(last));
+    while (cm) {
+      parts.push(cm[1]);
+      parts.push(mkLink(cm[2] + (cm[3] ?? ""), cm[2]));
+      last += cm[0].length;
+      RE.lastIndex = last;
+      cm = ART_CONN_RE.exec(teor.slice(last));
+    }
   }
   if (last < teor.length) parts.push(teor.slice(last));
   return parts;
+}
+
+// Mesmo destaque/link aplicado a um HTML já sanitizado, sem tocar em tags.
+function linkifyArticlesHtml(html: string): string {
+  const MAIN = new RegExp(ART_MAIN_SRC + "(?![^<]*>)", "gi");
+  const anchor = (label: string, num: string) =>
+    `<a href="/documentos?open=manual#art-${num}" target="_blank" rel="noreferrer" class="${artLinkClass}">${label}</a>`;
+  let out = html.replace(MAIN, (match, _p1, num) => anchor(match, num));
+  const CONN = /(<\/a>)(\s+(?:e|c\/c)\s+)(\d+)([ºo°]?)(?![^<]*>)/gi;
+  let prev = "";
+  while (prev !== out) {
+    prev = out;
+    out = out.replace(CONN, (_all, close, sep, num, suf) =>
+      `${close}${sep}${anchor(`${num}${suf ?? ""}`, num)}`,
+    );
+  }
+  return out;
 }
 
 function cargoLabel(c: string): string {
@@ -1754,19 +1788,16 @@ const ATO_MARKER: Record<"despacho" | "decisao" | "portaria", string> = {
  * Renderiza o corpo do ato: HTML sanitizado quando salvo como rich text,
  * ou texto plano (com links, se portaria) para registros legados.
  */
-function renderAtoBody(especie: "despacho" | "decisao" | "portaria", teor: string, pdf = false): React.ReactNode {
+function renderAtoBody(_especie: "despacho" | "decisao" | "portaria", teor: string, pdf = false): React.ReactNode {
   if (isHtmlAto(teor)) {
     return (
       <div
         className={pdf ? "ato-body-pdf" : "ato-body"}
-        dangerouslySetInnerHTML={{ __html: sanitizeAtoHtml(teor) }}
+        dangerouslySetInnerHTML={{ __html: linkifyArticlesHtml(sanitizeAtoHtml(teor)) }}
       />
     );
   }
-  if (especie === "portaria") {
-    return <div className="whitespace-pre-wrap">{renderTeorComLinks(teor)}</div>;
-  }
-  return <div className="whitespace-pre-wrap">{teor}</div>;
+  return <div className="whitespace-pre-wrap">{renderTeorComLinks(teor)}</div>;
 }
 
 function TimelineAtoCard({
@@ -1884,24 +1915,24 @@ function TimelineIpcCard({
   const relatoNode = isHtmlAto(relato) ? (
     <div
       className="ato-body"
-      dangerouslySetInnerHTML={{ __html: sanitizeAtoHtml(relato) }}
+      dangerouslySetInnerHTML={{ __html: linkifyArticlesHtml(sanitizeAtoHtml(relato)) }}
     />
   ) : (
     <div className="ato-body">
       {relatoParas.map((p, i) => (
-        <p key={i} className="whitespace-pre-wrap">{p}</p>
+        <p key={i} className="whitespace-pre-wrap">{renderTeorComLinks(p)}</p>
       ))}
     </div>
   );
   const relatoNodePdf = isHtmlAto(relato) ? (
     <div
       className="ato-body-pdf"
-      dangerouslySetInnerHTML={{ __html: sanitizeAtoHtml(relato) }}
+      dangerouslySetInnerHTML={{ __html: linkifyArticlesHtml(sanitizeAtoHtml(relato)) }}
     />
   ) : (
     <div className="ato-body-pdf">
       {relatoParas.map((p, i) => (
-        <p key={i} className="whitespace-pre-wrap">{p}</p>
+        <p key={i} className="whitespace-pre-wrap">{renderTeorComLinks(p)}</p>
       ))}
     </div>
   );

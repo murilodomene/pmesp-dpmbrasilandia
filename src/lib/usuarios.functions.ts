@@ -157,7 +157,7 @@ export const editarUsuarioPublico = createServerFn({ method: "POST" })
       .eq("user_id", data.user_id)
       .maybeSingle();
     if (!alvo || !(EDITABLE_ROLES as readonly string[]).includes(alvo.role)) {
-      throw new Error("Apenas usuários Cidadão ou Ministério Público podem ser editados.");
+      throw new Error("Este usuário não pode ser editado por esta ação.");
     }
 
     const { error: e1 } = await context.supabase

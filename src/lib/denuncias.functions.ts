@@ -643,7 +643,7 @@ export const instaurarOficio = createServerFn({ method: "POST" })
         relato: data.descricao,
         unidade: data.unidade ?? null,
         links: data.links,
-        status: "aguardando_analise",
+        status: "novo",
         termo_inicial: agora,
         instaurada_em: agora,
         interrupcoes_count: 0,

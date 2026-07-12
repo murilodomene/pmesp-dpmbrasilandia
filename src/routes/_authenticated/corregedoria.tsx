@@ -871,6 +871,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 } else {
                   setTeor("");
                   setAnexos([]);
+                  if (e.v === "ipc") setIpcUnidade((denuncia.unidade as string | null) ?? "");
                   setEspecie(e.v);
                 }
               }}

@@ -236,3 +236,33 @@ export const contarObservacoesPorPad = createServerFn({ method: "POST" })
     if (error) return { count: 0 };
     return { count: (rows ?? []).length };
   });
+
+export const contarObservacoesPorPolicial = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        nome: z.string().trim().max(200).optional().nullable(),
+        matricula: z.string().trim().max(50).optional().nullable(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    try {
+      await assertInterno(context);
+    } catch {
+      return { count: 0 };
+    }
+    const nome = (data.nome ?? "").trim();
+    const mat = (data.matricula ?? "").trim();
+    if (!nome && !mat) return { count: 0 };
+    let q = context.supabase.from("observacoes").select("id", { count: "exact", head: true });
+    if (mat) {
+      q = q.eq("policial_matricula", mat);
+    } else {
+      q = q.ilike("policial_nome", nome);
+    }
+    const { count, error } = await q;
+    if (error) return { count: 0 };
+    return { count: count ?? 0 };
+  });

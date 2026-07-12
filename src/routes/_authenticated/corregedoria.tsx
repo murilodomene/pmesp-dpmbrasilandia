@@ -2251,7 +2251,9 @@ function VerAtoDialog({
 function ProrrogarDialog({ id, onClose }: { id: string; onClose: () => void }) {
   const qc = useQueryClient();
   const fn = useServerFn(prorrogar);
-  const [j, setJ] = useState("");
+  const TEXTO_PADRAO =
+    "Prorrogue-se por 30 (trinta) dias o presente procedimento, considerando a remarcação da oitiva por parte do(s) denunciado(s), nos termos do art.93-C do Manual de Procedimentos.";
+  const [j, setJ] = useState(TEXTO_PADRAO);
   const [anexos, setAnexos] = useState<AtoAnexo[]>([]);
   const m = useMutation({
     mutationFn: () => fn({ data: { denuncia_id: id, justificativa: j, anexos } }),
@@ -2263,13 +2265,12 @@ function ProrrogarDialog({ id, onClose }: { id: string; onClose: () => void }) {
   });
   return (
     <Modal title="Prorrogar prazo em 30 dias" onClose={onClose}>
-      <div className="mb-3 text-xs text-muted-foreground">
-        Aplicável somente por remarcação de oitiva a pedido do denunciado.
+      <div className="mb-2 text-xs text-muted-foreground">
+        Aplicável somente por remarcação de oitiva a pedido do denunciado. Texto padronizado abaixo — ajuste se necessário ao caso concreto.
       </div>
       <textarea
-        rows={4}
+        rows={6}
         className="input"
-        placeholder="Justificativa (mín. 10 caracteres)"
         value={j}
         onChange={(e) => setJ(e.target.value)}
       />
@@ -2285,7 +2286,7 @@ function ProrrogarDialog({ id, onClose }: { id: string; onClose: () => void }) {
         </button>
         <button
           onClick={() => m.mutate()}
-          disabled={j.length < 10 || m.isPending}
+          disabled={j.trim().length < 10 || m.isPending}
           className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
           Prorrogar (+30 dias)

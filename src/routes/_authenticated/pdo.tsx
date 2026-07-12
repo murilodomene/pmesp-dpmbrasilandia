@@ -56,6 +56,9 @@ function PdoPage() {
 
   const cargo = session?.cargo ?? null;
   const isStaff = cargo && cargo !== "cidadao" && cargo !== "mp";
+  const canDelete = cargo === "delegado_corregedor";
+  const canGenerate =
+    cargo === "delegado_corregedor" || cargo === "delegado_geral" || cargo === "corregedor";
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();

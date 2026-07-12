@@ -207,11 +207,8 @@ function TarjaDialog({
   const [texto, setTexto] = useState(initial?.texto ?? "");
   const [saving, setSaving] = useState(false);
 
-  // Reset when opening
-  useState(() => {
-    setCor(initial?.cor ?? "azul");
-    setTexto(initial?.texto ?? "");
-  });
+
+
 
   return (
     <Dialog

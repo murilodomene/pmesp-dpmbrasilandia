@@ -1485,10 +1485,12 @@ function Modal({
   title,
   children,
   onClose,
+  size = "md",
 }: {
   title: string;
   children: React.ReactNode;
   onClose: () => void;
+  size?: "md" | "lg" | "xl" | "2xl" | "3xl";
 }) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -1497,21 +1499,29 @@ function Modal({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+  const maxW = {
+    md: "max-w-lg",
+    lg: "max-w-2xl",
+    xl: "max-w-3xl",
+    "2xl": "max-w-4xl",
+    "3xl": "max-w-5xl",
+  }[size];
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4">
-      <div className="surface w-full max-w-lg p-5">
-        <div className="mb-3 flex items-center justify-between">
+      <div className={`surface w-full ${maxW} flex max-h-[90vh] flex-col p-5`}>
+        <div className="mb-3 flex shrink-0 items-center justify-between">
           <h3 className="font-serif text-lg">{title}</h3>
           <button onClick={onClose} className="rounded-md p-1 hover:bg-surface-2">
             <X className="h-4 w-4" />
           </button>
         </div>
-        {children}
+        <div className="min-h-0 flex-1 overflow-y-auto pr-1">{children}</div>
       </div>
       <style>{`.input{background:var(--input);border:1px solid var(--border);border-radius:6px;padding:.55rem .7rem;font-size:.9rem;color:var(--foreground);width:100%}`}</style>
     </div>
   );
 }
+
 
 function StatusDialog({
   id,
@@ -1725,7 +1735,7 @@ function PortariaDialog({
   });
 
   return (
-    <Modal title="Portaria Inaugural" onClose={onClose}>
+    <Modal title="Portaria Inaugural" onClose={onClose} size="3xl">
       <div className="mb-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs">
         Ao confirmar, a portaria é lançada na linha do tempo, a data de instauração é
         preenchida e a <strong>prescrição é interrompida</strong> (relógio reinicia em 15 dias).
@@ -1798,7 +1808,7 @@ function PortariaDialog({
               ? ""
               : "Clique em «Usar modelo pré-formatado» ou digite a portaria livremente."
           }
-          minHeight={280}
+          minHeight={200}
         />
       </div>
 

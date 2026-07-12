@@ -529,13 +529,15 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
       obsFn({ data: { denuncia_id: id, obs_denunciante: obsPub, obs_internas: obsInt } }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["denuncia", id] }),
   });
+  const desentranharFn = useServerFn(desentranharOitiva);
   const mDesentranhar = useMutation({
     mutationFn: (oitiva_id: string) =>
-      useServerFn(desentranharOitiva)({
+      desentranharFn({
         data: { oitiva_id, motivo: "Desentranhada por decisão do condutor." },
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["denuncia", id] }),
   });
+
   const publicarFn = useServerFn(alternarPublicacaoIpc);
   const mPublicar = useMutation({
     mutationFn: (args: { id: string; publicado: boolean }) =>

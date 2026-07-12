@@ -2252,8 +2252,9 @@ function ProrrogarDialog({ id, onClose }: { id: string; onClose: () => void }) {
   const qc = useQueryClient();
   const fn = useServerFn(prorrogar);
   const [j, setJ] = useState("");
+  const [anexos, setAnexos] = useState<AtoAnexo[]>([]);
   const m = useMutation({
-    mutationFn: () => fn({ data: { denuncia_id: id, justificativa: j } }),
+    mutationFn: () => fn({ data: { denuncia_id: id, justificativa: j, anexos } }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["denuncia", id] });
       qc.invalidateQueries({ queryKey: ["denuncias"] });
@@ -2263,7 +2264,7 @@ function ProrrogarDialog({ id, onClose }: { id: string; onClose: () => void }) {
   return (
     <Modal title="Prorrogar prazo em 30 dias" onClose={onClose}>
       <div className="mb-3 text-xs text-muted-foreground">
-        Aplicável somente por remarcação de oitiva a pedido do denunciante.
+        Aplicável somente por remarcação de oitiva a pedido do denunciado.
       </div>
       <textarea
         rows={4}
@@ -2272,6 +2273,12 @@ function ProrrogarDialog({ id, onClose }: { id: string; onClose: () => void }) {
         value={j}
         onChange={(e) => setJ(e.target.value)}
       />
+      <div className="mt-3">
+        <div className="mb-1 text-[0.7rem] uppercase tracking-wider text-muted-foreground">
+          Anexos (imagens-prova)
+        </div>
+        <AtoAnexosUploader denunciaId={id} value={anexos} onChange={setAnexos} />
+      </div>
       <div className="mt-4 flex justify-end gap-2">
         <button onClick={onClose} className="rounded-md border border-border px-4 py-2 text-sm">
           Cancelar
@@ -2287,6 +2294,7 @@ function ProrrogarDialog({ id, onClose }: { id: string; onClose: () => void }) {
     </Modal>
   );
 }
+
 
 function OitivaDialog({ id, onClose }: { id: string; onClose: () => void }) {
   const qc = useQueryClient();

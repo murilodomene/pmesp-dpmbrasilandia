@@ -333,6 +333,15 @@ export const prorrogar = createServerFn({ method: "POST" })
       .object({
         denuncia_id: z.string().uuid(),
         justificativa: z.string().trim().min(10, "Justifique a remarcação.").max(4000),
+        anexos: z
+          .array(
+            z.object({
+              nome: z.string().trim().min(1).max(120),
+              path: z.string().trim().min(1).max(500),
+            }),
+          )
+          .max(30)
+          .optional(),
       })
       .parse(data),
   )
@@ -351,15 +360,18 @@ export const prorrogar = createServerFn({ method: "POST" })
       .eq("id", data.denuncia_id);
     if (updErr) throw new Error(updErr.message);
 
+    const anexos = data.anexos ?? [];
     await context.supabase.from("movimentos").insert({
       denuncia_id: data.denuncia_id,
       especie: "despacho",
-      teor: `PRORROGAÇÃO +30 DIAS — remarcação de oitiva. Justificativa: ${data.justificativa}`,
+      teor: `PRORROGAÇÃO +30 DIAS — remarcação de oitiva a pedido do denunciado. Justificativa: ${data.justificativa}`,
       prorroga: true,
+      anexos: anexos as never,
       ...p,
     });
     return { ok: true };
   });
+
 
 export const juntarOitiva = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

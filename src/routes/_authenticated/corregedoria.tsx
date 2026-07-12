@@ -1788,19 +1788,16 @@ const ATO_MARKER: Record<"despacho" | "decisao" | "portaria", string> = {
  * Renderiza o corpo do ato: HTML sanitizado quando salvo como rich text,
  * ou texto plano (com links, se portaria) para registros legados.
  */
-function renderAtoBody(especie: "despacho" | "decisao" | "portaria", teor: string, pdf = false): React.ReactNode {
+function renderAtoBody(_especie: "despacho" | "decisao" | "portaria", teor: string, pdf = false): React.ReactNode {
   if (isHtmlAto(teor)) {
     return (
       <div
         className={pdf ? "ato-body-pdf" : "ato-body"}
-        dangerouslySetInnerHTML={{ __html: sanitizeAtoHtml(teor) }}
+        dangerouslySetInnerHTML={{ __html: linkifyArticlesHtml(sanitizeAtoHtml(teor)) }}
       />
     );
   }
-  if (especie === "portaria") {
-    return <div className="whitespace-pre-wrap">{renderTeorComLinks(teor)}</div>;
-  }
-  return <div className="whitespace-pre-wrap">{teor}</div>;
+  return <div className="whitespace-pre-wrap">{renderTeorComLinks(teor)}</div>;
 }
 
 function TimelineAtoCard({

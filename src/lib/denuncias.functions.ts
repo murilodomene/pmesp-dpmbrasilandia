@@ -332,7 +332,7 @@ export const prorrogar = createServerFn({ method: "POST" })
     z
       .object({
         denuncia_id: z.string().uuid(),
-        justificativa: z.string().trim().min(10, "Justifique a remarcação.").max(4000),
+        justificativa: z.string().trim().min(10).max(4000),
         anexos: z
           .array(
             z.object({
@@ -364,7 +364,7 @@ export const prorrogar = createServerFn({ method: "POST" })
     await context.supabase.from("movimentos").insert({
       denuncia_id: data.denuncia_id,
       especie: "despacho",
-      teor: `Prorrogue-se por 30 (trinta) dias o presente procedimento, considerando a remarcação da oitiva por parte do(s) denunciado(s), nos termos do art.93-C do Manual de Procedimentos.`,
+      teor: data.justificativa,
       prorroga: true,
       anexos: anexos as never,
       ...p,

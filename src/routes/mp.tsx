@@ -17,7 +17,7 @@ export const Route = createFileRoute("/mp")({
   component: MpPage,
 });
 
-type Mode = "login" | "signup";
+type Mode = "login" | "signup" | "forgot";
 
 function MpPage() {
   const navigate = useNavigate();

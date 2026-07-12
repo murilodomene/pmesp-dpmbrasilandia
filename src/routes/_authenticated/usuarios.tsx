@@ -69,7 +69,7 @@ const CARGO_LABEL: Record<string, string> = {
 };
 
 const DELEGADO_CARGOS = new Set(["delegado_corregedor"]);
-const EDITAVEIS = new Set(["delegado_geral", "cidadao", "mp"]);
+const EDITAVEIS = new Set(["delegado_geral", "corregedor", "cidadao", "mp"]);
 
 interface Usuario {
   id: string;
@@ -274,7 +274,7 @@ function EditarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: (
   const editarFn = useServerFn(editarUsuarioPublico);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  const [cargo, setCargo] = useState<"delegado_geral" | "cidadao" | "mp">("cidadao");
+  const [cargo, setCargo] = useState<"delegado_geral" | "corregedor" | "cidadao" | "mp">("cidadao");
 
   const open = !!usuario;
 
@@ -282,7 +282,7 @@ function EditarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: (
     if (usuario) {
       setNome(usuario.nome);
       setEmail(usuario.email ?? "");
-      setCargo((usuario.cargo as "delegado_geral" | "cidadao" | "mp") ?? "cidadao");
+      setCargo((usuario.cargo as "delegado_geral" | "corregedor" | "cidadao" | "mp") ?? "cidadao");
     }
   });
 
@@ -315,11 +315,12 @@ function EditarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: (
           </div>
           <div>
             <Label>Perfil</Label>
-            <Select value={cargo} onValueChange={(v) => setCargo(v as "delegado_geral" | "cidadao" | "mp")}>
+            <Select value={cargo} onValueChange={(v) => setCargo(v as "delegado_geral" | "corregedor" | "cidadao" | "mp")}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="cidadao">Cidadão</SelectItem>
                 <SelectItem value="mp">Ministério Público</SelectItem>
+                <SelectItem value="corregedor">Corregedor</SelectItem>
                 <SelectItem value="delegado_geral">Delegado Geral</SelectItem>
               </SelectContent>
             </Select>

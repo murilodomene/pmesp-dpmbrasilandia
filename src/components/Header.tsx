@@ -87,6 +87,7 @@ export function Header() {
         <div className="flex items-center gap-2">
           {loading ? null : session ? (
             <div className="flex items-center gap-2 text-sm">
+              {isStaff && <NotificationBell />}
               <span className="hidden text-muted-foreground sm:inline">{profile?.nome ?? session.user.email}</span>
               <button
                 onClick={signOut}

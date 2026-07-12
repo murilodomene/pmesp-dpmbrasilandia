@@ -2,6 +2,7 @@ import { Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
+import { NotificationBell } from "@/components/NotificationBell";
 
 interface Profile {
   nome: string;

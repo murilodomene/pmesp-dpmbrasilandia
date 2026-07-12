@@ -239,15 +239,18 @@ function DocumentosPage() {
 
   const selected = visibleDocs.find((d) => d.id === selectedId) ?? null;
   const isHierarquia = selected?.id === "hierarquia";
+  const isLegal = !!selected && !isHierarquia && isLegalDoc(selected.conteudo);
 
   const rendered = useMemo(() => {
-    if (!selected) return { html: "", toc: [] as { id: string; label: string }[], count: 0 };
-    const html = mdToHtml(selected.conteudo);
-    const withAnchors = anchorize(html);
-    const finalHtml = highlight(withAnchors.html, buscaAtiva);
+    if (!selected) return { html: "", toc: [] as TocEntry[], count: 0, legal: false };
+    const legal = !isHierarquia && isLegalDoc(selected.conteudo);
+    const built = legal
+      ? legalToHtml(selected.conteudo)
+      : anchorize(mdToHtml(selected.conteudo));
+    const finalHtml = highlight(built.html, buscaAtiva);
     const count = buscaAtiva.trim() ? (finalHtml.match(/<mark\b/g)?.length ?? 0) : 0;
-    return { html: finalHtml, toc: withAnchors.toc, count };
-  }, [selected, buscaAtiva]);
+    return { html: finalHtml, toc: built.toc, count, legal };
+  }, [selected, isHierarquia, buscaAtiva]);
 
   // Sequential navigation between matches
   const [currentIndex, setCurrentIndex] = useState(0);

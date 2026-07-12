@@ -63,7 +63,7 @@ export const criarAviso = createServerFn({ method: "POST" })
         corpo: data.corpo,
         autor_id: context.userId,
         autor_nome: nome ?? "",
-        autor_cargo: cargo,
+        autor_cargo: cargo as "delegado_geral" | "delegado_corregedor",
       })
       .select("id")
       .single();

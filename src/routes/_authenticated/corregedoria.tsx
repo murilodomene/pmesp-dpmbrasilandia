@@ -493,6 +493,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
 
   const mLancar = useMutation({
     mutationFn: () => {
+      if (!especie) throw new Error("Selecione uma espécie.");
       let teorFinal: string;
       if (especie === "ipc") {
         teorFinal = montarTeorIpc({
@@ -507,7 +508,6 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
       } else {
         teorFinal = sanitizeAtoHtml(teor);
       }
-      // Anexos só se aplicam a despacho e decisão.
       const anexosPayload =
         especie === "despacho" || especie === "decisao" ? anexos : [];
       return lancarFn({
@@ -517,6 +517,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     onSuccess: () => {
       setTeor("");
       setAnexos([]);
+      setEspecie(null);
       qc.invalidateQueries({ queryKey: ["denuncia", id] });
       qc.invalidateQueries({ queryKey: ["denuncias"] });
     },

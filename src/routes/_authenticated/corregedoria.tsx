@@ -665,7 +665,12 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                         onClick={() =>
                           setDialog({
                             kind: "retificar",
-                            policial: { id: p.id, nome: p.nome, rg_funcional: p.rg_funcional ?? null },
+                            policial: {
+                              id: p.id,
+                              nome: p.nome,
+                              rg_funcional: p.rg_funcional ?? null,
+                              unidade: p.unidade ?? null,
+                            },
                           })
                         }
                         className="rounded-md border border-border p-1 text-muted-foreground hover:bg-surface-2 hover:text-foreground"
@@ -678,24 +683,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
               </div>
             </Row>
 
-            <Row k="Unidade">
-              <select
-                value={denuncia.unidade ?? ""}
-                onChange={(e) =>
-                  unidadeFn({ data: { denuncia_id: id, unidade: e.target.value as typeof UNIDADES[number] } }).then(
-                    () => qc.invalidateQueries({ queryKey: ["denuncia", id] }),
-                  )
-                }
-                className="rounded-md border border-border bg-input px-2 py-1 text-sm"
-              >
-                <option value="">Selecionar...</option>
-                {UNIDADES.map((u) => (
-                  <option key={u} value={u}>
-                    {u}
-                  </option>
-                ))}
-              </select>
-            </Row>
+
             <Row k="Ocorrência">
               {denuncia.ocorrencia_data
                 ? new Date(denuncia.ocorrencia_data).toLocaleDateString("pt-BR")

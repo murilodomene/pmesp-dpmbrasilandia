@@ -1655,13 +1655,12 @@ function StatusDialog({
 function RecursoDialog({ id, onClose }: { id: string; onClose: () => void }) {
   const qc = useQueryClient();
   const fn = useServerFn(registrarRecurso);
-  const [certificacao, setCertificacao] = useState(
-    "Certifico e dou fé que, dentro do prazo legal, foi interposto recurso administrativo em face da decisão proferida nos autos.",
-  );
+  const CERTIDAO_PADRAO =
+    "Certifico e dou fé que foi interposto recurso administrativo dentro do prazo legal.";
   const [link, setLink] = useState("");
   const m = useMutation({
     mutationFn: () =>
-      fn({ data: { denuncia_id: id, certificacao, recurso_link: link || null } }),
+      fn({ data: { denuncia_id: id, certificacao: CERTIDAO_PADRAO, recurso_link: link || null } }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["denuncia", id] });
       qc.invalidateQueries({ queryKey: ["denuncias"] });
@@ -1672,19 +1671,11 @@ function RecursoDialog({ id, onClose }: { id: string; onClose: () => void }) {
     <Modal title="Registrar recurso administrativo" onClose={onClose}>
       <p className="text-xs text-muted-foreground">
         Ao confirmar, o decurso automático é interrompido, o procedimento retorna
-        para "Em análise" e a certificação é juntada aos autos como Evento.
+        para "Em análise" e a certidão abaixo é juntada aos autos.
       </p>
-      <label className="mt-3 grid gap-1.5">
-        <span className="text-xs uppercase tracking-wider text-muted-foreground">
-          Certificação (obrigatória)
-        </span>
-        <textarea
-          rows={4}
-          className="input"
-          value={certificacao}
-          onChange={(e) => setCertificacao(e.target.value)}
-        />
-      </label>
+      <div className="mt-3 rounded-md border border-border/60 bg-muted/30 p-3 text-sm italic text-foreground">
+        “{CERTIDAO_PADRAO}”
+      </div>
       <label className="mt-3 grid gap-1.5">
         <span className="text-xs uppercase tracking-wider text-muted-foreground">
           Link / referência do recurso juntado (opcional)
@@ -1705,7 +1696,7 @@ function RecursoDialog({ id, onClose }: { id: string; onClose: () => void }) {
         </button>
         <button
           onClick={() => m.mutate()}
-          disabled={certificacao.trim().length < 10 || m.isPending}
+          disabled={m.isPending}
           className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
           {m.isPending ? "Registrando..." : "Registrar recurso"}

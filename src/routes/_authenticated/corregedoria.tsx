@@ -3090,4 +3090,25 @@ function ObservacoesIndicador({ denunciaId, numero }: { denunciaId: string; nume
   );
 }
 
+function ObservacoesPolicialBadge({ nome, matricula }: { nome: string; matricula: string | null }) {
+  const fn = useServerFn(contarObservacoesPorPolicial);
+  const { data } = useQuery({
+    queryKey: ["obs-policial-count", nome, matricula],
+    queryFn: () => fn({ data: { nome, matricula } }) as Promise<{ count: number }>,
+  });
+  if (!data || data.count === 0) return null;
+  return (
+    <Link
+      to="/observacoes"
+      search={{ q: matricula || nome }}
+      className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary hover:bg-primary/20"
+      title="Observações internas sobre este policial"
+    >
+      <Eye className="h-3 w-3" />
+      {data.count}
+    </Link>
+  );
+}
+
+
 

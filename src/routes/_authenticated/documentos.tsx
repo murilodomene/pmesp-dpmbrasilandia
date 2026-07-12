@@ -3,10 +3,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { Header } from "@/components/Header";
-import { Search, Save, Pencil, X, FileText, ChevronUp, ChevronDown } from "lucide-react";
+import { Search, Save, Pencil, X, FileText, ChevronUp, ChevronDown, GitBranch } from "lucide-react";
 import { HierarquiaQuadro } from "@/components/HierarquiaQuadro";
+import { FluxoPAD } from "@/components/FluxoPAD";
 
 const HIERARQUIA_ROLES = new Set(["delegado_geral", "delegado_corregedor", "corregedor"]);
+const FLUXO_ROLES = HIERARQUIA_ROLES;
 
 export const Route = createFileRoute("/_authenticated/documentos")({
   component: DocumentosPage,
@@ -19,6 +21,13 @@ type Doc = {
   atualizado_em: string;
 };
 
+const FLUXO_DOC: Doc = {
+  id: "fluxo",
+  titulo: "Fluxo do Processo Administrativo",
+  conteudo: "",
+  atualizado_em: new Date(0).toISOString(),
+};
+
 import {
   type TocEntry,
   anchorize,
@@ -28,7 +37,7 @@ import {
   mdToHtml,
 } from "@/lib/documento-formatter";
 
-const DOC_ORDER = ["manual", "regimento", "fardamentos", "hierarquia"];
+const DOC_ORDER = ["manual", "regimento", "fardamentos", "hierarquia", "fluxo"];
 
 function DocumentosPage() {
   const { session } = useSession();
@@ -76,17 +85,22 @@ function DocumentosPage() {
   }, [selectedId]);
 
   const podeVerHierarquia = cargo !== null && HIERARQUIA_ROLES.has(cargo);
-  const visibleDocs = useMemo(
-    () => docs.filter((d) => d.id !== "hierarquia" || podeVerHierarquia),
-    [docs, podeVerHierarquia],
-  );
+  const podeVerFluxo = cargo !== null && FLUXO_ROLES.has(cargo);
+  const visibleDocs = useMemo(() => {
+    const base = docs.filter((d) => d.id !== "hierarquia" || podeVerHierarquia);
+    const withFluxo = podeVerFluxo ? [...base, FLUXO_DOC] : base;
+    return withFluxo.sort(
+      (a, b) => DOC_ORDER.indexOf(a.id) - DOC_ORDER.indexOf(b.id),
+    );
+  }, [docs, podeVerHierarquia, podeVerFluxo]);
 
   const selected = visibleDocs.find((d) => d.id === selectedId) ?? null;
   const isHierarquia = selected?.id === "hierarquia";
-  const isLegal = !!selected && !isHierarquia && isLegalDoc(selected.conteudo);
+  const isFluxo = selected?.id === "fluxo";
+  const isLegal = !!selected && !isHierarquia && !isFluxo && isLegalDoc(selected.conteudo);
 
   const rendered = useMemo(() => {
-    if (!selected) return { html: "", toc: [] as TocEntry[], count: 0, legal: false };
+    if (!selected || isFluxo) return { html: "", toc: [] as TocEntry[], count: 0, legal: false };
     const legal = !isHierarquia && isLegalDoc(selected.conteudo);
     const built = legal
       ? legalToHtml(selected.conteudo)
@@ -94,7 +108,7 @@ function DocumentosPage() {
     const finalHtml = highlight(built.html, buscaAtiva);
     const count = buscaAtiva.trim() ? (finalHtml.match(/<mark\b/g)?.length ?? 0) : 0;
     return { html: finalHtml, toc: built.toc, count, legal };
-  }, [selected, isHierarquia, buscaAtiva]);
+  }, [selected, isHierarquia, isFluxo, buscaAtiva]);
 
   // Sequential navigation between matches
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -244,12 +258,14 @@ function DocumentosPage() {
                   className="group flex w-full items-start gap-4 rounded-lg border border-border bg-surface p-5 text-left shadow-sm transition hover:border-primary hover:bg-surface-2"
                 >
                   <div className="grid h-10 w-10 place-items-center rounded-md bg-primary/10 text-primary">
-                    <FileText className="h-5 w-5" />
+                    {d.id === "fluxo" ? <GitBranch className="h-5 w-5" /> : <FileText className="h-5 w-5" />}
                   </div>
                   <div className="flex-1">
                     <div className="font-serif text-lg">{d.titulo}</div>
                     <div className="mt-1 text-xs text-muted-foreground">
-                      Atualizado em {new Date(d.atualizado_em).toLocaleString("pt-BR")}
+                      {d.id === "fluxo"
+                        ? "Referência visual — somente leitura"
+                        : `Atualizado em ${new Date(d.atualizado_em).toLocaleString("pt-BR")}`}
                     </div>
                   </div>
                 </button>
@@ -276,7 +292,7 @@ function DocumentosPage() {
                   <h2 className="font-serif text-2xl">{selected.titulo}</h2>
                 )}
               </div>
-              {podeEditar && !editando && !isHierarquia && (
+              {podeEditar && !editando && !isHierarquia && !isFluxo && (
                 <button
                   onClick={() => { setRascunho(selected.conteudo); setEditando(true); }}
                   className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-surface-2"
@@ -303,7 +319,9 @@ function DocumentosPage() {
               )}
             </header>
 
-            {isHierarquia ? (
+            {isFluxo ? (
+              <FluxoPAD />
+            ) : isHierarquia ? (
               <HierarquiaQuadro cargo={cargo} />
             ) : editando ? (
               <div className="p-6">

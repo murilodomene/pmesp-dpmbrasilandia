@@ -63,8 +63,9 @@ export const Route = createFileRoute("/_authenticated/corregedoria")({
 });
 
 const STATUS_LIST: DenunciaStatus[] = [
-  "recebida",
+  "novo",
   "aguardando_analise",
+  "recebida",
   "em_analise",
   "em_investigacao",
   "ag_decurso_prazo",
@@ -74,9 +75,9 @@ const STATUS_LIST: DenunciaStatus[] = [
 // Opções selecionáveis manualmente em "Movimentar status".
 // "Trânsito em Julgado" NÃO aparece — só é atingido automaticamente pelo decurso.
 const STATUS_LIST_MANUAL: DenunciaStatus[] = [
-  "recebida",
+  "novo",
   "aguardando_analise",
-  "em_analise",
+  "recebida",
   "em_investigacao",
   "ag_decurso_prazo",
   "arquivada",

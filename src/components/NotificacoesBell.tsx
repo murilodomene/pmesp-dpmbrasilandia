@@ -7,7 +7,9 @@ import {
   listMinhasNotificacoes,
   contarNaoLidasNotif,
   marcarNotificacaoLida,
+  marcarTodasLidas,
 } from "@/lib/notificacoes.functions";
+
 import {
   Popover,
   PopoverContent,

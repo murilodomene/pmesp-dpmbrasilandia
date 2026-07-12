@@ -190,19 +190,45 @@ export const lancarMovimento = createServerFn({ method: "POST" })
         denuncia_id: z.string().uuid(),
         especie: z.enum(ESPECIES),
         teor: z.string().trim().min(3).max(20000),
+        anexos: z
+          .array(
+            z.object({
+              nome: z.string().trim().min(1).max(120),
+              path: z.string().trim().min(1).max(500),
+            }),
+          )
+          .max(30)
+          .optional(),
       })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
     const p = await getProlator(context);
+    const anexos = data.anexos ?? [];
     const { error } = await context.supabase.from("movimentos").insert({
       denuncia_id: data.denuncia_id,
       especie: data.especie,
       teor: data.teor,
+      anexos: anexos as never,
       ...p,
     });
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+// URL assinada temporária (60 min) para abrir um anexo (imagem-prova).
+// A policy de storage já garante que só staff ativo ou MP com acesso ao processo consegue ler.
+export const getAnexoSignedUrl = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({ path: z.string().trim().min(1).max(500) }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: signed, error } = await context.supabase.storage
+      .from("atos-anexos")
+      .createSignedUrl(data.path, 60 * 60);
+    if (error || !signed) throw new Error(error?.message ?? "Sem acesso ao anexo.");
+    return { url: signed.signedUrl };
   });
 
 export const alterarStatus = createServerFn({ method: "POST" })

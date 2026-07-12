@@ -8,6 +8,7 @@
  */
 import { calcularPrescricao, type DenunciaStatus, formatarDiasRestantes } from "@/lib/prescricao";
 import { sanitizeAtoHtml, isHtmlAto } from "@/components/RichTextEditor";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface ExportPolicial {
   id: string;
@@ -27,6 +28,7 @@ export interface ExportMovimento {
   cancelado_em?: string | null;
   cancelado_por_nome?: string | null;
   motivo_cancelamento?: string | null;
+  anexos?: Array<{ nome: string; path: string }> | null;
 }
 export interface ExportOitiva {
   id: string;
@@ -319,7 +321,43 @@ function genericContentPage(m: ExportMovimento): string {
   `);
 }
 
+/* ------------ anexos (imagens-prova) ------------ */
+
+async function anexoImagePage(nome: string, dataUrl: string): Promise<string> {
+  return pageWrap(`
+    ${HEADER_HTML}
+    <div style="text-align:center;margin-top:10px">
+      <div style="font-size:12px;letter-spacing:.15em;font-weight:bold;color:#374151">PROVA JUNTADA AOS AUTOS</div>
+      <div style="margin-top:4px;font-size:15px;font-weight:bold">${esc(nome)}</div>
+    </div>
+    <div style="margin-top:22px;display:flex;align-items:center;justify-content:center">
+      <img src="${dataUrl}" alt="${esc(nome)}" style="max-width:100%;max-height:820px;object-fit:contain;border:1px solid #d1d5db" />
+    </div>
+  `);
+}
+
+async function fetchAnexoDataUrl(path: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabase.storage
+      .from("atos-anexos")
+      .createSignedUrl(path, 60 * 10);
+    if (error || !data) return null;
+    const resp = await fetch(data.signedUrl);
+    if (!resp.ok) return null;
+    const blob = await resp.blob();
+    return await new Promise<string>((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result as string);
+      r.onerror = () => reject(r.error);
+      r.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
 /* ------------ export principal ------------ */
+
 
 export async function exportProcessoCompleto(data: ExportProcessoData): Promise<void> {
   const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
@@ -349,7 +387,8 @@ export async function exportProcessoCompleto(data: ExportProcessoData): Promise<
   const doc = iframe.contentDocument!;
   const pages: string[] = [];
   pages.push(coverPage(data.denuncia, data.policiais));
-  movsAsc.forEach((m, i) => {
+  for (let i = 0; i < movsAsc.length; i++) {
+    const m = movsAsc[i];
     const eventoNo = i + 1;
     pages.push(separatorPage(eventoNo, m));
     const isAto =
@@ -358,7 +397,14 @@ export async function exportProcessoCompleto(data: ExportProcessoData): Promise<
       m.especie === "portaria" ||
       m.especie === "ipc";
     pages.push(isAto ? atoContentPage(m, data.denuncia, data.policiais) : genericContentPage(m));
-  });
+    // Anexos-prova (só despacho/decisão) — cada imagem em página própria.
+    if ((m.especie === "despacho" || m.especie === "decisao") && Array.isArray(m.anexos)) {
+      for (const a of m.anexos) {
+        const dataUrl = await fetchAnexoDataUrl(a.path);
+        if (dataUrl) pages.push(await anexoImagePage(a.nome, dataUrl));
+      }
+    }
+  }
   doc.body.innerHTML = pages.join("");
 
   try {

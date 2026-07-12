@@ -42,6 +42,8 @@ import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Tra
 import { DocumentTemplate, exportDocumentToPdf, useDocumentRef } from "@/components/DocumentTemplate";
 import { RichTextEditor, isHtmlAto, sanitizeAtoHtml } from "@/components/RichTextEditor";
 import { exportProcessoCompleto } from "@/lib/exportProcesso";
+import { AtoAnexosUploader, type AtoAnexo } from "@/components/AtoAnexosUploader";
+import { AtoAnexosLinks } from "@/components/AtoAnexosLinks";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -475,6 +477,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
   const lancarFn = useServerFn(lancarMovimento);
   const [especie, setEspecie] = useState<"despacho" | "decisao" | "ipc">("despacho");
   const [teor, setTeor] = useState("");
+  const [anexos, setAnexos] = useState<AtoAnexo[]>([]);
 
   const obsFn = useServerFn(atualizarObservacoes);
   const [obsPub, setObsPub] = useState<string | null>(null);
@@ -504,10 +507,16 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
       } else {
         teorFinal = sanitizeAtoHtml(teor);
       }
-      return lancarFn({ data: { denuncia_id: id, especie, teor: teorFinal } });
+      // Anexos só se aplicam a despacho e decisão.
+      const anexosPayload =
+        especie === "despacho" || especie === "decisao" ? anexos : [];
+      return lancarFn({
+        data: { denuncia_id: id, especie, teor: teorFinal, anexos: anexosPayload },
+      });
     },
     onSuccess: () => {
       setTeor("");
+      setAnexos([]);
       qc.invalidateQueries({ queryKey: ["denuncia", id] });
       qc.invalidateQueries({ queryKey: ["denuncias"] });
     },
@@ -851,7 +860,10 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
               key={e.v}
               type="button"
               onClick={() => {
-                if (e.v !== especie) setTeor("");
+                if (e.v !== especie) {
+                  setTeor("");
+                  setAnexos([]);
+                }
                 setEspecie(e.v);
               }}
               className={`flex items-center gap-1 rounded-md border px-3 py-1.5 text-xs ${
@@ -895,13 +907,24 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
             />
           </div>
         ) : (
-          <div className="mt-3">
+          <div className="mt-3 space-y-3">
             <RichTextEditor
               value={teor}
               onChange={setTeor}
               placeholder="Redija o teor do ato. Use a barra acima para formatação."
               minHeight={160}
             />
+            <div>
+              <div className="mb-1 text-[11px] uppercase tracking-wider text-muted-foreground">
+                Provas (imagens)
+              </div>
+              <AtoAnexosUploader
+                denunciaId={id}
+                value={anexos}
+                onChange={setAnexos}
+                disabled={mLancar.isPending}
+              />
+            </div>
           </div>
         )}
         <div className="mt-3 flex justify-end">
@@ -1028,6 +1051,13 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                         }
                       />
                     </div>
+                    {(() => {
+                      const raw = (m as unknown as { anexos?: unknown }).anexos;
+                      const list = Array.isArray(raw)
+                        ? (raw as Array<{ nome: string; path: string }>)
+                        : [];
+                      return list.length > 0 ? <AtoAnexosLinks anexos={list} /> : null;
+                    })()}
                     {canceladoFooter}
                   </div>
                 </li>
@@ -2545,6 +2575,7 @@ function ExportarProcessoBtn({
     cancelado_em?: string | null;
     cancelado_por_nome?: string | null;
     motivo_cancelamento?: string | null;
+    anexos?: Array<{ nome: string; path: string }> | null;
   }>;
 }) {
   const [gerando, setGerando] = useState(false);

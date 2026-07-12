@@ -216,6 +216,7 @@ export type Database = {
       }
       movimentos: {
         Row: {
+          anexos: Json
           cancelado_em: string | null
           cancelado_por_cargo: Database["public"]["Enums"]["app_role"] | null
           cancelado_por_id: string | null
@@ -234,6 +235,7 @@ export type Database = {
           teor: string
         }
         Insert: {
+          anexos?: Json
           cancelado_em?: string | null
           cancelado_por_cargo?: Database["public"]["Enums"]["app_role"] | null
           cancelado_por_id?: string | null
@@ -252,6 +254,7 @@ export type Database = {
           teor: string
         }
         Update: {
+          anexos?: Json
           cancelado_em?: string | null
           cancelado_por_cargo?: Database["public"]["Enums"]["app_role"] | null
           cancelado_por_id?: string | null

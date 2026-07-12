@@ -53,6 +53,7 @@ function PdoPage() {
   const [aberto, setAberto] = useState<string | null>(null);
   const [novo, setNovo] = useState(false);
   const [busca, setBusca] = useState("");
+  const [excluir, setExcluir] = useState<{ id: string; numero: string } | null>(null);
 
   const cargo = session?.cargo ?? null;
   const isStaff = cargo && cargo !== "cidadao" && cargo !== "mp";

@@ -1309,6 +1309,11 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
 
 
 
+      {dialog?.kind === "intimar" && (
+        <IntimarDialog denunciaId={id} cargo={cargo} onClose={() => setDialog(null)} />
+      )}
+
+
       <style>{`.input{background:var(--input);border:1px solid var(--border);border-radius:6px;padding:.55rem .7rem;font-size:.9rem;color:var(--foreground);width:100%}`}</style>
     </div>
   );

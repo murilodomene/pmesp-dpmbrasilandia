@@ -597,6 +597,14 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
             >
               Movimentar status
             </button>
+            {(cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor") && (
+              <button
+                onClick={() => setDialog({ kind: "intimar" })}
+                className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
+              >
+                Intimar
+              </button>
+            )}
             {podeRegistrarRecurso && (
               <button
                 onClick={() => setDialog({ kind: "recurso" })}

@@ -82,8 +82,6 @@ export function Header() {
               {isDelegadoCorregedor && <NavLink to="/usuarios">Gestão de Usuários</NavLink>}
             </>
           )}
-            </>
-          )}
 
         </nav>
 

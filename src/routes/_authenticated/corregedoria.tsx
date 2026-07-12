@@ -727,6 +727,9 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                     )}
+                    {podeRetificar && (
+                      <ObservacoesPolicialBadge nome={p.nome} matricula={p.rg_funcional ?? null} />
+                    )}
                   </div>
                 ))}
               </div>

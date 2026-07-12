@@ -52,6 +52,7 @@ export function Header() {
   const isMp = cargo === "mp";
   const isStaff = ativo && cargo && !isCidadao && !isMp;
   const isDelegadoCorregedor = ativo && cargo === "delegado_corregedor";
+  const isDelegadoGeral = ativo && cargo === "delegado_geral";
 
   const internalLinks: { to: string; label: string }[] = isStaff
     ? [
@@ -61,6 +62,7 @@ export function Header() {
         { to: "/avisos", label: "Avisos" },
         { to: "/documentos", label: "Documentos" },
         ...(isDelegadoCorregedor ? [{ to: "/usuarios", label: "Gestão de Usuários" }] : []),
+        ...(isDelegadoGeral ? [{ to: "/manutencao", label: "Manutenção" }] : []),
       ]
     : [];
 

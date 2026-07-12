@@ -503,10 +503,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
         teorFinal = montarTeorIpc({
           unidade: ipcUnidade || null,
           protocolo: data?.denuncia.numero_protocolo ?? "",
-          policiais: (data?.policiais ?? []).map((p) => ({
-            nome: p.nome,
-            rg_funcional: p.rg_funcional ?? null,
-          })),
+          identificacao: ipcIdent.trim(),
           relato: sanitizeAtoHtml(teor),
         });
       } else {

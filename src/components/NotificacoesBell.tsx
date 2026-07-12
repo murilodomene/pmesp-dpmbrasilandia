@@ -104,6 +104,8 @@ export function NotificacoesBell() {
                           <div className="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">
                             {new Date(n.created_at).toLocaleString("pt-BR")}
                             {n.tipo === "intimacao" && " · intimação"}
+                            {n.tipo === "aviso" && " · aviso"}
+
                           </div>
                         </div>
                       </div>

@@ -36,6 +36,7 @@ import {
   registrarRecurso,
   certificarResultadoRecurso,
 } from "@/lib/denuncias.functions";
+import { contarObservacoesPorPad } from "@/lib/observacoes.functions";
 
 
 
@@ -586,6 +587,8 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
   const podeCertificarResultado =
     status === "em_recurso" &&
     (cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor");
+  const isInternoCorregedoria =
+    cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor";
 
   return (
     <div className="space-y-4">
@@ -608,6 +611,9 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                     ? "Prazo de recurso vencido"
                     : `Recurso: ${decurso.diasRestantes === 1 ? "1 dia restante" : `${decurso.diasRestantes} dias restantes`}`}
                 </span>
+              )}
+              {isInternoCorregedoria && (
+                <ObservacoesIndicador denunciaId={denuncia.id} numero={denuncia.numero_protocolo} />
               )}
             </div>
             <div className="mt-2">
@@ -3058,6 +3064,26 @@ function NaturezaInline({
         Cancelar
       </button>
     </span>
+  );
+}
+
+function ObservacoesIndicador({ denunciaId, numero }: { denunciaId: string; numero: string }) {
+  const fn = useServerFn(contarObservacoesPorPad);
+  const { data } = useQuery({
+    queryKey: ["obs-pad-count", denunciaId],
+    queryFn: () => fn({ data: { denuncia_id: denunciaId } }) as Promise<{ count: number }>,
+  });
+  if (!data || data.count === 0) return null;
+  return (
+    <Link
+      to="/observacoes"
+      search={{ q: numero }}
+      className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 px-2 py-0.5 text-xs text-primary hover:bg-primary/20"
+      title="Observações internas relacionadas a este PAD"
+    >
+      <Eye className="h-3 w-3" />
+      {data.count} observaç{data.count === 1 ? "ão" : "ões"}
+    </Link>
   );
 }
 

@@ -53,12 +53,16 @@ export function Header() {
   const isStaff = ativo && cargo && !isCidadao && !isMp;
   const isDelegadoCorregedor = ativo && cargo === "delegado_corregedor";
 
+  const isInternoCorregedoria =
+    ativo && (cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor");
+
   const internalLinks: { to: string; label: string }[] = isStaff
     ? [
         { to: "/painel", label: "Painel Interno" },
         { to: "/corregedoria", label: "Corregedoria" },
         { to: "/pdo", label: "PDO" },
         { to: "/avisos", label: "Avisos" },
+        ...(isInternoCorregedoria ? [{ to: "/observacoes", label: "Observações" }] : []),
         { to: "/documentos", label: "Documentos" },
         ...(isDelegadoCorregedor ? [{ to: "/usuarios", label: "Gestão de Usuários" }] : []),
         ...(isDelegadoCorregedor ? [{ to: "/manutencao", label: "Manutenção" }] : []),

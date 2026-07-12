@@ -1,6 +1,7 @@
 import type { DenunciaStatus } from "@/lib/prescricao";
 
 const LABELS: Record<DenunciaStatus, string> = {
+  novo: "Novo",
   recebida: "Recebida",
   aguardando_analise: "Aguardando análise",
   em_analise: "Em análise",
@@ -12,6 +13,7 @@ const LABELS: Record<DenunciaStatus, string> = {
 };
 
 const CLASSES: Record<DenunciaStatus, string> = {
+  novo: "bg-sky-500/15 text-sky-300 border border-sky-500/30",
   recebida: "bg-status-recebida text-status-recebida-fg",
   aguardando_analise: "bg-status-aguardando text-status-aguardando-fg",
   em_analise: "bg-status-analise text-status-analise-fg",

@@ -506,7 +506,7 @@ export type Database = {
           id: string
           policial_cargo: string | null
           policial_matricula: string | null
-          policial_nome: string
+          policial_nome: string | null
           policial_unidade: string | null
           updated_at: string
         }
@@ -520,7 +520,7 @@ export type Database = {
           id?: string
           policial_cargo?: string | null
           policial_matricula?: string | null
-          policial_nome: string
+          policial_nome?: string | null
           policial_unidade?: string | null
           updated_at?: string
         }
@@ -534,7 +534,7 @@ export type Database = {
           id?: string
           policial_cargo?: string | null
           policial_matricula?: string | null
-          policial_nome?: string
+          policial_nome?: string | null
           policial_unidade?: string | null
           updated_at?: string
         }

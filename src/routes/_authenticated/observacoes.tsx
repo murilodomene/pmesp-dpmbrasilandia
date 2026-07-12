@@ -55,7 +55,7 @@ type Observacao = {
   autor_id: string;
   autor_nome: string;
   autor_cargo: string;
-  policial_nome: string;
+  policial_nome: string | null;
   policial_matricula: string | null;
   policial_cargo: string | null;
   policial_unidade: string | null;

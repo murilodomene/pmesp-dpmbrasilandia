@@ -424,7 +424,13 @@ function DocumentosPage() {
                 >
                   ← Voltar
                 </button>
-                <h2 className="font-serif text-2xl">{selected.titulo}</h2>
+                {isLegal ? (
+                  <div className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                    Documento normativo
+                  </div>
+                ) : (
+                  <h2 className="font-serif text-2xl">{selected.titulo}</h2>
+                )}
               </div>
               {podeEditar && !editando && !isHierarquia && (
                 <button

@@ -21,6 +21,7 @@ import {
   juntarOitiva,
   desentranharOitiva,
   atualizarObservacoes,
+  atualizarNatureza,
   atualizarUnidade,
   retificarDenunciado,
   lavrarPortaria,

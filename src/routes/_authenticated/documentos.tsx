@@ -290,7 +290,7 @@ function DocumentosPage() {
                   <h2 className="font-serif text-2xl">{selected.titulo}</h2>
                 )}
               </div>
-              {podeEditar && !editando && !isHierarquia && (
+              {podeEditar && !editando && !isHierarquia && !isFluxo && (
                 <button
                   onClick={() => { setRascunho(selected.conteudo); setEditando(true); }}
                   className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-surface-2"

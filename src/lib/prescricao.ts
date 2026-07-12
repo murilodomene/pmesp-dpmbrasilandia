@@ -97,7 +97,11 @@ export function calcularDecursoPrazo(
 ): { diasRestantes: number; vencido: boolean } | null {
   if (!concluidoEm) return null;
   const inicio = concluidoEm instanceof Date ? concluidoEm : new Date(concluidoEm);
-  const diasCorridos = Math.floor((agora.getTime() - inicio.getTime()) / MS_DIA);
-  const diasRestantes = PRAZO_DECURSO_DIAS - diasCorridos;
+  // Regra: exclui o dia do começo, inclui o dia do vencimento.
+  // Trabalha em dias de calendário para não sofrer com fuso/skew de relógio.
+  const startDay = Date.UTC(inicio.getFullYear(), inicio.getMonth(), inicio.getDate());
+  const todayDay = Date.UTC(agora.getFullYear(), agora.getMonth(), agora.getDate());
+  const diasDesdeInicio = Math.round((todayDay - startDay) / MS_DIA);
+  const diasRestantes = PRAZO_DECURSO_DIAS - diasDesdeInicio;
   return { diasRestantes, vencido: diasRestantes <= 0 };
 }

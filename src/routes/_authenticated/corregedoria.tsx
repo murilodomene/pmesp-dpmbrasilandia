@@ -2019,6 +2019,81 @@ function TimelineAtoCard({
   );
 }
 
+function TimelineCertidaoCard({
+  teor,
+  quando,
+  prolator,
+  cargo,
+  procedimento,
+  denunciado,
+}: {
+  teor: string;
+  quando: string;
+  prolator: string;
+  cargo: string;
+  procedimento: string;
+  denunciado: string;
+}) {
+  const pdfRef = useDocumentRef();
+  const [gerando, setGerando] = useState(false);
+
+  async function exportarPdf() {
+    if (!pdfRef.current) return;
+    setGerando(true);
+    try {
+      const fname = `Certidao_${procedimento.replace(/[^\w-]/g, "_")}.pdf`;
+      await exportDocumentToPdf(pdfRef.current, fname);
+    } finally {
+      setGerando(false);
+    }
+  }
+
+  const body = <div className="whitespace-pre-wrap">{renderTeorComLinks(teor)}</div>;
+
+  return (
+    <div className="space-y-2">
+      <DocumentTemplate
+        variant="screen"
+        procedimento={procedimento}
+        denunciado={denunciado}
+        tipo="CERTIDÃO"
+        prolatorNome={prolator}
+        prolatorCargo={cargoLabelFull(cargo)}
+        data={quando}
+        markerClass="bg-emerald-600"
+      >
+        {body}
+      </DocumentTemplate>
+
+      <div className="pointer-events-none fixed left-[-10000px] top-0" aria-hidden>
+        <DocumentTemplate
+          ref={pdfRef}
+          variant="pdf"
+          procedimento={procedimento}
+          denunciado={denunciado}
+          assunto="Certidão"
+          prolatorNome={prolator}
+          prolatorCargo={cargoLabelFull(cargo)}
+          data={quando}
+          markerClass="bg-emerald-600"
+        >
+          <div className="whitespace-pre-wrap">{renderTeorComLinks(teor)}</div>
+        </DocumentTemplate>
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          onClick={exportarPdf}
+          disabled={gerando}
+          className="inline-flex items-center gap-1 rounded-md border border-border bg-surface px-3 py-1.5 text-xs hover:bg-surface-2 disabled:opacity-50"
+        >
+          <Download className="h-3.5 w-3.5" /> {gerando ? "Gerando..." : "Exportar PDF"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 
 
 /**

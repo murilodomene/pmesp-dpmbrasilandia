@@ -436,13 +436,7 @@ function LinhaProcesso({
 
 
 
-function VazioAutuacao() {
-  return (
-    <div className="surface grid h-full min-h-96 place-items-center p-12 text-center text-sm text-muted-foreground">
-      Selecione um procedimento na fila para abrir a autuação.
-    </div>
-  );
-}
+
 
 function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; onDeleted?: () => void }) {
   const qc = useQueryClient();

@@ -30,8 +30,9 @@ export function NotificationBell() {
 
   const items = (data ?? []) as Array<{
     id: string;
-    denuncia_id: string;
-    tipo: "auto" | "intimacao";
+    denuncia_id: string | null;
+    aviso_id: string | null;
+    tipo: "auto" | "intimacao" | "aviso";
     titulo: string;
     teor: string | null;
     remetente_nome: string | null;
@@ -48,7 +49,11 @@ export function NotificationBell() {
       } catch {}
     }
     setOpen(false);
-    navigate({ to: "/corregedoria", search: { id: n.denuncia_id } });
+    if (n.tipo === "aviso") {
+      navigate({ to: "/avisos" });
+    } else if (n.denuncia_id) {
+      navigate({ to: "/corregedoria", search: { id: n.denuncia_id } });
+    }
   }
 
   return (

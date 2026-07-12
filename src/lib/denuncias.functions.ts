@@ -580,6 +580,7 @@ export const lavrarPortaria = createServerFn({ method: "POST" })
         acrescimos_dias: 0,
         interrupcoes_count: (atual.interrupcoes_count ?? 0) + 1,
         instaurada_em: agora,
+        status: "recebida",
       })
       .eq("id", data.denuncia_id);
     if (updErr) throw new Error(updErr.message);

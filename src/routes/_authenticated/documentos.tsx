@@ -3,10 +3,19 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { Header } from "@/components/Header";
-import { Search, Save, Pencil, X, FileText, ChevronUp, ChevronDown } from "lucide-react";
+import { Search, Save, Pencil, X, FileText, ChevronUp, ChevronDown, GitBranch } from "lucide-react";
 import { HierarquiaQuadro } from "@/components/HierarquiaQuadro";
+import { FluxoPAD } from "@/components/FluxoPAD";
 
 const HIERARQUIA_ROLES = new Set(["delegado_geral", "delegado_corregedor", "corregedor"]);
+const FLUXO_ROLES = HIERARQUIA_ROLES;
+
+const FLUXO_DOC: Doc = {
+  id: "fluxo",
+  titulo: "Fluxo do Processo Administrativo",
+  conteudo: "",
+  atualizado_em: new Date(0).toISOString(),
+};
 
 export const Route = createFileRoute("/_authenticated/documentos")({
   component: DocumentosPage,

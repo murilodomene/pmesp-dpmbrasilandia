@@ -2,8 +2,9 @@ import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
+import Link from "@tiptap/extension-link";
 import DOMPurify from "isomorphic-dompurify";
-import { Bold, Italic, Underline as UnderlineIcon, AlignLeft, AlignCenter, AlignRight, AlignJustify } from "lucide-react";
+import { Bold, Italic, Underline as UnderlineIcon, AlignLeft, AlignCenter, AlignRight, AlignJustify, Link as LinkIcon } from "lucide-react";
 import { useEffect } from "react";
 
 interface RichTextEditorProps {

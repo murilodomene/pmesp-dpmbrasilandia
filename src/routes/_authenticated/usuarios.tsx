@@ -274,7 +274,7 @@ function EditarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: (
   const editarFn = useServerFn(editarUsuarioPublico);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  const [cargo, setCargo] = useState<"cidadao" | "mp">("cidadao");
+  const [cargo, setCargo] = useState<"delegado_geral" | "cidadao" | "mp">("cidadao");
 
   const open = !!usuario;
 
@@ -282,7 +282,7 @@ function EditarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: (
     if (usuario) {
       setNome(usuario.nome);
       setEmail(usuario.email ?? "");
-      setCargo((usuario.cargo as "cidadao" | "mp") ?? "cidadao");
+      setCargo((usuario.cargo as "delegado_geral" | "cidadao" | "mp") ?? "cidadao");
     }
   });
 

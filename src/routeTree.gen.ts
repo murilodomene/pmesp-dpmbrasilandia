@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as MpRouteImport } from './routes/mp'
+import { Route as ManualRouteImport } from './routes/manual'
 import { Route as DenunciarRouteImport } from './routes/denunciar'
 import { Route as ConsultarRouteImport } from './routes/consultar'
 import { Route as CidadaoRouteImport } from './routes/cidadao'
@@ -34,6 +35,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const MpRoute = MpRouteImport.update({
   id: '/mp',
   path: '/mp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManualRoute = ManualRouteImport.update({
+  id: '/manual',
+  path: '/manual',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DenunciarRoute = DenunciarRouteImport.update({
@@ -115,6 +121,7 @@ export interface FileRoutesByFullPath {
   '/cidadao': typeof CidadaoRoute
   '/consultar': typeof ConsultarRoute
   '/denunciar': typeof DenunciarRoute
+  '/manual': typeof ManualRoute
   '/mp': typeof MpRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/corregedoria': typeof AuthenticatedCorregedoriaRoute
@@ -132,6 +139,7 @@ export interface FileRoutesByTo {
   '/cidadao': typeof CidadaoRoute
   '/consultar': typeof ConsultarRoute
   '/denunciar': typeof DenunciarRoute
+  '/manual': typeof ManualRoute
   '/mp': typeof MpRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/corregedoria': typeof AuthenticatedCorregedoriaRoute
@@ -151,6 +159,7 @@ export interface FileRoutesById {
   '/cidadao': typeof CidadaoRoute
   '/consultar': typeof ConsultarRoute
   '/denunciar': typeof DenunciarRoute
+  '/manual': typeof ManualRoute
   '/mp': typeof MpRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/corregedoria': typeof AuthenticatedCorregedoriaRoute
@@ -170,6 +179,7 @@ export interface FileRouteTypes {
     | '/cidadao'
     | '/consultar'
     | '/denunciar'
+    | '/manual'
     | '/mp'
     | '/sitemap.xml'
     | '/corregedoria'
@@ -187,6 +197,7 @@ export interface FileRouteTypes {
     | '/cidadao'
     | '/consultar'
     | '/denunciar'
+    | '/manual'
     | '/mp'
     | '/sitemap.xml'
     | '/corregedoria'
@@ -205,6 +216,7 @@ export interface FileRouteTypes {
     | '/cidadao'
     | '/consultar'
     | '/denunciar'
+    | '/manual'
     | '/mp'
     | '/sitemap.xml'
     | '/_authenticated/corregedoria'
@@ -224,6 +236,7 @@ export interface RootRouteChildren {
   CidadaoRoute: typeof CidadaoRoute
   ConsultarRoute: typeof ConsultarRoute
   DenunciarRoute: typeof DenunciarRoute
+  ManualRoute: typeof ManualRoute
   MpRoute: typeof MpRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
 }
@@ -242,6 +255,13 @@ declare module '@tanstack/react-router' {
       path: '/mp'
       fullPath: '/mp'
       preLoaderRoute: typeof MpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/manual': {
+      id: '/manual'
+      path: '/manual'
+      fullPath: '/manual'
+      preLoaderRoute: typeof ManualRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/denunciar': {
@@ -377,6 +397,7 @@ const rootRouteChildren: RootRouteChildren = {
   CidadaoRoute: CidadaoRoute,
   ConsultarRoute: ConsultarRoute,
   DenunciarRoute: DenunciarRoute,
+  ManualRoute: ManualRoute,
   MpRoute: MpRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
 }

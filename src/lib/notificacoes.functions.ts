@@ -40,6 +40,19 @@ export const marcarNotificacaoLida = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const marcarTodasLidas = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { error } = await context.supabase
+      .from("notificacoes")
+      .update({ lido: true, lida_em: new Date().toISOString() })
+      .eq("user_id", context.userId)
+      .eq("lido", false);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+
 export const buscarInternos = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>

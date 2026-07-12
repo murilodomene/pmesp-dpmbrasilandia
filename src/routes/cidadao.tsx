@@ -85,10 +85,12 @@ function CidadaoPage() {
         <div>
           <div className="eyebrow">Área do Cidadão</div>
           <h1 className="mt-2 font-serif text-3xl">
-            {mode === "login" ? "Entrar" : "Cadastre-se"}
+            {mode === "login" ? "Entrar" : mode === "signup" ? "Cadastre-se" : "Recuperar senha"}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Acompanhe suas denúncias. Cadastro imediato, sem aprovação.
+            {mode === "forgot"
+              ? "Digite o e-mail cadastrado. Enviaremos as instruções."
+              : "Acompanhe suas denúncias. Cadastro imediato, sem aprovação."}
           </p>
         </div>
         <form onSubmit={submit} className="surface grid gap-4 p-6">
@@ -106,21 +108,36 @@ function CidadaoPage() {
             <input
               type="email"
               required
+              placeholder="exemplo@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="input"
             />
           </Field>
-          <Field label="Senha">
-            <input
-              type="password"
-              required
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="input"
-            />
-          </Field>
+          {mode !== "forgot" && (
+            <Field label="Senha">
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="input"
+              />
+            </Field>
+          )}
+
+          {mode === "login" && (
+            <div className="-mt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => { setMode("forgot"); setError(null); setInfo(null); }}
+                className="text-xs text-muted-foreground transition-colors hover:text-primary hover:underline"
+              >
+                Esqueceu a senha?
+              </button>
+            </div>
+          )}
 
           {error && (
             <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive-foreground">
@@ -136,20 +153,30 @@ function CidadaoPage() {
             disabled={loading}
             className="rounded-md bg-primary py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-60"
           >
-            {loading ? "Aguarde..." : mode === "login" ? "Entrar" : "Cadastrar"}
+            {loading ? "Aguarde..." : mode === "login" ? "Entrar" : mode === "signup" ? "Cadastrar" : "Enviar instruções"}
           </button>
 
-          <button
-            type="button"
-            onClick={() => {
-              setMode(mode === "login" ? "signup" : "login");
-              setError(null);
-              setInfo(null);
-            }}
-            className="text-xs text-muted-foreground hover:text-foreground"
-          >
-            {mode === "login" ? "Não tem conta? Cadastrar" : "Já tenho conta. Entrar"}
-          </button>
+          {mode === "forgot" ? (
+            <button
+              type="button"
+              onClick={() => { setMode("login"); setError(null); setInfo(null); }}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              ← Voltar para login
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setMode(mode === "login" ? "signup" : "login");
+                setError(null);
+                setInfo(null);
+              }}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              {mode === "login" ? "Não tem conta? Cadastrar" : "Já tenho conta. Entrar"}
+            </button>
+          )}
         </form>
         <Link to="/" className="text-center text-xs text-muted-foreground hover:text-foreground">
           ← Voltar ao início

@@ -474,6 +474,29 @@ function DocumentosPage() {
               </div>
             ) : (
               <>
+                {isLegal && (
+                  <div className="border-b border-border/60 bg-surface-2/40 px-6 py-6">
+                    <div className="flex items-start gap-4">
+                      <img
+                        src="/brasao-pcsp.png"
+                        alt=""
+                        aria-hidden
+                        className="h-14 w-auto flex-shrink-0 opacity-90 sm:h-16"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground sm:text-[11px]">
+                          Polícia Civil do Estado de São Paulo — Corregedoria Geral
+                        </div>
+                        <h2 className="mt-1 font-serif text-2xl leading-tight text-foreground sm:text-3xl">
+                          {selected.titulo}
+                        </h2>
+                        <p className="mt-1 text-xs italic text-muted-foreground sm:text-sm">
+                          Diretrizes, condutas e regras gerais da Polícia Civil.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <div className="sticky top-0 z-10 border-b border-border bg-surface/95 px-6 py-3 backdrop-blur">
                   <div className="relative">
                     <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

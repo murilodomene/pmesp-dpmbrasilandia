@@ -33,7 +33,7 @@ export const limparDados = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    await requireDelegadoGeral(context as any);
+    await requireDelegadoCorregedor(context as any);
     if (data.confirmacao.trim().toUpperCase() !== CONFIRMACOES[data.tipo]) {
       throw new Error(`Digite exatamente ${CONFIRMACOES[data.tipo]} para confirmar.`);
     }

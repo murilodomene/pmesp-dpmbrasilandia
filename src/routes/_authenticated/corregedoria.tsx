@@ -1051,6 +1051,12 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                         }
                       />
                     </div>
+                    {Array.isArray((m as { anexos?: unknown }).anexos) &&
+                      ((m as { anexos: Array<{ nome: string; path: string }> }).anexos.length > 0) && (
+                        <AtoAnexosLinks
+                          anexos={(m as { anexos: Array<{ nome: string; path: string }> }).anexos}
+                        />
+                      )}
                     {canceladoFooter}
                   </div>
                 </li>

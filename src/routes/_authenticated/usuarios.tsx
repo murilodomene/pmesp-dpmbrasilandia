@@ -1,4 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
@@ -41,8 +43,22 @@ import {
 } from "@/lib/usuarios.functions";
 
 export const Route = createFileRoute("/_authenticated/usuarios")({
+  beforeLoad: async () => {
+    const { data: sess } = await supabase.auth.getSession();
+    const uid = sess.session?.user.id;
+    if (!uid) throw redirect({ to: "/auth" });
+    const { data: role } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", uid)
+      .maybeSingle();
+    if ((role as { role: string } | null)?.role !== "delegado_corregedor") {
+      throw redirect({ to: "/painel" });
+    }
+  },
   component: UsuariosPage,
 });
+
 
 const CARGO_LABEL: Record<string, string> = {
   delegado_geral: "Delegado Geral",

@@ -44,6 +44,7 @@ import { RichTextEditor, isHtmlAto, sanitizeAtoHtml } from "@/components/RichTex
 import { exportProcessoCompleto } from "@/lib/exportProcesso";
 import { AtoAnexosUploader, type AtoAnexo } from "@/components/AtoAnexosUploader";
 import { AtoAnexosLinks } from "@/components/AtoAnexosLinks";
+import { IntimarDialog } from "@/components/IntimarDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -470,6 +471,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     | { kind: "excluir" }
     | { kind: "cancelarMov"; movimento_id: string; resumo: string }
     | { kind: "recurso" }
+    | { kind: "intimar" }
     | null
   >(null);
 
@@ -596,6 +598,15 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
             >
               Movimentar status
             </button>
+            {(cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor") && (
+              <button
+                onClick={() => setDialog({ kind: "intimar" })}
+                title="Intimar usuário interno"
+                className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
+              >
+                <Bell className="h-3.5 w-3.5" /> Intimar
+              </button>
+            )}
             {podeRegistrarRecurso && (
               <button
                 onClick={() => setDialog({ kind: "recurso" })}

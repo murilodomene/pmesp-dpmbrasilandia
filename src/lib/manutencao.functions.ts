@@ -43,7 +43,9 @@ export const limparDados = createServerFn({ method: "POST" })
         ? "manutencao_limpar_processos"
         : data.tipo === "pdos"
           ? "manutencao_limpar_pdos"
-          : "manutencao_limpar_avisos";
+          : data.tipo === "avisos"
+            ? "manutencao_limpar_avisos"
+            : "manutencao_limpar_observacoes";
     const { data: res, error } = await (context.supabase as any).rpc(rpc);
     if (error) throw new Error(error.message);
     return res as { removidos: number };

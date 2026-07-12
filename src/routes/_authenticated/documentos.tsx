@@ -10,13 +10,6 @@ import { FluxoPAD } from "@/components/FluxoPAD";
 const HIERARQUIA_ROLES = new Set(["delegado_geral", "delegado_corregedor", "corregedor"]);
 const FLUXO_ROLES = HIERARQUIA_ROLES;
 
-const FLUXO_DOC: Doc = {
-  id: "fluxo",
-  titulo: "Fluxo do Processo Administrativo",
-  conteudo: "",
-  atualizado_em: new Date(0).toISOString(),
-};
-
 export const Route = createFileRoute("/_authenticated/documentos")({
   component: DocumentosPage,
 });
@@ -28,6 +21,13 @@ type Doc = {
   atualizado_em: string;
 };
 
+const FLUXO_DOC: Doc = {
+  id: "fluxo",
+  titulo: "Fluxo do Processo Administrativo",
+  conteudo: "",
+  atualizado_em: new Date(0).toISOString(),
+};
+
 import {
   type TocEntry,
   anchorize,
@@ -37,7 +37,7 @@ import {
   mdToHtml,
 } from "@/lib/documento-formatter";
 
-const DOC_ORDER = ["manual", "regimento", "fardamentos", "hierarquia"];
+const DOC_ORDER = ["manual", "regimento", "fardamentos", "hierarquia", "fluxo"];
 
 function DocumentosPage() {
   const { session } = useSession();

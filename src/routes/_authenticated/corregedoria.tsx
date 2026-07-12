@@ -2575,6 +2575,7 @@ function ExportarProcessoBtn({
     cancelado_em?: string | null;
     cancelado_por_nome?: string | null;
     motivo_cancelamento?: string | null;
+    anexos?: Array<{ nome: string; path: string }> | null;
   }>;
 }) {
   const [gerando, setGerando] = useState(false);

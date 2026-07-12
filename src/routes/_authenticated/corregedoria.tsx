@@ -1915,24 +1915,24 @@ function TimelineIpcCard({
   const relatoNode = isHtmlAto(relato) ? (
     <div
       className="ato-body"
-      dangerouslySetInnerHTML={{ __html: sanitizeAtoHtml(relato) }}
+      dangerouslySetInnerHTML={{ __html: linkifyArticlesHtml(sanitizeAtoHtml(relato)) }}
     />
   ) : (
     <div className="ato-body">
       {relatoParas.map((p, i) => (
-        <p key={i} className="whitespace-pre-wrap">{p}</p>
+        <p key={i} className="whitespace-pre-wrap">{renderTeorComLinks(p)}</p>
       ))}
     </div>
   );
   const relatoNodePdf = isHtmlAto(relato) ? (
     <div
       className="ato-body-pdf"
-      dangerouslySetInnerHTML={{ __html: sanitizeAtoHtml(relato) }}
+      dangerouslySetInnerHTML={{ __html: linkifyArticlesHtml(sanitizeAtoHtml(relato)) }}
     />
   ) : (
     <div className="ato-body-pdf">
       {relatoParas.map((p, i) => (
-        <p key={i} className="whitespace-pre-wrap">{p}</p>
+        <p key={i} className="whitespace-pre-wrap">{renderTeorComLinks(p)}</p>
       ))}
     </div>
   );

@@ -70,6 +70,8 @@ export const submitDenuncia = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => submitSchema.parse(data))
   .handler(async ({ data }) => {
     const sb = publicClient();
+    const unidadeDenuncia =
+      data.policiais.map((p) => p.unidade).find((u) => u) ?? null;
     const { data: den, error } = await sb
       .from("denuncias")
       .insert({
@@ -84,6 +86,7 @@ export const submitDenuncia = createServerFn({ method: "POST" })
         relato: data.relato,
         info_adicional: data.info_adicional,
         links: data.links,
+        unidade: unidadeDenuncia,
       })
       .select("id, numero_protocolo")
       .single();

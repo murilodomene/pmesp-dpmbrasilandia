@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
-import { Search, Edit3, ShieldAlert, UserX, UserCheck, Trash2 } from "lucide-react";
+import { Search, Edit3, ShieldAlert, UserX, UserCheck, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,7 @@ import {
   alterarStatusUsuario,
   editarUsuarioPublico,
   excluirUsuario,
+  aprovarUsuario,
   getSessionInfo,
 } from "@/lib/usuarios.functions";
 
@@ -102,6 +103,8 @@ function UsuariosPage() {
   const [editando, setEditando] = useState<Usuario | null>(null);
   const [confirmando, setConfirmando] = useState<Usuario | null>(null);
   const [excluindo, setExcluindo] = useState<Usuario | null>(null);
+  const [aprovando, setAprovando] = useState<Usuario | null>(null);
+
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -226,7 +229,20 @@ function UsuariosPage() {
                       {new Date(u.created_at).toLocaleDateString("pt-BR")}
                     </TableCell>
                     <TableCell className="text-right">
-                      {isEditavel ? (
+                      {u.status === "pendente" ? (
+                        <div className="flex justify-end gap-2">
+                          <Button size="sm" onClick={() => setAprovando(u)}>
+                            <UserPlus className="mr-1 h-3.5 w-3.5" /> Aprovar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => setExcluindo(u)}
+                          >
+                            <Trash2 className="mr-1 h-3.5 w-3.5" /> Excluir
+                          </Button>
+                        </div>
+                      ) : isEditavel ? (
                         <div className="flex justify-end gap-2">
                           <Button size="sm" variant="outline" onClick={() => setEditando(u)}>
                             <Edit3 className="mr-1 h-3.5 w-3.5" /> Editar
@@ -265,6 +281,7 @@ function UsuariosPage() {
       <EditarModal usuario={editando} onClose={() => setEditando(null)} />
       <StatusModal usuario={confirmando} onClose={() => setConfirmando(null)} />
       <ExcluirModal usuario={excluindo} onClose={() => setExcluindo(null)} />
+      <AprovarModal usuario={aprovando} onClose={() => setAprovando(null)} />
     </div>
   );
 }
@@ -417,6 +434,55 @@ function ExcluirModal({ usuario, onClose }: { usuario: Usuario | null; onClose: 
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
           <Button variant="destructive" onClick={() => m.mutate()} disabled={m.isPending}>
             {m.isPending ? "Excluindo…" : "Excluir definitivamente"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AprovarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: () => void }) {
+  const qc = useQueryClient();
+  const aprovarFn = useServerFn(aprovarUsuario);
+  const [cargo, setCargo] = useState<"cidadao" | "corregedor" | "delegado_geral" | "mp">("cidadao");
+
+  const m = useMutation({
+    mutationFn: () => aprovarFn({ data: { user_id: usuario!.id, cargo } }),
+    onSuccess: () => {
+      toast.success("Cadastro aprovado.");
+      qc.invalidateQueries({ queryKey: ["usuarios"] });
+      onClose();
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro ao aprovar."),
+  });
+
+  return (
+    <Dialog open={!!usuario} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Aprovar cadastro</DialogTitle>
+          <DialogDescription>
+            Defina o cargo de <strong>{usuario?.nome}</strong> ao aprovar o cadastro.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label>Cargo</Label>
+            <Select value={cargo} onValueChange={(v) => setCargo(v as typeof cargo)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cidadao">Cidadão</SelectItem>
+                <SelectItem value="mp">Ministério Público</SelectItem>
+                <SelectItem value="corregedor">Corregedor</SelectItem>
+                <SelectItem value="delegado_geral">Delegado Geral</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button onClick={() => m.mutate()} disabled={m.isPending}>
+            {m.isPending ? "Aprovando…" : "Aprovar cadastro"}
           </Button>
         </DialogFooter>
       </DialogContent>

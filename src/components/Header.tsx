@@ -58,10 +58,12 @@ export function Header() {
         { to: "/painel", label: "Painel Interno" },
         { to: "/corregedoria", label: "Corregedoria" },
         { to: "/pdo", label: "PDO" },
+        { to: "/avisos", label: "Avisos" },
         { to: "/documentos", label: "Documentos" },
         ...(isDelegadoCorregedor ? [{ to: "/usuarios", label: "Gestão de Usuários" }] : []),
       ]
     : [];
+
 
   return (
     <header className="border-b border-border bg-surface/60 backdrop-blur">

@@ -71,9 +71,13 @@ export function NotificacoesBell() {
           ) : (
             <ul className="divide-y divide-border">
               {items.map((n) => {
-                const to = n.denuncia_id
-                  ? `/corregedoria?id=${n.denuncia_id}`
-                  : "/painel";
+                const to =
+                  n.tipo === "aviso"
+                    ? "/avisos"
+                    : n.denuncia_id
+                      ? `/corregedoria?id=${n.denuncia_id}`
+                      : "/painel";
+
                 return (
                   <li key={n.id}>
                     <Link
@@ -100,6 +104,8 @@ export function NotificacoesBell() {
                           <div className="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">
                             {new Date(n.created_at).toLocaleString("pt-BR")}
                             {n.tipo === "intimacao" && " · intimação"}
+                            {n.tipo === "aviso" && " · aviso"}
+
                           </div>
                         </div>
                       </div>

@@ -69,6 +69,20 @@ function Toolbar({ editor }: { editor: Editor }) {
       <button type="button" onClick={() => editor.chain().focus().setTextAlign("center").run()} className={btn(editor.isActive({ textAlign: "center" }))} aria-label="Centro"><AlignCenter className="h-3.5 w-3.5" /></button>
       <button type="button" onClick={() => editor.chain().focus().setTextAlign("right").run()} className={btn(editor.isActive({ textAlign: "right" }))} aria-label="Direita"><AlignRight className="h-3.5 w-3.5" /></button>
       <button type="button" onClick={() => editor.chain().focus().setTextAlign("justify").run()} className={btn(editor.isActive({ textAlign: "justify" }))} aria-label="Justificado"><AlignJustify className="h-3.5 w-3.5" /></button>
+      <span className="mx-1 h-4 w-px bg-border" />
+      <button
+        type="button"
+        onClick={() => {
+          const prev = (editor.getAttributes("link") as { href?: string }).href ?? "";
+          const url = window.prompt("URL do link (https://...)", prev);
+          if (url === null) return;
+          if (url === "") { editor.chain().focus().extendMarkRange("link").unsetLink().run(); return; }
+          const safe = /^(https?:|mailto:|tel:)/i.test(url) ? url : `https://${url}`;
+          editor.chain().focus().extendMarkRange("link").setLink({ href: safe }).run();
+        }}
+        className={btn(editor.isActive("link"))}
+        aria-label="Inserir link"
+      ><LinkIcon className="h-3.5 w-3.5" /></button>
     </div>
   );
 }

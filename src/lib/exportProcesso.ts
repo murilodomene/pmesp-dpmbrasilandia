@@ -27,6 +27,7 @@ export interface ExportMovimento {
   cancelado_em?: string | null;
   cancelado_por_nome?: string | null;
   motivo_cancelamento?: string | null;
+  anexos?: Array<{ nome: string; path: string }> | null;
 }
 export interface ExportOitiva {
   id: string;

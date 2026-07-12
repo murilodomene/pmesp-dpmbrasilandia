@@ -57,6 +57,7 @@
     "dompurify": "^3.4.11",
     "embla-carousel-react": "^8.6.0",
     "html2canvas": "^1.4.1",
+    "html2canvas-pro": "^2.2.3",
     "input-otp": "^1.4.2",
     "isomorphic-dompurify": "^3.18.0",
     "jspdf": "^4.2.1",

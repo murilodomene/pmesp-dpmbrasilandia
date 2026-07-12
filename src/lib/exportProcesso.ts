@@ -123,6 +123,7 @@ function cargoLabel(c: string | null | undefined): string {
 
 function statusLabel(s: string): string {
   const m: Record<string, string> = {
+    novo: "Novo",
     recebida: "Recebida",
     aguardando_analise: "Aguardando análise",
     em_analise: "Em análise",

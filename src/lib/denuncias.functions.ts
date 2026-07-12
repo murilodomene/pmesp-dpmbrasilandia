@@ -5,8 +5,9 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
 const STATUS_VALUES = [
-  "recebida",
+  "novo",
   "aguardando_analise",
+  "recebida",
   "em_analise",
   "em_investigacao",
   "ag_decurso_prazo",
@@ -642,7 +643,7 @@ export const instaurarOficio = createServerFn({ method: "POST" })
         relato: data.descricao,
         unidade: data.unidade ?? null,
         links: data.links,
-        status: "aguardando_analise",
+        status: "novo",
         termo_inicial: agora,
         instaurada_em: agora,
         interrupcoes_count: 0,

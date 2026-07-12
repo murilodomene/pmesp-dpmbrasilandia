@@ -123,13 +123,14 @@ function ObservacoesPage() {
   const porPolicial = useMemo(() => {
     const map = new Map<string, { chave: string; nome: string; matricula: string | null; cargo: string | null; unidade: string | null; observacoes: Observacao[] }>();
     for (const o of filtrados) {
-      const chave = (o.policial_matricula || o.policial_nome).toLowerCase();
+      if (!o.policial_nome && !o.policial_matricula) continue; // observações gerais só aparecem na "Lista geral"
+      const chave = (o.policial_matricula || o.policial_nome || "").toLowerCase();
       const cur = map.get(chave);
       if (cur) cur.observacoes.push(o);
       else
         map.set(chave, {
           chave,
-          nome: o.policial_nome,
+          nome: o.policial_nome ?? "—",
           matricula: o.policial_matricula,
           cargo: o.policial_cargo,
           unidade: o.policial_unidade,

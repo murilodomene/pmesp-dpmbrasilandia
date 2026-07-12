@@ -24,6 +24,7 @@ import {
   atualizarNatureza,
   
   retificarDenunciado,
+  CARGOS_POLICIAIS,
   lavrarPortaria,
   alternarPublicacaoIpc,
   listMembrosMp,

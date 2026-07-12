@@ -642,7 +642,6 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                     <span>
                       {p.nome}
                       {p.rg_funcional && <span className="text-muted-foreground"> · {p.rg_funcional}</span>}
-                      {p.unidade && <span className="text-muted-foreground"> · {p.unidade}</span>}
                     </span>
                     {podeRetificar && (
                       <button

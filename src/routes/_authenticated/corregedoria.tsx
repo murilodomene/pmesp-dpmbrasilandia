@@ -45,6 +45,8 @@ import { exportProcessoCompleto } from "@/lib/exportProcesso";
 import { AtoAnexosUploader, type AtoAnexo } from "@/components/AtoAnexosUploader";
 import { AtoAnexosLinks } from "@/components/AtoAnexosLinks";
 import { IntimarDialog } from "@/components/IntimarDialog";
+import { TarjasManager, TarjasStrip, type CorTarja } from "@/components/Tarja";
+
 import {
   AlertDialog,
   AlertDialogAction,

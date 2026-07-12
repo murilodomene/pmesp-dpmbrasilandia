@@ -212,7 +212,6 @@ export const alterarStatus = createServerFn({ method: "POST" })
       .object({
         denuncia_id: z.string().uuid(),
         novo_status: z.enum(STATUS_VALUES),
-        motivo: z.string().trim().min(3).max(4000),
       })
       .parse(data),
   )

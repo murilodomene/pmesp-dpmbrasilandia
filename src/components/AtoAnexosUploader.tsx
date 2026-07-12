@@ -58,6 +58,7 @@ export function AtoAnexosUploader({ denunciaId, value, onChange, disabled }: Pro
       return;
     }
     setUploading((c) => c + arr.length);
+    let acc: AtoAnexo[] = [...value];
     try {
       for (const file of arr) {
         try {
@@ -71,9 +72,9 @@ export function AtoAnexosUploader({ denunciaId, value, onChange, disabled }: Pro
             .from("atos-anexos")
             .upload(path, blob, { contentType: blob.type, upsert: false });
           if (error) throw error;
-          const nome = `PROVA ${String(value.length + 1).padStart(2, "0")}`;
-          value = [...value, { nome, path }];
-          onChange(value);
+          const nome = `PROVA ${String(acc.length + 1).padStart(2, "0")}`;
+          acc = [...acc, { nome, path }];
+          onChange(acc);
         } catch (e) {
           setErro(e instanceof Error ? e.message : "Falha no envio.");
         } finally {

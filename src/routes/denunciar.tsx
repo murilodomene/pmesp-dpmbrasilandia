@@ -135,6 +135,17 @@ function DenunciarPage() {
           consulta posterior.
         </p>
 
+        {!logado && (
+          <div className="mt-6 rounded-md border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-foreground">
+            <strong className="font-medium">Aviso ao denunciante anônimo:</strong> sem cadastro no
+            sistema como Cidadão, não será possível acompanhar o andamento desta denúncia. Por
+            questões de privacidade e da LGPD, não expomos consultas abertas às demais denúncias.
+            Guarde o número de protocolo — ele será exibido apenas uma vez.
+          </div>
+        )}
+
+
+
         <section className="surface mt-8 p-6">
           <h2 className="font-serif text-lg">Denunciante</h2>
           <label className="mt-4 flex items-center gap-2 text-sm">

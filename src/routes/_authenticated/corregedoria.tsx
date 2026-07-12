@@ -861,13 +861,18 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
               key={e.v}
               type="button"
               onClick={() => {
-                if (e.v !== especie) {
+                if (especie === e.v) {
+                  // Recolher ao clicar na espécie ativa
+                  setEspecie(null);
                   setTeor("");
                   setAnexos([]);
+                } else {
+                  setTeor("");
+                  setAnexos([]);
+                  setEspecie(e.v);
                 }
-                setEspecie(e.v);
               }}
-              className={`flex items-center gap-1 rounded-md border px-3 py-1.5 text-xs ${
+              className={`flex items-center gap-1 rounded-md border px-3 py-1.5 text-xs transition ${
                 especie === e.v ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-surface-2"
               }`}
             >
@@ -875,71 +880,87 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
             </button>
           ))}
         </div>
-        {especie === "ipc" ? (
-          <div className="mt-3 space-y-2">
-            <IpcCampoAuto label="Unidade" valor={denuncia.unidade || "—"} />
-            <IpcCampoAuto label="1º Processo número" valor={denuncia.numero_protocolo} />
-            <IpcCampoAuto
-              label="2º Identificação do policial"
-              valor={
-                policiais.length
-                  ? policiais
-                      .map((p) => `${p.nome}${p.rg_funcional ? ` — ${p.rg_funcional}` : ""}`)
-                      .join("; ")
-                  : "Não identificado"
-              }
-            />
-            <div>
-              <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                3º Relato do fato
-              </span>
-              <div className="mt-1">
+        {especie !== null && (
+          <>
+            {especie === "ipc" ? (
+              <div className="mt-3 space-y-2">
+                <IpcCampoAuto label="Unidade" valor={denuncia.unidade || "—"} />
+                <IpcCampoAuto label="1º Processo número" valor={denuncia.numero_protocolo} />
+                <IpcCampoAuto
+                  label="2º Identificação do policial"
+                  valor={
+                    policiais.length
+                      ? policiais
+                          .map((p) => `${p.nome}${p.rg_funcional ? ` — ${p.rg_funcional}` : ""}`)
+                          .join("; ")
+                      : "Não identificado"
+                  }
+                />
+                <div>
+                  <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                    3º Relato do fato
+                  </span>
+                  <div className="mt-1">
+                    <RichTextEditor
+                      value={teor}
+                      onChange={setTeor}
+                      placeholder="Descreva o fato. Use a barra acima para formatação."
+                      minHeight={160}
+                    />
+                  </div>
+                </div>
+                <IpcCampoAuto
+                  label="4º Ciente dos fatos"
+                  valor="Corregedoria Geral da Polícia Civil"
+                />
+              </div>
+            ) : (
+              <div className="mt-3 space-y-3">
                 <RichTextEditor
                   value={teor}
                   onChange={setTeor}
-                  placeholder="Descreva o fato. Use a barra acima para formatação."
+                  placeholder="Redija o teor do ato. Use a barra acima para formatação."
                   minHeight={160}
                 />
+                <div>
+                  <div className="mb-1 text-[11px] uppercase tracking-wider text-muted-foreground">
+                    Provas (imagens)
+                  </div>
+                  <AtoAnexosUploader
+                    denunciaId={id}
+                    value={anexos}
+                    onChange={setAnexos}
+                    disabled={mLancar.isPending}
+                  />
+                </div>
               </div>
+            )}
+            <div className="mt-3 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setEspecie(null);
+                  setTeor("");
+                  setAnexos([]);
+                }}
+                className="rounded-md border border-border px-3 py-2 text-sm hover:bg-surface-2"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => mLancar.mutate()}
+                disabled={
+                  teor.replace(/<[^>]+>/g, "").trim().length < 3 || mLancar.isPending
+                }
+                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+              >
+                {mLancar.isPending ? "Lançando..." : "Lançar"}
+              </button>
             </div>
-            <IpcCampoAuto
-              label="4º Ciente dos fatos"
-              valor="Corregedoria Geral da Polícia Civil"
-            />
-          </div>
-        ) : (
-          <div className="mt-3 space-y-3">
-            <RichTextEditor
-              value={teor}
-              onChange={setTeor}
-              placeholder="Redija o teor do ato. Use a barra acima para formatação."
-              minHeight={160}
-            />
-            <div>
-              <div className="mb-1 text-[11px] uppercase tracking-wider text-muted-foreground">
-                Provas (imagens)
-              </div>
-              <AtoAnexosUploader
-                denunciaId={id}
-                value={anexos}
-                onChange={setAnexos}
-                disabled={mLancar.isPending}
-              />
-            </div>
-          </div>
+          </>
         )}
-        <div className="mt-3 flex justify-end">
-          <button
-            onClick={() => mLancar.mutate()}
-            disabled={
-              teor.replace(/<[^>]+>/g, "").trim().length < 3 || mLancar.isPending
-            }
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
-          >
-            {mLancar.isPending ? "Lançando..." : "Lançar"}
-          </button>
-        </div>
       </div>
+
 
 
       {/* Timeline */}

@@ -95,6 +95,7 @@ function Corregedoria() {
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState<DenunciaStatus | "">("");
   const [selecionada, setSelecionada] = useState<string | null>(search.id ?? null);
+  const [abaAtiva, setAbaAtiva] = useState<"tramitacao" | "decurso" | "concluidos">("tramitacao");
 
   useEffect(() => {
     if (search.id) setSelecionada(search.id);

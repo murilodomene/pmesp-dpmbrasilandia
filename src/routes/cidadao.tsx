@@ -41,7 +41,14 @@ function CidadaoPage() {
     setError(null);
     setInfo(null);
     try {
-      if (mode === "login") {
+      if (mode === "forgot") {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (error) throw error;
+        setInfo("E-mail enviado. Verifique sua caixa de entrada (e spam).");
+        setMode("login");
+      } else if (mode === "login") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         navigate({ to: "/minhas-denuncias" });

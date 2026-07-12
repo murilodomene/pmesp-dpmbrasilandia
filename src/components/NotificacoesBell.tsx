@@ -71,9 +71,13 @@ export function NotificacoesBell() {
           ) : (
             <ul className="divide-y divide-border">
               {items.map((n) => {
-                const to = n.denuncia_id
-                  ? `/corregedoria?id=${n.denuncia_id}`
-                  : "/painel";
+                const to =
+                  n.tipo === "aviso"
+                    ? "/avisos"
+                    : n.denuncia_id
+                      ? `/corregedoria?id=${n.denuncia_id}`
+                      : "/painel";
+
                 return (
                   <li key={n.id}>
                     <Link

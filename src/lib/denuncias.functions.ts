@@ -212,7 +212,6 @@ export const alterarStatus = createServerFn({ method: "POST" })
       .object({
         denuncia_id: z.string().uuid(),
         novo_status: z.enum(STATUS_VALUES),
-        motivo: z.string().trim().min(3).max(4000),
       })
       .parse(data),
   )
@@ -244,7 +243,7 @@ export const alterarStatus = createServerFn({ method: "POST" })
     await context.supabase.from("movimentos").insert({
       denuncia_id: data.denuncia_id,
       especie: "status",
-      teor: `Status alterado de ${atual.status} para ${data.novo_status}. Motivação: ${data.motivo}`,
+      teor: `Status alterado de ${atual.status} para ${data.novo_status}.`,
       ...p,
     });
     return { ok: true };

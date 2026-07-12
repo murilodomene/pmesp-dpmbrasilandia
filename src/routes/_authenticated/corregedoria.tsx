@@ -1460,10 +1460,9 @@ function StatusDialog({
   const qc = useQueryClient();
   const fn = useServerFn(alterarStatus);
   const [novoStatus, setNovoStatus] = useState<DenunciaStatus | "">("");
-  const [motivo, setMotivo] = useState("");
   const m = useMutation({
     mutationFn: () =>
-      fn({ data: { denuncia_id: id, novo_status: novoStatus as DenunciaStatus, motivo } }),
+      fn({ data: { denuncia_id: id, novo_status: novoStatus as DenunciaStatus } }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["denuncia", id] });
       qc.invalidateQueries({ queryKey: ["denuncias"] });
@@ -1477,7 +1476,7 @@ function StatusDialog({
         <select
           value={novoStatus}
           onChange={(e) => setNovoStatus(e.target.value as DenunciaStatus)}
-          className="input"
+          className="input rounded-md transition-colors"
         >
           <option value="">Selecionar...</option>
           {STATUS_LIST_MANUAL.map((s) => (
@@ -1487,22 +1486,16 @@ function StatusDialog({
           ))}
         </select>
       </label>
-      <label className="mt-3 grid gap-1.5">
-        <span className="text-xs uppercase tracking-wider text-muted-foreground">
-          Motivação (obrigatória)
-        </span>
-        <textarea rows={3} className="input" value={motivo} onChange={(e) => setMotivo(e.target.value)} />
-      </label>
-      <div className="mt-4 flex justify-end gap-2">
-        <button onClick={onClose} className="rounded-md border border-border px-4 py-2 text-sm">
+      <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <button onClick={onClose} className="rounded-md border border-border px-4 py-2 text-sm transition-colors hover:bg-surface-2">
           Cancelar
         </button>
         <button
           onClick={() => m.mutate()}
-          disabled={!novoStatus || motivo.length < 3 || m.isPending}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+          disabled={!novoStatus || m.isPending}
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity disabled:opacity-50"
         >
-          Aplicar
+          Confirmar
         </button>
       </div>
     </Modal>

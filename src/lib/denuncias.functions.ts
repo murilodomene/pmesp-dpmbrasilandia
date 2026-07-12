@@ -107,12 +107,13 @@ export const listDenuncias = createServerFn({ method: "GET" })
     const { data, error } = await context.supabase
       .from("denuncias")
       .select(
-        "id, numero_protocolo, status, unidade, ocorrencia_tipo, termo_inicial, acrescimos_dias, interrupcoes_count, concluido_em, certidao_gerada, created_at, denunciante_nome, denuncia_policiais(nome, unidade)",
+        "id, numero_protocolo, status, unidade, ocorrencia_tipo, termo_inicial, acrescimos_dias, interrupcoes_count, concluido_em, certidao_gerada, created_at, denunciante_nome, denuncia_policiais(nome, unidade), denuncia_tarjas(id, cor, texto)",
       )
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return data ?? [];
   });
+
 
 export const getDenuncia = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])

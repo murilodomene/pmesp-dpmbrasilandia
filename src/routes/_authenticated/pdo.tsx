@@ -119,31 +119,47 @@ function PdoPage() {
             <div className="p-6 text-sm text-muted-foreground">Nenhum PDO registrado.</div>
           )}
           {filtrados.map((p: any) => (
-            <button
+            <div
               key={p.id}
-              onClick={() => setAberto(p.id)}
-              className="flex w-full items-center justify-between gap-3 p-3 text-left text-sm hover:bg-surface-2"
+              className="flex items-center gap-2 p-3 text-sm hover:bg-surface-2"
             >
-              <div className="min-w-0">
-                <div className="tabular text-xs text-muted-foreground">{p.numero}</div>
-                <div className="truncate">
-                  {new Date(p.abordagem_em).toLocaleString("pt-BR")} · {p.local}
-                </div>
-                <div className="truncate text-xs text-muted-foreground">
-                  VTR {p.vtr_prefixo || "—"}
-                  {p.vtr_placa ? ` · ${p.vtr_placa}` : ""}
-                  {p.vtr_unidade ? ` · ${p.vtr_unidade}` : ""}
-                </div>
-              </div>
-              <div className="shrink-0 text-right">
-                <DesfechoBadge d={p.desfecho} />
-                {p.procedimento_numero && (
-                  <div className="mt-1 text-[10px] text-muted-foreground tabular">
-                    → {p.procedimento_numero}
+              <button
+                onClick={() => setAberto(p.id)}
+                className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left"
+              >
+                <div className="min-w-0">
+                  <div className="tabular text-xs text-muted-foreground">{p.numero}</div>
+                  <div className="truncate">
+                    {new Date(p.abordagem_em).toLocaleString("pt-BR")} · {p.local}
                   </div>
-                )}
-              </div>
-            </button>
+                  <div className="truncate text-xs text-muted-foreground">
+                    VTR {p.vtr_prefixo || "—"}
+                    {p.vtr_placa ? ` · ${p.vtr_placa}` : ""}
+                    {p.vtr_unidade ? ` · ${p.vtr_unidade}` : ""}
+                  </div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <DesfechoBadge d={p.desfecho} />
+                  {p.procedimento_numero && (
+                    <div className="mt-1 text-[10px] text-muted-foreground tabular">
+                      → {p.procedimento_numero}
+                    </div>
+                  )}
+                </div>
+              </button>
+              {canDelete && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setExcluir({ id: p.id, numero: p.numero });
+                  }}
+                  aria-label={`Excluir ${p.numero}`}
+                  className="rounded-md p-2 text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
+            </div>
           ))}
         </div>
       </div>
@@ -158,10 +174,30 @@ function PdoPage() {
           }}
         />
       )}
-      {aberto && <VerPdoDialog id={aberto} onClose={() => setAberto(null)} />}
+      {aberto && (
+        <VerPdoDialog
+          id={aberto}
+          canDelete={canDelete}
+          canGenerate={canGenerate}
+          onClose={() => setAberto(null)}
+          onRequestDelete={(id, numero) => setExcluir({ id, numero })}
+        />
+      )}
+      {excluir && (
+        <ConfirmarExclusaoDialog
+          id={excluir.id}
+          numero={excluir.numero}
+          onDone={() => {
+            setExcluir(null);
+            if (aberto === excluir.id) setAberto(null);
+          }}
+          onClose={() => setExcluir(null)}
+        />
+      )}
     </div>
   );
 }
+
 
 function DesfechoBadge({ d }: { d: string }) {
   const map: Record<string, { l: string; cls: string }> = {

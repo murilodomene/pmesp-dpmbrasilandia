@@ -100,7 +100,7 @@ function DocumentosPage() {
   const isLegal = !!selected && !isHierarquia && !isFluxo && isLegalDoc(selected.conteudo);
 
   const rendered = useMemo(() => {
-    if (!selected) return { html: "", toc: [] as TocEntry[], count: 0, legal: false };
+    if (!selected || isFluxo) return { html: "", toc: [] as TocEntry[], count: 0, legal: false };
     const legal = !isHierarquia && isLegalDoc(selected.conteudo);
     const built = legal
       ? legalToHtml(selected.conteudo)
@@ -108,7 +108,7 @@ function DocumentosPage() {
     const finalHtml = highlight(built.html, buscaAtiva);
     const count = buscaAtiva.trim() ? (finalHtml.match(/<mark\b/g)?.length ?? 0) : 0;
     return { html: finalHtml, toc: built.toc, count, legal };
-  }, [selected, isHierarquia, buscaAtiva]);
+  }, [selected, isHierarquia, isFluxo, buscaAtiva]);
 
   // Sequential navigation between matches
   const [currentIndex, setCurrentIndex] = useState(0);

@@ -1051,12 +1051,13 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                         }
                       />
                     </div>
-                    {Array.isArray((m as { anexos?: unknown }).anexos) &&
-                      ((m as { anexos: Array<{ nome: string; path: string }> }).anexos.length > 0) && (
-                        <AtoAnexosLinks
-                          anexos={(m as { anexos: Array<{ nome: string; path: string }> }).anexos}
-                        />
-                      )}
+                    {(() => {
+                      const raw = (m as unknown as { anexos?: unknown }).anexos;
+                      const list = Array.isArray(raw)
+                        ? (raw as Array<{ nome: string; path: string }>)
+                        : [];
+                      return list.length > 0 ? <AtoAnexosLinks anexos={list} /> : null;
+                    })()}
                     {canceladoFooter}
                   </div>
                 </li>

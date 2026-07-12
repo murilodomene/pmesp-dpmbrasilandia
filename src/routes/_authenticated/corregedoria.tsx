@@ -1345,20 +1345,15 @@ function IpcCampoAuto({ label, valor }: { label: string; valor: string }) {
 function montarTeorIpc(params: {
   unidade: string | null;
   protocolo: string;
-  policiais: Array<{ nome: string; rg_funcional: string | null }>;
+  identificacao: string;
   relato: string;
 }): string {
-  const ident = params.policiais.length
-    ? params.policiais
-        .map((p) => `${p.nome}${p.rg_funcional ? ` — ${p.rg_funcional}` : ""}`)
-        .join("; ")
-    : "";
   return [
     `| UNIDADE: ${params.unidade || "—"}`,
     ``,
     `| 1º PROCESSO NÚMERO: ${params.protocolo}`,
     ``,
-    `| 2º IDENTIFICAÇÃO DO POLICIAL: ${ident}`,
+    `| 2º IDENTIFICAÇÃO DO POLICIAL: ${params.identificacao || "—"}`,
     ``,
     `| 3º RELATO DO FATO:`,
     params.relato.trim(),

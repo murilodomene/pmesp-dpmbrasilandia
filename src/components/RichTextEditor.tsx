@@ -33,11 +33,14 @@ export function RichTextEditor({ value, onChange, placeholder, minHeight = 180 }
   });
 
   useEffect(() => {
-    if (editor && value === "" && editor.getHTML() !== "<p></p>") {
-      editor.commands.clearContent();
+    if (!editor) return;
+    const current = editor.getHTML();
+    if (value !== current && !(value === "" && current === "<p></p>")) {
+      editor.commands.setContent(value || "", { emitUpdate: false });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value === ""]);
+  }, [value, editor]);
+
 
   if (!editor) return null;
 

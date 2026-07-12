@@ -55,7 +55,7 @@ type Observacao = {
   autor_id: string;
   autor_nome: string;
   autor_cargo: string;
-  policial_nome: string;
+  policial_nome: string | null;
   policial_matricula: string | null;
   policial_cargo: string | null;
   policial_unidade: string | null;
@@ -123,13 +123,14 @@ function ObservacoesPage() {
   const porPolicial = useMemo(() => {
     const map = new Map<string, { chave: string; nome: string; matricula: string | null; cargo: string | null; unidade: string | null; observacoes: Observacao[] }>();
     for (const o of filtrados) {
-      const chave = (o.policial_matricula || o.policial_nome).toLowerCase();
+      if (!o.policial_nome && !o.policial_matricula) continue; // observações gerais só aparecem na "Lista geral"
+      const chave = (o.policial_matricula || o.policial_nome || "").toLowerCase();
       const cur = map.get(chave);
       if (cur) cur.observacoes.push(o);
       else
         map.set(chave, {
           chave,
-          nome: o.policial_nome,
+          nome: o.policial_nome ?? "—",
           matricula: o.policial_matricula,
           cargo: o.policial_cargo,
           unidade: o.policial_unidade,
@@ -275,11 +276,17 @@ function ObservacaoCard({
     >
       {showPolicial && (
         <div className="text-xs">
-          <span className="font-medium">{obs.policial_nome}</span>
-          <span className="text-muted-foreground">
-            {" · "}
-            {[obs.policial_matricula, obs.policial_cargo, obs.policial_unidade].filter(Boolean).join(" · ") || "—"}
-          </span>
+          {obs.policial_nome ? (
+            <>
+              <span className="font-medium">{obs.policial_nome}</span>
+              <span className="text-muted-foreground">
+                {" · "}
+                {[obs.policial_matricula, obs.policial_cargo, obs.policial_unidade].filter(Boolean).join(" · ") || "—"}
+              </span>
+            </>
+          ) : (
+            <span className="font-medium italic text-muted-foreground">Observação geral</span>
+          )}
         </div>
       )}
       <div className="text-[11px] text-muted-foreground">
@@ -366,10 +373,12 @@ function ObservacaoViewer({
             </div>
             <div className="h-px w-full bg-border/60" />
             <dl className="grid gap-1.5 py-3 text-xs sm:text-sm">
-              <div className="flex flex-wrap gap-x-2">
-                <dt className="font-semibold uppercase tracking-wider text-primary">Policial:</dt>
-                <dd className="text-foreground">{obs.policial_nome}</dd>
-              </div>
+              {obs.policial_nome && (
+                <div className="flex flex-wrap gap-x-2">
+                  <dt className="font-semibold uppercase tracking-wider text-primary">Policial:</dt>
+                  <dd className="text-foreground">{obs.policial_nome}</dd>
+                </div>
+              )}
               {obs.policial_matricula && (
                 <div className="flex flex-wrap gap-x-2">
                   <dt className="font-semibold uppercase tracking-wider text-primary">Matrícula:</dt>
@@ -483,7 +492,7 @@ function ObservacaoDialog({ obs, onClose }: { obs?: Observacao; onClose: () => v
   });
 
   const corpoTexto = useMemo(() => corpo.replace(/<[^>]+>/g, "").trim(), [corpo]);
-  const disabled = nome.trim().length < 2 || corpoTexto.length < 3 || m.isPending;
+  const disabled = corpoTexto.length < 3 || m.isPending;
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4">
@@ -496,7 +505,7 @@ function ObservacaoDialog({ obs, onClose }: { obs?: Observacao; onClose: () => v
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="grid gap-1 text-xs">
-              <span className="text-muted-foreground">Nome do policial *</span>
+              <span className="text-muted-foreground">Nome do policial (opcional)</span>
               <input
                 className="rounded-md border border-border bg-input px-3 py-2 text-sm"
                 value={nome}

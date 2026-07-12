@@ -10,7 +10,7 @@ const AnexoSchema = z.object({
 });
 
 const ObsInput = z.object({
-  policial_nome: z.string().trim().min(2).max(200),
+  policial_nome: z.string().trim().max(200).optional().nullable(),
   policial_matricula: z.string().trim().max(50).optional().nullable(),
   policial_cargo: z.string().trim().max(60).optional().nullable(),
   policial_unidade: z.string().trim().max(60).optional().nullable(),
@@ -91,7 +91,7 @@ export const criarObservacao = createServerFn({ method: "POST" })
         autor_id: context.userId,
         autor_nome: nome,
         autor_cargo: cargo as "delegado_geral" | "delegado_corregedor" | "corregedor",
-        policial_nome: data.policial_nome,
+        policial_nome: data.policial_nome?.trim() || null,
         policial_matricula: data.policial_matricula || null,
         policial_cargo: data.policial_cargo || null,
         policial_unidade: data.policial_unidade || null,
@@ -121,7 +121,7 @@ export const atualizarObservacao = createServerFn({ method: "POST" })
     const { error } = await context.supabase
       .from("observacoes")
       .update({
-        policial_nome: data.policial_nome,
+        policial_nome: data.policial_nome?.trim() || null,
         policial_matricula: data.policial_matricula || null,
         policial_cargo: data.policial_cargo || null,
         policial_unidade: data.policial_unidade || null,

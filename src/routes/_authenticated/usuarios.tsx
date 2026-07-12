@@ -39,6 +39,7 @@ import {
   alterarStatusUsuario,
   editarUsuarioPublico,
   excluirUsuario,
+  aprovarUsuario,
   getSessionInfo,
 } from "@/lib/usuarios.functions";
 

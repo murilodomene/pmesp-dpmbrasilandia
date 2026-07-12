@@ -52,7 +52,7 @@ const CARGO_LABEL: Record<string, string> = {
   mp: "Ministério Público",
 };
 
-const DELEGADO_CARGOS = new Set(["delegado_geral", "delegado_corregedor"]);
+const DELEGADO_CARGOS = new Set(["delegado_corregedor"]);
 const EDITAVEIS = new Set(["cidadao", "mp"]);
 
 interface Usuario {

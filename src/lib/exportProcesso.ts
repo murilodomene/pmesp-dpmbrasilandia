@@ -387,7 +387,8 @@ export async function exportProcessoCompleto(data: ExportProcessoData): Promise<
   const doc = iframe.contentDocument!;
   const pages: string[] = [];
   pages.push(coverPage(data.denuncia, data.policiais));
-  movsAsc.forEach((m, i) => {
+  for (let i = 0; i < movsAsc.length; i++) {
+    const m = movsAsc[i];
     const eventoNo = i + 1;
     pages.push(separatorPage(eventoNo, m));
     const isAto =
@@ -396,7 +397,14 @@ export async function exportProcessoCompleto(data: ExportProcessoData): Promise<
       m.especie === "portaria" ||
       m.especie === "ipc";
     pages.push(isAto ? atoContentPage(m, data.denuncia, data.policiais) : genericContentPage(m));
-  });
+    // Anexos-prova (só despacho/decisão) — cada imagem em página própria.
+    if ((m.especie === "despacho" || m.especie === "decisao") && Array.isArray(m.anexos)) {
+      for (const a of m.anexos) {
+        const dataUrl = await fetchAnexoDataUrl(a.path);
+        if (dataUrl) pages.push(await anexoImagePage(a.nome, dataUrl));
+      }
+    }
+  }
   doc.body.innerHTML = pages.join("");
 
   try {

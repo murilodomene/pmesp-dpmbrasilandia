@@ -102,7 +102,7 @@ function Corregedoria() {
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState<DenunciaStatus | "">("");
   const [selecionada, setSelecionada] = useState<string | null>(search.id ?? null);
-  const [abaAtiva, setAbaAtiva] = useState<"tramitacao" | "decurso" | "concluidos">("tramitacao");
+  const [abaAtiva, setAbaAtiva] = useState<"tramitacao" | "decurso" | "recurso" | "concluidos">("tramitacao");
 
   useEffect(() => {
     if (search.id) setSelecionada(search.id);
@@ -133,6 +133,7 @@ function Corregedoria() {
   const grupos = useMemo(() => {
     const tramitacao: DenunciaStatus[] = ["novo", "recebida", "aguardando_analise", "em_analise", "em_investigacao"];
     const decurso: DenunciaStatus[] = ["ag_decurso_prazo"];
+    const recurso: DenunciaStatus[] = ["em_recurso"];
     const concluidos: DenunciaStatus[] = ["transito_julgado", "arquivada"];
     const tram = listaFiltrada
       .filter((d) => tramitacao.includes(d.status as DenunciaStatus))
@@ -145,6 +146,7 @@ function Corregedoria() {
     return {
       tramitacao: tram,
       decurso: listaFiltrada.filter((d) => decurso.includes(d.status as DenunciaStatus)),
+      recurso: listaFiltrada.filter((d) => recurso.includes(d.status as DenunciaStatus)),
       concluidos: listaFiltrada.filter((d) => concluidos.includes(d.status as DenunciaStatus)),
     };
   }, [listaFiltrada]);
@@ -182,9 +184,10 @@ function Corregedoria() {
     navigate({ search: {} });
   }
 
-  const abas: { key: "tramitacao" | "decurso" | "concluidos"; label: string; itens: ItemKanban[]; vazio: string; modo: "prescricao" | "decurso" | "suspenso" }[] = [
+  const abas: { key: "tramitacao" | "decurso" | "recurso" | "concluidos"; label: string; itens: ItemKanban[]; vazio: string; modo: "prescricao" | "decurso" | "suspenso" }[] = [
     { key: "tramitacao", label: "Em Tramitação", itens: grupos.tramitacao, vazio: "Nada em tramitação.", modo: "prescricao" },
     { key: "decurso", label: "Ag. Decurso do Prazo", itens: grupos.decurso, vazio: "Nenhum procedimento aguardando decurso.", modo: "decurso" },
+    { key: "recurso", label: "Em Recurso", itens: grupos.recurso, vazio: "Nenhum procedimento em recurso.", modo: "suspenso" },
     { key: "concluidos", label: "Concluídas", itens: grupos.concluidos, vazio: "Nenhum procedimento concluído.", modo: "suspenso" },
   ];
   const abaCorrente = abas.find((a) => a.key === abaAtiva)!;

@@ -695,6 +695,7 @@ export type Database = {
         | "cidadao"
         | "mp"
       denuncia_status:
+        | "novo"
         | "recebida"
         | "aguardando_analise"
         | "em_analise"
@@ -860,6 +861,7 @@ export const Constants = {
         "mp",
       ],
       denuncia_status: [
+        "novo",
         "recebida",
         "aguardando_analise",
         "em_analise",

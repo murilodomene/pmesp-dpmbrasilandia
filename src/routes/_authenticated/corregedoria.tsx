@@ -907,13 +907,24 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
             />
           </div>
         ) : (
-          <div className="mt-3">
+          <div className="mt-3 space-y-3">
             <RichTextEditor
               value={teor}
               onChange={setTeor}
               placeholder="Redija o teor do ato. Use a barra acima para formatação."
               minHeight={160}
             />
+            <div>
+              <div className="mb-1 text-[11px] uppercase tracking-wider text-muted-foreground">
+                Provas (imagens)
+              </div>
+              <AtoAnexosUploader
+                denunciaId={id}
+                value={anexos}
+                onChange={setAnexos}
+                disabled={mLancar.isPending}
+              />
+            </div>
           </div>
         )}
         <div className="mt-3 flex justify-end">

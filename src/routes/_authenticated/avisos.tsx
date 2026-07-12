@@ -249,10 +249,11 @@ function AvisoDialog({ aviso, onClose }: { aviso?: Aviso; onClose: () => void })
   const criarFn = useServerFn(criarAviso);
   const editarFn = useServerFn(atualizarAviso);
   const m = useMutation({
-    mutationFn: () =>
-      editing
-        ? editarFn({ data: { id: aviso!.id, titulo, corpo: sanitizeAtoHtml(corpo) } })
-        : criarFn({ data: { titulo, corpo: sanitizeAtoHtml(corpo) } }),
+    mutationFn: async () => {
+      if (editing) await editarFn({ data: { id: aviso!.id, titulo, corpo: sanitizeAtoHtml(corpo) } });
+      else await criarFn({ data: { titulo, corpo: sanitizeAtoHtml(corpo) } });
+    },
+
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["avisos"] });
       qc.invalidateQueries({ queryKey: ["notif-count"] });

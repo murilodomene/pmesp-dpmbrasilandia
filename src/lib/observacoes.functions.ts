@@ -121,7 +121,7 @@ export const atualizarObservacao = createServerFn({ method: "POST" })
     const { error } = await context.supabase
       .from("observacoes")
       .update({
-        policial_nome: data.policial_nome,
+        policial_nome: data.policial_nome?.trim() || null,
         policial_matricula: data.policial_matricula || null,
         policial_cargo: data.policial_cargo || null,
         policial_unidade: data.policial_unidade || null,

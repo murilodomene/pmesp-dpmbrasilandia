@@ -479,6 +479,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
   const lancarFn = useServerFn(lancarMovimento);
   const [especie, setEspecie] = useState<"despacho" | "decisao" | "ipc" | null>(null);
   const [teor, setTeor] = useState("");
+  const [ipcUnidade, setIpcUnidade] = useState<string>("");
   const [anexos, setAnexos] = useState<AtoAnexo[]>([]);
 
   const obsFn = useServerFn(atualizarObservacoes);
@@ -499,7 +500,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
       let teorFinal: string;
       if (especie === "ipc") {
         teorFinal = montarTeorIpc({
-          unidade: (data?.denuncia.unidade as string | null) ?? null,
+          unidade: ipcUnidade || null,
           protocolo: data?.denuncia.numero_protocolo ?? "",
           policiais: (data?.policiais ?? []).map((p) => ({
             nome: p.nome,
@@ -870,6 +871,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 } else {
                   setTeor("");
                   setAnexos([]);
+                  if (e.v === "ipc") setIpcUnidade((denuncia.unidade as string | null) ?? "");
                   setEspecie(e.v);
                 }
               }}
@@ -885,7 +887,21 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
           <>
             {especie === "ipc" ? (
               <div className="mt-3 space-y-2">
-                <IpcCampoAuto label="Unidade" valor={denuncia.unidade || "—"} />
+                <div>
+                  <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                    Unidade
+                  </span>
+                  <select
+                    value={ipcUnidade}
+                    onChange={(ev) => setIpcUnidade(ev.target.value)}
+                    className="mt-1 w-full rounded-md border border-border bg-surface-2 px-2 py-1.5 text-sm"
+                  >
+                    <option value="">— selecione —</option>
+                    {UNIDADES.map((u) => (
+                      <option key={u} value={u}>{u}</option>
+                    ))}
+                  </select>
+                </div>
                 <IpcCampoAuto label="1º Processo número" valor={denuncia.numero_protocolo} />
                 <IpcCampoAuto
                   label="2º Identificação do policial"

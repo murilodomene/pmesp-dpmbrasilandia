@@ -18,6 +18,7 @@ export const PRAZO_DECURSO_DIAS = 7;
 const MS_DIA = 24 * 60 * 60 * 1000;
 
 export type DenunciaStatus =
+  | "novo"
   | "recebida"
   | "aguardando_analise"
   | "em_analise"

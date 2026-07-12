@@ -1194,6 +1194,45 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 </li>
               );
             }
+            if (isCertidao) {
+              return (
+                <li key={m.id} className={`flex gap-3 ${canceladoEm ? "opacity-60" : ""}`}>
+                  <MovMarker especie={m.especie as string} />
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span className="rounded-md border border-primary/40 bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-primary" title="Número permanente do evento no procedimento">
+                        {eventoLabel}
+                      </span>
+                      <span className="font-medium uppercase tracking-wider">
+                        {labelEspecie(m.especie as string)}
+                      </span>
+                      {canceladoBadge}
+                      <span className="ml-auto text-muted-foreground tabular">
+                        {new Date(m.criado_em).toLocaleString("pt-BR")}
+                      </span>
+                      {btnCancelar}
+                    </div>
+                    <div className={canceladoEm ? "line-through decoration-destructive/60" : ""}>
+                      <TimelineCertidaoCard
+                        teor={m.teor}
+                        quando={m.criado_em}
+                        prolator={m.prolator_nome}
+                        cargo={(m.prolator_cargo as string) ?? "delegado_corregedor"}
+                        procedimento={denuncia.numero_protocolo}
+                        denunciado={
+                          policiais.length
+                            ? policiais
+                                .map((p) => `${p.nome}${p.rg_funcional ? ` — ${p.rg_funcional}` : ""}`)
+                                .join("; ")
+                            : "Não identificado"
+                        }
+                      />
+                    </div>
+                    {canceladoFooter}
+                  </div>
+                </li>
+              );
+            }
             return (
               <li key={m.id} className={`flex gap-3 ${canceladoEm ? "opacity-60" : ""}`}>
                 <MovMarker especie={m.especie as string} />

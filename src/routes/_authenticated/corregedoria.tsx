@@ -22,7 +22,7 @@ import {
   desentranharOitiva,
   atualizarObservacoes,
   atualizarNatureza,
-  atualizarUnidade,
+  
   retificarDenunciado,
   lavrarPortaria,
   alternarPublicacaoIpc,

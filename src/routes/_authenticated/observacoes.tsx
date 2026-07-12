@@ -276,11 +276,17 @@ function ObservacaoCard({
     >
       {showPolicial && (
         <div className="text-xs">
-          <span className="font-medium">{obs.policial_nome}</span>
-          <span className="text-muted-foreground">
-            {" · "}
-            {[obs.policial_matricula, obs.policial_cargo, obs.policial_unidade].filter(Boolean).join(" · ") || "—"}
-          </span>
+          {obs.policial_nome ? (
+            <>
+              <span className="font-medium">{obs.policial_nome}</span>
+              <span className="text-muted-foreground">
+                {" · "}
+                {[obs.policial_matricula, obs.policial_cargo, obs.policial_unidade].filter(Boolean).join(" · ") || "—"}
+              </span>
+            </>
+          ) : (
+            <span className="font-medium italic text-muted-foreground">Observação geral</span>
+          )}
         </div>
       )}
       <div className="text-[11px] text-muted-foreground">

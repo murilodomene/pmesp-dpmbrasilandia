@@ -2,11 +2,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const TIPOS = ["processos", "pdos", "avisos"] as const;
+const TIPOS = ["processos", "pdos", "avisos", "observacoes"] as const;
 const CONFIRMACOES: Record<(typeof TIPOS)[number], string> = {
   processos: "PROCESSOS",
   pdos: "PDOS",
   avisos: "AVISOS",
+  observacoes: "OBSERVACOES",
 };
 
 async function requireDelegadoCorregedor(context: { supabase: any; userId: string }) {

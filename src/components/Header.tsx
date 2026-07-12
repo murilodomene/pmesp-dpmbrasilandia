@@ -43,6 +43,7 @@ export function Header() {
   const isCidadao = cargo === "cidadao";
   const isMp = cargo === "mp";
   const isStaff = ativo && cargo && !isCidadao && !isMp;
+  const isDelegadoCorregedor = ativo && cargo === "delegado_corregedor";
 
 
   return (

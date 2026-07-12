@@ -492,7 +492,7 @@ function ObservacaoDialog({ obs, onClose }: { obs?: Observacao; onClose: () => v
   });
 
   const corpoTexto = useMemo(() => corpo.replace(/<[^>]+>/g, "").trim(), [corpo]);
-  const disabled = nome.trim().length < 2 || corpoTexto.length < 3 || m.isPending;
+  const disabled = corpoTexto.length < 3 || m.isPending;
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4">

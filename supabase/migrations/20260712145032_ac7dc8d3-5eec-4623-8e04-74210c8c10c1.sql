@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "MP nunca insere" ON public.denuncias;

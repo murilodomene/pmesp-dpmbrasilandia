@@ -67,6 +67,7 @@ export type Database = {
       }
       denuncia_policiais: {
         Row: {
+          cargo: string | null
           created_at: string
           denuncia_id: string
           id: string
@@ -75,6 +76,7 @@ export type Database = {
           unidade: Database["public"]["Enums"]["unidade_pc"] | null
         }
         Insert: {
+          cargo?: string | null
           created_at?: string
           denuncia_id: string
           id?: string
@@ -83,6 +85,7 @@ export type Database = {
           unidade?: Database["public"]["Enums"]["unidade_pc"] | null
         }
         Update: {
+          cargo?: string | null
           created_at?: string
           denuncia_id?: string
           id?: string

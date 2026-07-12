@@ -24,6 +24,7 @@ import {
   atualizarNatureza,
   
   retificarDenunciado,
+  CARGOS_POLICIAIS,
   lavrarPortaria,
   alternarPublicacaoIpc,
   listMembrosMp,
@@ -462,7 +463,9 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     queryFn: () => getFn({ data: { id } }),
   });
 
-  const podeRetificar = cargo === "delegado_geral" || cargo === "delegado_corregedor";
+  const podeRetificar =
+    cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor";
+  const podeEditarCargo = cargo === "delegado_corregedor" || cargo === "corregedor";
 
   const podeExcluir = cargo === "delegado_geral" || cargo === "delegado_corregedor";
 
@@ -479,7 +482,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
       }
     | { kind: "prorrogar" }
     | { kind: "oitiva" }
-    | { kind: "retificar"; policial: { id: string; nome: string; rg_funcional: string | null; unidade: string | null } }
+    | { kind: "retificar"; policial: { id: string; nome: string; rg_funcional: string | null; unidade: string | null; cargo: string | null } }
     | { kind: "excluir" }
     | { kind: "cancelarMov"; movimento_id: string; resumo: string }
     | { kind: "recurso" }
@@ -692,6 +695,9 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                       {p.nome}
                       {p.rg_funcional && <span className="text-muted-foreground"> · {p.rg_funcional}</span>}
                       {p.unidade && <span className="text-muted-foreground"> · {p.unidade}</span>}
+                      {(p as { cargo?: string | null }).cargo && (
+                        <span className="text-muted-foreground"> · {(p as { cargo?: string | null }).cargo}</span>
+                      )}
                     </span>
                     {podeRetificar && (
                       <button
@@ -706,6 +712,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                               nome: p.nome,
                               rg_funcional: p.rg_funcional ?? null,
                               unidade: p.unidade ?? null,
+                              cargo: (p as { cargo?: string | null }).cargo ?? null,
                             },
                           })
                         }
@@ -1384,6 +1391,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
         <RetificarDialog
           denunciaId={id}
           policial={dialog.policial}
+          podeEditarCargo={podeEditarCargo}
           onClose={() => setDialog(null)}
         />
       )}
@@ -2557,10 +2565,12 @@ function OitivaDialog({ id, onClose }: { id: string; onClose: () => void }) {
 function RetificarDialog({
   denunciaId,
   policial,
+  podeEditarCargo,
   onClose,
 }: {
   denunciaId: string;
-  policial: { id: string; nome: string; rg_funcional: string | null; unidade: string | null };
+  policial: { id: string; nome: string; rg_funcional: string | null; unidade: string | null; cargo: string | null };
+  podeEditarCargo: boolean;
   onClose: () => void;
 }) {
   const qc = useQueryClient();
@@ -2568,6 +2578,7 @@ function RetificarDialog({
   const [nome, setNome] = useState(policial.nome);
   const [mat, setMat] = useState(policial.rg_funcional ?? "");
   const [unidade, setUnidade] = useState<string>(policial.unidade ?? "");
+  const [cargoPol, setCargoPol] = useState<string>(policial.cargo ?? "");
   const [motivo, setMotivo] = useState("");
   const m = useMutation({
     mutationFn: () =>
@@ -2577,6 +2588,7 @@ function RetificarDialog({
           nome,
           rg_funcional: mat || null,
           unidade: (unidade || null) as typeof UNIDADES[number] | null,
+          cargo: (cargoPol || null) as typeof CARGOS_POLICIAIS[number] | null,
           motivo: motivo || null,
         },
       }),
@@ -2589,7 +2601,8 @@ function RetificarDialog({
   const semMudanca =
     nome.trim() === policial.nome &&
     (mat.trim() || null) === (policial.rg_funcional ?? null) &&
-    (unidade || null) === (policial.unidade ?? null);
+    (unidade || null) === (policial.unidade ?? null) &&
+    (cargoPol || null) === (policial.cargo ?? null);
   return (
     <Modal title="Retificar denunciado" onClose={onClose}>
       <label className="grid gap-1.5">
@@ -2611,6 +2624,24 @@ function RetificarDialog({
           {UNIDADES.map((u) => (
             <option key={u} value={u}>
               {u}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="mt-3 grid gap-1.5">
+        <span className="text-xs uppercase tracking-wider text-muted-foreground">
+          Cargo{!podeEditarCargo && " (somente Delegado Corregedor ou Corregedor)"}
+        </span>
+        <select
+          className="input"
+          value={cargoPol}
+          disabled={!podeEditarCargo}
+          onChange={(e) => setCargoPol(e.target.value)}
+        >
+          <option value="">Selecionar...</option>
+          {CARGOS_POLICIAIS.map((c) => (
+            <option key={c} value={c}>
+              {c}
             </option>
           ))}
         </select>
@@ -2647,6 +2678,7 @@ function RetificarDialog({
     </Modal>
   );
 }
+
 
 // ============ Acesso do Ministério Público ============
 function AcessoMpSection({ denunciaId }: { denunciaId: string }) {

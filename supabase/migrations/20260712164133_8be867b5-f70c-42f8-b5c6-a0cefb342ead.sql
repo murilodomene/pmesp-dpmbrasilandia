@@ -1,0 +1,3 @@
+ALTER TABLE public.denuncia_policiais ADD COLUMN IF NOT EXISTS cargo text;
+ALTER TABLE public.denuncia_policiais DROP CONSTRAINT IF EXISTS denuncia_policiais_cargo_check;
+ALTER TABLE public.denuncia_policiais ADD CONSTRAINT denuncia_policiais_cargo_check CHECK (cargo IS NULL OR cargo IN ('ACADEPOL','Agente de 3º Classe','Agente de 2º Classe','Agente de 1º Classe','Agente de Classe Especial','Investigador','Investigador-Chefe','Perito','Escrivão','Delegado'));

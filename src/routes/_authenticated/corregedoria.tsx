@@ -463,7 +463,9 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     queryFn: () => getFn({ data: { id } }),
   });
 
-  const podeRetificar = cargo === "delegado_geral" || cargo === "delegado_corregedor";
+  const podeRetificar =
+    cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor";
+  const podeEditarCargo = cargo === "delegado_corregedor" || cargo === "corregedor";
 
   const podeExcluir = cargo === "delegado_geral" || cargo === "delegado_corregedor";
 

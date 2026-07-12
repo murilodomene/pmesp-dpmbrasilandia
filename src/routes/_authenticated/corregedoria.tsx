@@ -95,6 +95,7 @@ function Corregedoria() {
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState<DenunciaStatus | "">("");
   const [selecionada, setSelecionada] = useState<string | null>(search.id ?? null);
+  const [abaAtiva, setAbaAtiva] = useState<"tramitacao" | "decurso" | "concluidos">("tramitacao");
 
   useEffect(() => {
     if (search.id) setSelecionada(search.id);
@@ -126,8 +127,16 @@ function Corregedoria() {
     const tramitacao: DenunciaStatus[] = ["recebida", "aguardando_analise", "em_analise", "em_investigacao"];
     const decurso: DenunciaStatus[] = ["ag_decurso_prazo"];
     const concluidos: DenunciaStatus[] = ["transito_julgado", "arquivada"];
+    const tram = listaFiltrada
+      .filter((d) => tramitacao.includes(d.status as DenunciaStatus))
+      .slice()
+      .sort((a, b) => {
+        const pa = calcularPrescricao({ termo_inicial: a.termo_inicial, acrescimos_dias: a.acrescimos_dias, status: a.status as DenunciaStatus });
+        const pb = calcularPrescricao({ termo_inicial: b.termo_inicial, acrescimos_dias: b.acrescimos_dias, status: b.status as DenunciaStatus });
+        return pa.diasRestantes - pb.diasRestantes;
+      });
     return {
-      tramitacao: listaFiltrada.filter((d) => tramitacao.includes(d.status as DenunciaStatus)),
+      tramitacao: tram,
       decurso: listaFiltrada.filter((d) => decurso.includes(d.status as DenunciaStatus)),
       concluidos: listaFiltrada.filter((d) => concluidos.includes(d.status as DenunciaStatus)),
     };
@@ -157,98 +166,118 @@ function Corregedoria() {
     setSelecionada(idSel);
     navigate({ search: { id: idSel } });
     if (typeof window !== "undefined") {
-      requestAnimationFrame(() => {
-        document.getElementById("autuacao-detalhe")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
+      requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
     }
   }
+
+  function onVoltar() {
+    setSelecionada(null);
+    navigate({ search: {} });
+  }
+
+  const abas: { key: "tramitacao" | "decurso" | "concluidos"; label: string; itens: ItemKanban[]; vazio: string; modo: "prescricao" | "decurso" | "suspenso" }[] = [
+    { key: "tramitacao", label: "Em Tramitação", itens: grupos.tramitacao, vazio: "Nada em tramitação.", modo: "prescricao" },
+    { key: "decurso", label: "Ag. Decurso do Prazo", itens: grupos.decurso, vazio: "Nenhum procedimento aguardando decurso.", modo: "decurso" },
+    { key: "concluidos", label: "Concluídas", itens: grupos.concluidos, vazio: "Nenhum procedimento concluído.", modo: "suspenso" },
+  ];
+  const abaCorrente = abas.find((a) => a.key === abaAtiva)!;
 
   return (
     <div className="min-h-screen">
       <Header />
       <div className="mx-auto max-w-[1400px] px-4 py-6">
-        <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
-          <div>
-            <div className="eyebrow">Autos</div>
-            <h1 className="mt-1 font-serif text-3xl">Corregedoria</h1>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span>{denuncias?.length ?? 0} procedimentos</span>
-            {isDelegado && (
-              <Link
-                to="/usuarios"
-                className="ml-2 flex items-center gap-1 rounded-md border border-border px-2 py-1 hover:bg-surface-2"
+        {selecionada ? (
+          <>
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={onVoltar}
+                className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-surface-2"
               >
-                <Users className="h-3.5 w-3.5" /> Usuários
-              </Link>
-            )}
-          </div>
-        </div>
+                ← Voltar
+              </button>
+              {isDelegado && (
+                <Link
+                  to="/usuarios"
+                  className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-surface-2"
+                >
+                  <Users className="h-3.5 w-3.5" /> Usuários
+                </Link>
+              )}
+            </div>
+            <Autuacao id={selecionada} cargo={session?.cargo ?? null} onDeleted={onVoltar} />
+          </>
+        ) : (
+          <>
+            <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+              <div>
+                <div className="eyebrow">Autos</div>
+                <h1 className="mt-1 font-serif text-3xl">Corregedoria</h1>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>{denuncias?.length ?? 0} procedimentos</span>
+                {isDelegado && (
+                  <Link
+                    to="/usuarios"
+                    className="ml-2 flex items-center gap-1 rounded-md border border-border px-2 py-1 hover:bg-surface-2"
+                  >
+                    <Users className="h-3.5 w-3.5" /> Usuários
+                  </Link>
+                )}
+              </div>
+            </div>
 
-        {/* Busca e filtros rápidos */}
-        <div className="surface mb-4 flex flex-wrap items-center gap-2 p-3">
-          <input
-            placeholder="Buscar por protocolo, denunciante, policial, natureza..."
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            className="min-w-[220px] flex-1 rounded-md border border-border bg-input px-3 py-2 text-sm"
-          />
-          <div className="flex flex-wrap gap-1">
-            <FiltroChip label="Todos" ativo={filtro === ""} onClick={() => setFiltro("")} />
-            {STATUS_LIST.map((s) => (
-              <FiltroChip
-                key={s}
-                label={STATUS_LABEL[s]}
-                ativo={filtro === s}
-                onClick={() => setFiltro(filtro === s ? "" : s)}
+            {/* Busca e filtros rápidos */}
+            <div className="surface mb-4 flex flex-wrap items-center gap-2 p-3">
+              <input
+                placeholder="Buscar por protocolo, denunciante, policial, natureza..."
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                className="min-w-[220px] flex-1 rounded-md border border-border bg-input px-3 py-2 text-sm"
               />
-            ))}
-          </div>
-        </div>
+              <div className="flex flex-wrap gap-1">
+                <FiltroChip label="Todos" ativo={filtro === ""} onClick={() => setFiltro("")} />
+                {STATUS_LIST.map((s) => (
+                  <FiltroChip
+                    key={s}
+                    label={STATUS_LABEL[s]}
+                    ativo={filtro === s}
+                    onClick={() => setFiltro(filtro === s ? "" : s)}
+                  />
+                ))}
+              </div>
+            </div>
 
-        {/* Kanban 3 colunas */}
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <ColunaKanban
-            titulo="Em Tramitação"
-            tom="azul"
-            count={grupos.tramitacao.length}
-            carregando={carregando}
-            vazioLabel="Nada em tramitação."
-            itens={grupos.tramitacao}
-            selecionada={selecionada}
-            onSelect={onSelect}
-          />
-          <ColunaKanban
-            titulo="Ag. Decurso do Prazo"
-            tom="amarelo"
-            count={grupos.decurso.length}
-            carregando={carregando}
-            vazioLabel="Nenhum procedimento aguardando decurso."
-            itens={grupos.decurso}
-            selecionada={selecionada}
-            onSelect={onSelect}
-            mostrarDecurso
-          />
-          <ColunaKanban
-            titulo="Concluídos"
-            tom="verde"
-            count={grupos.concluidos.length}
-            carregando={carregando}
-            vazioLabel="Nenhum procedimento concluído."
-            itens={grupos.concluidos}
-            selecionada={selecionada}
-            onSelect={onSelect}
-          />
-        </div>
+            {/* Abas */}
+            <div className="mb-3 flex flex-wrap items-center gap-1 border-b border-border">
+              {abas.map((a) => (
+                <button
+                  key={a.key}
+                  type="button"
+                  onClick={() => setAbaAtiva(a.key)}
+                  className={`-mb-px flex items-center gap-2 border-b-2 px-4 py-2 text-sm transition ${
+                    abaAtiva === a.key
+                      ? "border-primary text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {a.label}
+                  <span className="tabular rounded-full bg-surface-2 px-2 py-0.5 text-[11px]">
+                    {a.itens.length}
+                  </span>
+                </button>
+              ))}
+            </div>
 
-        {/* Autuação */}
-        <section id="autuacao-detalhe" className="mt-6">
-          {selecionada ? (
-            <Autuacao id={selecionada} cargo={session?.cargo ?? null} onDeleted={() => setSelecionada(null)} />
-          ) : (
-            <VazioAutuacao />
-          )}
-        </section>
+            <ListaProcessos
+              itens={abaCorrente.itens}
+              carregando={carregando}
+              vazioLabel={abaCorrente.vazio}
+              modo={abaCorrente.modo}
+              onSelect={onSelect}
+            />
+          </>
+        )}
       </div>
     </div>
   );
@@ -270,12 +299,6 @@ function FiltroChip({ label, ativo, onClick }: { label: string; ativo: boolean; 
   );
 }
 
-const TOM_HEADER: Record<"azul" | "amarelo" | "verde", string> = {
-  azul: "border-sky-500/30 bg-sky-500/10 text-sky-200",
-  amarelo: "border-amber-500/30 bg-amber-500/10 text-amber-200",
-  verde: "border-emerald-500/30 bg-emerald-500/10 text-emerald-200",
-};
-
 interface ItemKanban {
   id: string;
   numero_protocolo: string;
@@ -290,132 +313,130 @@ interface ItemKanban {
   denuncia_policiais?: { nome: string; unidade: string | null }[] | null;
 }
 
-function ColunaKanban({
-  titulo,
-  tom,
-  count,
+function ListaProcessos({
+  itens,
   carregando,
   vazioLabel,
-  itens,
-  selecionada,
+  modo,
   onSelect,
-  mostrarDecurso = false,
 }: {
-  titulo: string;
-  tom: "azul" | "amarelo" | "verde";
-  count: number;
+  itens: ItemKanban[];
   carregando: boolean;
   vazioLabel: string;
-  itens: ItemKanban[];
-  selecionada: string | null;
+  modo: "prescricao" | "decurso" | "suspenso";
   onSelect: (id: string) => void;
-  mostrarDecurso?: boolean;
 }) {
-  return (
-    <div className="surface flex min-h-[240px] flex-col p-3">
-      <div className={`flex items-center justify-between rounded-md border px-3 py-2 ${TOM_HEADER[tom]}`}>
-        <span className="text-sm font-medium">{titulo}</span>
-        <span className="tabular rounded-full bg-black/30 px-2 py-0.5 text-xs">{count}</span>
-      </div>
-      <div className="mt-3 flex-1 space-y-2 overflow-y-auto pr-1 [max-height:70vh]">
-        {carregando &&
-          Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="animate-pulse rounded-md border border-border/60 p-3">
-              <div className="h-3 w-24 rounded bg-surface-2" />
-              <div className="mt-2 h-4 w-3/4 rounded bg-surface-2" />
-              <div className="mt-2 h-3 w-1/2 rounded bg-surface-2" />
-            </div>
-          ))}
-        {!carregando && itens.length === 0 && (
-          <div className="grid place-items-center rounded-md border border-dashed border-border p-8 text-center text-xs text-muted-foreground">
-            <div className="mb-2 grid h-10 w-10 place-items-center rounded-full border border-border text-base opacity-70">∅</div>
-            {vazioLabel}
+  if (carregando) {
+    return (
+      <div className="surface overflow-hidden">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="animate-pulse border-b border-border/60 p-3 last:border-0">
+            <div className="h-4 w-full rounded bg-surface-2" />
           </div>
-        )}
-        {!carregando &&
-          itens.map((d) => (
-            <CardKanban
-              key={d.id}
-              d={d}
-              ativo={selecionada === d.id}
-              onSelect={onSelect}
-              mostrarDecurso={mostrarDecurso}
-            />
-          ))}
+        ))}
       </div>
+    );
+  }
+  if (itens.length === 0) {
+    return (
+      <div className="surface grid place-items-center p-16 text-center text-sm text-muted-foreground">
+        <div className="mb-3 grid h-12 w-12 place-items-center rounded-full border border-border text-lg opacity-70">∅</div>
+        {vazioLabel}
+      </div>
+    );
+  }
+  return (
+    <div className="surface overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead className="border-b border-border bg-surface-2/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
+          <tr>
+            <th className="px-3 py-2 font-medium">Número</th>
+            <th className="px-3 py-2 font-medium">Natureza</th>
+            <th className="px-3 py-2 font-medium">Denunciado · Unidade</th>
+            <th className="px-3 py-2 font-medium">Status</th>
+            <th className="px-3 py-2 text-right font-medium">Prazo</th>
+          </tr>
+        </thead>
+        <tbody>
+          {itens.map((d) => (
+            <LinhaProcesso key={d.id} d={d} modo={modo} onSelect={onSelect} />
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
 
-function CardKanban({
+function LinhaProcesso({
   d,
-  ativo,
+  modo,
   onSelect,
-  mostrarDecurso,
 }: {
   d: ItemKanban;
-  ativo: boolean;
+  modo: "prescricao" | "decurso" | "suspenso";
   onSelect: (id: string) => void;
-  mostrarDecurso: boolean;
 }) {
   const prescr = calcularPrescricao({
     termo_inicial: d.termo_inicial,
     acrescimos_dias: d.acrescimos_dias,
     status: d.status as DenunciaStatus,
   });
-  const decurso = mostrarDecurso ? calcularDecursoPrazo(d.concluido_em ?? null) : null;
-  const ultima = d.updated_at ?? d.created_at ?? d.termo_inicial;
+  const decurso = modo === "decurso" ? calcularDecursoPrazo(d.concluido_em ?? null) : null;
+  const denunciados = (d.denuncia_policiais ?? []).map((p) => p.nome).join(", ") || "—";
+
+  let prazoCell: React.ReactNode = <span className="text-muted-foreground">—</span>;
+  if (modo === "prescricao") {
+    const cls = prescr.prescrita
+      ? "text-clock-danger"
+      : prescr.nivel === "danger"
+        ? "text-clock-danger"
+        : prescr.nivel === "warn"
+          ? "text-clock-warn"
+          : "text-clock-safe";
+    prazoCell = (
+      <span className={`tabular ${cls}`}>
+        {prescr.prescrita
+          ? `Prescrita há ${Math.abs(prescr.diasRestantes)}d`
+          : `${prescr.diasRestantes}d`}
+      </span>
+    );
+  } else if (modo === "decurso" && decurso) {
+    prazoCell = (
+      <span className={`tabular ${decurso.vencido ? "text-clock-danger" : "text-clock-warn"}`}>
+        {decurso.vencido ? "Prazo vencido" : `${decurso.diasRestantes}d`}
+      </span>
+    );
+  } else if (modo === "suspenso") {
+    prazoCell = <span className="text-xs text-muted-foreground">Relógio suspenso</span>;
+  }
 
   return (
-    <button
+    <tr
       onClick={() => onSelect(d.id)}
-      className={`group w-full rounded-md border p-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-surface-2 hover:shadow-md ${
-        ativo ? "border-primary/60 bg-surface-2" : "border-border/60"
-      } ${prescr.prescrita ? "border-l-4 border-l-clock-danger" : ""}`}
+      className="cursor-pointer border-b border-border/60 transition hover:bg-surface-2 last:border-0"
     >
-      <div className="flex items-center justify-between gap-2">
-        <span className="tabular text-xs text-muted-foreground">{d.numero_protocolo}</span>
+      <td className="px-3 py-2.5 tabular text-xs text-muted-foreground whitespace-nowrap">
+        {d.numero_protocolo}
+      </td>
+      <td className="px-3 py-2.5">
+        <div className="line-clamp-1 font-medium">{d.ocorrencia_tipo || "Sem natureza"}</div>
+      </td>
+      <td className="px-3 py-2.5 text-xs text-muted-foreground">
+        <div className="line-clamp-1">{denunciados} · {d.unidade || "sem unidade"}</div>
+      </td>
+      <td className="px-3 py-2.5 whitespace-nowrap">
         <StatusBadge status={d.status as DenunciaStatus} />
-      </div>
-      <div className="mt-1.5 line-clamp-1 text-sm font-medium">
-        {d.ocorrencia_tipo || "Sem natureza"}
-      </div>
-      <div className="mt-1 line-clamp-1 text-xs text-muted-foreground">
-        {(d.denuncia_policiais ?? []).map((p) => p.nome).join(", ") || "—"} · {d.unidade || "sem unidade"}
-      </div>
-      <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
-        <span>Atualizado {new Date(ultima).toLocaleDateString("pt-BR")}</span>
-        {decurso && (
-          <span
-            className={`tabular rounded-md border px-1.5 py-0.5 ${
-              decurso.vencido
-                ? "border-red-500/40 bg-red-500/10 text-red-300"
-                : "border-amber-500/40 bg-amber-500/10 text-amber-200"
-            }`}
-          >
-            {decurso.vencido
-              ? "Prazo vencido"
-              : `${decurso.diasRestantes}d restantes`}
-          </span>
-        )}
-      </div>
-      <div className="mt-2 flex justify-end">
-        <span className="text-[11px] text-primary opacity-70 transition group-hover:opacity-100">
-          Ver detalhes →
-        </span>
-      </div>
-    </button>
+      </td>
+      <td className="px-3 py-2.5 text-right whitespace-nowrap">{prazoCell}</td>
+    </tr>
   );
 }
 
 
-function VazioAutuacao() {
-  return (
-    <div className="surface grid h-full min-h-96 place-items-center p-12 text-center text-sm text-muted-foreground">
-      Selecione um procedimento na fila para abrir a autuação.
-    </div>
-  );
-}
+
+
+
+
 
 function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; onDeleted?: () => void }) {
   const qc = useQueryClient();

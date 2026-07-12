@@ -166,10 +166,13 @@ function Corregedoria() {
     setSelecionada(idSel);
     navigate({ search: { id: idSel } });
     if (typeof window !== "undefined") {
-      requestAnimationFrame(() => {
-        document.getElementById("autuacao-detalhe")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
+      requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
     }
+  }
+
+  function onVoltar() {
+    setSelecionada(null);
+    navigate({ search: {} });
   }
 
   return (

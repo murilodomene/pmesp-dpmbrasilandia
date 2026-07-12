@@ -483,6 +483,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     | { kind: "excluir" }
     | { kind: "cancelarMov"; movimento_id: string; resumo: string }
     | { kind: "recurso" }
+    | { kind: "resultadoRecurso" }
     | { kind: "intimar" }
     | null
   >(null);
@@ -579,6 +580,9 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     status === "ag_decurso_prazo" &&
     !denuncia.certidao_gerada &&
     (cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor");
+  const podeCertificarResultado =
+    status === "em_recurso" &&
+    (cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor");
 
   return (
     <div className="space-y-4">
@@ -639,6 +643,15 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 className="inline-flex items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-100 hover:bg-amber-500/20"
               >
                 Registrar recurso
+              </button>
+            )}
+            {podeCertificarResultado && (
+              <button
+                onClick={() => setDialog({ kind: "resultadoRecurso" })}
+                title="Certificar o resultado do julgamento do recurso"
+                className="inline-flex items-center gap-1 rounded-md border border-violet-500/40 bg-violet-500/10 px-3 py-1.5 text-xs text-violet-100 hover:bg-violet-500/20"
+              >
+                Certificar resultado
               </button>
             )}
             {(cargo === "delegado_geral" || cargo === "delegado_corregedor") && (

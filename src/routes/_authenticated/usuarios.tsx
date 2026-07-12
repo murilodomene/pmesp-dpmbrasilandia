@@ -229,7 +229,20 @@ function UsuariosPage() {
                       {new Date(u.created_at).toLocaleDateString("pt-BR")}
                     </TableCell>
                     <TableCell className="text-right">
-                      {isEditavel ? (
+                      {u.status === "pendente" ? (
+                        <div className="flex justify-end gap-2">
+                          <Button size="sm" onClick={() => setAprovando(u)}>
+                            <UserPlus className="mr-1 h-3.5 w-3.5" /> Aprovar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => setExcluindo(u)}
+                          >
+                            <Trash2 className="mr-1 h-3.5 w-3.5" /> Excluir
+                          </Button>
+                        </div>
+                      ) : isEditavel ? (
                         <div className="flex justify-end gap-2">
                           <Button size="sm" variant="outline" onClick={() => setEditando(u)}>
                             <Edit3 className="mr-1 h-3.5 w-3.5" /> Editar

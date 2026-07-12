@@ -1665,32 +1665,57 @@ const PROVIDENCIAS_PADRAO = `I - Juntar aos autos a apuração preliminar;
 II - Deliberar a Cúpula da Corregedoria pela existência de elementos de justa causa da presente denúncia, caso necessário;
 III - A seguir, tornem os autos conclusos.`;
 
+type DenunciadoPortaria = {
+  nome: string;
+  matricula: string;
+  cargo: string;
+  artigos: string;
+};
+
 function montarModeloPortaria(params: {
   cargoProlator: string;
   nomeProlator: string;
   matriculaProlator: string;
-  nomeDenunciado: string;
-  matriculaDenunciado: string;
-  cargoDenunciado: string;
-  artigos: string;
+  denunciados: DenunciadoPortaria[];
   providencias: string;
 }): string {
-  const cargoDen = params.cargoDenunciado.trim() || "[CARGO_DENUNCIADO]";
-  const artigos = params.artigos.trim() || "[ARTIGOS_ENQUADRADOS]";
-  return `A Corregedoria Geral da Polícia Civil do Estado de São Paulo, por intermédio do ${params.cargoProlator}, ${params.nomeProlator}, ${params.matriculaProlator}, com fundamento nos arts. 78, inciso I c/c 79 do Manual de Procedimentos, instaura o presente PROCESSO ADMINISTRATIVO DISCIPLINAR com a finalidade de apurar a conduta do policial civil ${params.nomeDenunciado}, ${params.matriculaDenunciado}, ${cargoDen}, em face do suposto cometimento da(s) infração administrativas relatadas.
+  const preamblePrefix = `A Corregedoria Geral da Polícia Civil do Estado de São Paulo, por intermédio do ${params.cargoProlator}, ${params.nomeProlator}, ${params.matriculaProlator}, com fundamento nos arts. 78, inciso I c/c 79 do Manual de Procedimentos, instaura o presente PROCESSO ADMINISTRATIVO DISCIPLINAR`;
+  const providencias = params.providencias.trim() || PROVIDENCIAS_PADRAO;
+  const dataFmt = new Date().toLocaleDateString("pt-BR");
+  const fecho = `\n\nCumpra-se.\n\nDatado e assinado digitalmente em ${dataFmt}.\n\n${params.nomeProlator}\n${params.cargoProlator}`;
 
-Com efeito, a partir dos fatos constantes da presente denúncia, os comportamentos supramencionados, configuram, em tese, infração aos dispositivos ${artigos}.
+  const dens = params.denunciados.length > 0
+    ? params.denunciados
+    : [{ nome: "[NOME_DENUNCIADO]", matricula: "matrícula não informada", cargo: "", artigos: "" }];
+
+  if (dens.length === 1) {
+    const d = dens[0];
+    const cargoDen = d.cargo.trim() || "[CARGO_DENUNCIADO]";
+    const artigos = d.artigos.trim() || "[ARTIGOS_ENQUADRADOS]";
+    return `${preamblePrefix} com a finalidade de apurar a conduta do policial civil ${d.nome}, ${d.matricula || "matrícula não informada"}, ${cargoDen}, em face do suposto cometimento da(s) infração(ões) administrativa(s) relatada(s).
+
+Com efeito, a partir dos fatos constantes da presente denúncia, os comportamentos supramencionados configuram, em tese, infração aos dispositivos ${artigos}.
 
 Pelo exposto, para que o denunciado venha se defender das imputações acima descritas segundo os princípios do contraditório e da ampla defesa, de acordo com o rito estabelecido nos arts. 80 e seguintes, deverá a CORREGEPOL, logo após esta Portaria, tomar as seguintes providências:
 
-${params.providencias.trim() || PROVIDENCIAS_PADRAO}
+${providencias}${fecho}`;
+  }
 
-Cumpra-se.
+  const blocos = dens
+    .map((d) => {
+      const cargoDen = d.cargo.trim() || "[CARGO_DENUNCIADO]";
+      const artigos = d.artigos.trim() || "[ARTIGOS_ENQUADRADOS]";
+      return `Quanto ao policial civil ${d.nome}, ${d.matricula || "matrícula não informada"}, ${cargoDen}, imputa-se-lhe, em tese, a infração aos dispositivos ${artigos}.`;
+    })
+    .join("\n\n");
 
-Datado e assinado digitalmente em ${new Date().toLocaleDateString("pt-BR")}.
+  return `${preamblePrefix} com a finalidade de apurar a conduta dos policiais civis a seguir identificados, em face do suposto cometimento das infrações administrativas relatadas:
 
-${params.nomeProlator}
-${params.cargoProlator}`;
+${blocos}
+
+Pelo exposto, para que os denunciados venham se defender das imputações acima descritas segundo os princípios do contraditório e da ampla defesa, de acordo com o rito estabelecido nos arts. 80 e seguintes, deverá a CORREGEPOL, logo após esta Portaria, tomar as seguintes providências:
+
+${providencias}${fecho}`;
 }
 
 function PortariaDialog({
@@ -1707,14 +1732,23 @@ function PortariaDialog({
   const sessionFn = useServerFn(getSessionInfo);
   const { data: session } = useQuery({ queryKey: ["session-info"], queryFn: () => sessionFn() });
 
-  const primeiro = policiais[0];
-  const [denNome, setDenNome] = useState(primeiro?.nome ?? "");
-  const [denMat, setDenMat] = useState(primeiro?.rg_funcional ?? "");
-  const [cargoDen, setCargoDen] = useState("");
-  const [artigos, setArtigos] = useState("");
+  const [denunciados, setDenunciados] = useState<DenunciadoPortaria[]>(
+    policiais.length > 0
+      ? policiais.map((p) => ({
+          nome: p.nome,
+          matricula: p.rg_funcional ?? "",
+          cargo: "",
+          artigos: "",
+        }))
+      : [{ nome: "", matricula: "", cargo: "", artigos: "" }],
+  );
   const [providencias, setProvidencias] = useState(PROVIDENCIAS_PADRAO);
   const [corpo, setCorpo] = useState("");
   const [modeloAplicado, setModeloAplicado] = useState(false);
+
+  function updateDen(idx: number, patch: Partial<DenunciadoPortaria>) {
+    setDenunciados((prev) => prev.map((d, i) => (i === idx ? { ...d, ...patch } : d)));
+  }
 
   function aplicarModelo() {
     if (!session?.profile || !session.cargo) return;
@@ -1722,13 +1756,14 @@ function PortariaDialog({
       cargoProlator: cargoLabelFull(session.cargo),
       nomeProlator: session.profile.nome,
       matriculaProlator: session.profile.matricula || "matrícula não informada",
-      nomeDenunciado: denNome || "[NOME_DENUNCIADO]",
-      matriculaDenunciado: denMat || "matrícula não informada",
-      cargoDenunciado: cargoDen,
-      artigos,
+      denunciados: denunciados.map((d) => ({
+        nome: d.nome || "[NOME_DENUNCIADO]",
+        matricula: d.matricula,
+        cargo: d.cargo,
+        artigos: d.artigos,
+      })),
       providencias,
     });
-    // Converte o modelo em parágrafos HTML preservando quebras duplas.
     const html = texto
       .split(/\n{2,}/)
       .map((par) => `<p>${par.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br/>")}</p>`)
@@ -1755,49 +1790,54 @@ function PortariaDialog({
 
       <div className="grid gap-3 rounded-md border border-border/60 p-3">
         <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-          Variáveis do modelo
+          Denunciados ({denunciados.length}) — artigos enquadrados por policial
         </div>
-        <div className="grid gap-2 md:grid-cols-2">
-          <label className="grid gap-1 text-xs">
-            <span className="text-muted-foreground">Nome do denunciado</span>
-            <input className="input" value={denNome} onChange={(e) => setDenNome(e.target.value)} />
-          </label>
-          <label className="grid gap-1 text-xs">
-            <span className="text-muted-foreground">Matrícula do denunciado</span>
-            <input className="input" value={denMat} onChange={(e) => setDenMat(e.target.value)} />
-          </label>
-          <label className="grid gap-1 text-xs md:col-span-2">
-            <span className="text-muted-foreground">
-              Cargo do denunciado (opcional — deixe em branco se desconhecido)
-            </span>
-            <input
-              className="input"
-              value={cargoDen}
-              onChange={(e) => setCargoDen(e.target.value)}
-              placeholder="ex.: Investigador de Polícia"
-            />
-          </label>
-          <label className="grid gap-1 text-xs md:col-span-2">
-            <span className="text-muted-foreground">
-              Artigos enquadrados (ex.: art. 12, inciso III)
-            </span>
-            <input
-              className="input"
-              value={artigos}
-              onChange={(e) => setArtigos(e.target.value)}
-              placeholder="art. 12, inciso III"
-            />
-          </label>
-          <label className="grid gap-1 text-xs md:col-span-2">
-            <span className="text-muted-foreground">Providências</span>
-            <textarea
-              rows={4}
-              className="input"
-              value={providencias}
-              onChange={(e) => setProvidencias(e.target.value)}
-            />
-          </label>
+        <div className="grid gap-3">
+          {denunciados.map((d, idx) => (
+            <div key={idx} className="grid gap-2 rounded-md border border-border/50 bg-surface-2/40 p-2 md:grid-cols-2">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-primary md:col-span-2">
+                Denunciado {idx + 1}
+              </div>
+              <label className="grid gap-1 text-xs">
+                <span className="text-muted-foreground">Nome</span>
+                <input className="input" value={d.nome} onChange={(e) => updateDen(idx, { nome: e.target.value })} />
+              </label>
+              <label className="grid gap-1 text-xs">
+                <span className="text-muted-foreground">Matrícula</span>
+                <input className="input" value={d.matricula} onChange={(e) => updateDen(idx, { matricula: e.target.value })} />
+              </label>
+              <label className="grid gap-1 text-xs md:col-span-2">
+                <span className="text-muted-foreground">Cargo (opcional)</span>
+                <input
+                  className="input"
+                  value={d.cargo}
+                  onChange={(e) => updateDen(idx, { cargo: e.target.value })}
+                  placeholder="ex.: Investigador de Polícia"
+                />
+              </label>
+              <label className="grid gap-1 text-xs md:col-span-2">
+                <span className="text-muted-foreground">
+                  Artigos enquadrados deste policial (ex.: art. 12, inciso III)
+                </span>
+                <input
+                  className="input"
+                  value={d.artigos}
+                  onChange={(e) => updateDen(idx, { artigos: e.target.value })}
+                  placeholder="art. 12, inciso III"
+                />
+              </label>
+            </div>
+          ))}
         </div>
+        <label className="grid gap-1 text-xs">
+          <span className="text-muted-foreground">Providências (comuns a todos os denunciados)</span>
+          <textarea
+            rows={4}
+            className="input"
+            value={providencias}
+            onChange={(e) => setProvidencias(e.target.value)}
+          />
+        </label>
         <button
           type="button"
           onClick={aplicarModelo}
@@ -1845,6 +1885,8 @@ function PortariaDialog({
     </Modal>
   );
 }
+
+
 
 const ATO_ASSUNTO: Record<"despacho" | "decisao" | "portaria", string> = {
   despacho: "Despacho",

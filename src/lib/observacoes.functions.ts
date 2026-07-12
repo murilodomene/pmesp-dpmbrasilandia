@@ -91,7 +91,7 @@ export const criarObservacao = createServerFn({ method: "POST" })
         autor_id: context.userId,
         autor_nome: nome,
         autor_cargo: cargo as "delegado_geral" | "delegado_corregedor" | "corregedor",
-        policial_nome: data.policial_nome,
+        policial_nome: data.policial_nome?.trim() || null,
         policial_matricula: data.policial_matricula || null,
         policial_cargo: data.policial_cargo || null,
         policial_unidade: data.policial_unidade || null,

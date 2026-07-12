@@ -69,7 +69,7 @@ const CARGO_LABEL: Record<string, string> = {
 };
 
 const DELEGADO_CARGOS = new Set(["delegado_corregedor"]);
-const EDITAVEIS = new Set(["cidadao", "mp"]);
+const EDITAVEIS = new Set(["delegado_geral", "cidadao", "mp"]);
 
 interface Usuario {
   id: string;

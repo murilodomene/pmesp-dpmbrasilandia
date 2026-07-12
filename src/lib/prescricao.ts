@@ -22,6 +22,7 @@ export type DenunciaStatus =
   | "recebida"
   | "aguardando_analise"
   | "em_analise"
+  | "em_recurso"
   | "em_investigacao"
   | "ag_decurso_prazo"
   | "transito_julgado"

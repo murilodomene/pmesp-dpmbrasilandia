@@ -33,6 +33,7 @@ import {
   excluirDenuncia,
   cancelarMovimento,
   registrarRecurso,
+  certificarResultadoRecurso,
 } from "@/lib/denuncias.functions";
 
 
@@ -102,7 +103,7 @@ function Corregedoria() {
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState<DenunciaStatus | "">("");
   const [selecionada, setSelecionada] = useState<string | null>(search.id ?? null);
-  const [abaAtiva, setAbaAtiva] = useState<"tramitacao" | "decurso" | "concluidos">("tramitacao");
+  const [abaAtiva, setAbaAtiva] = useState<"tramitacao" | "decurso" | "recurso" | "concluidos">("tramitacao");
 
   useEffect(() => {
     if (search.id) setSelecionada(search.id);
@@ -133,6 +134,7 @@ function Corregedoria() {
   const grupos = useMemo(() => {
     const tramitacao: DenunciaStatus[] = ["novo", "recebida", "aguardando_analise", "em_analise", "em_investigacao"];
     const decurso: DenunciaStatus[] = ["ag_decurso_prazo"];
+    const recurso: DenunciaStatus[] = ["em_recurso"];
     const concluidos: DenunciaStatus[] = ["transito_julgado", "arquivada"];
     const tram = listaFiltrada
       .filter((d) => tramitacao.includes(d.status as DenunciaStatus))
@@ -145,6 +147,7 @@ function Corregedoria() {
     return {
       tramitacao: tram,
       decurso: listaFiltrada.filter((d) => decurso.includes(d.status as DenunciaStatus)),
+      recurso: listaFiltrada.filter((d) => recurso.includes(d.status as DenunciaStatus)),
       concluidos: listaFiltrada.filter((d) => concluidos.includes(d.status as DenunciaStatus)),
     };
   }, [listaFiltrada]);
@@ -182,9 +185,10 @@ function Corregedoria() {
     navigate({ search: {} });
   }
 
-  const abas: { key: "tramitacao" | "decurso" | "concluidos"; label: string; itens: ItemKanban[]; vazio: string; modo: "prescricao" | "decurso" | "suspenso" }[] = [
+  const abas: { key: "tramitacao" | "decurso" | "recurso" | "concluidos"; label: string; itens: ItemKanban[]; vazio: string; modo: "prescricao" | "decurso" | "suspenso" }[] = [
     { key: "tramitacao", label: "Em Tramitação", itens: grupos.tramitacao, vazio: "Nada em tramitação.", modo: "prescricao" },
     { key: "decurso", label: "Ag. Decurso do Prazo", itens: grupos.decurso, vazio: "Nenhum procedimento aguardando decurso.", modo: "decurso" },
+    { key: "recurso", label: "Em Recurso", itens: grupos.recurso, vazio: "Nenhum procedimento em recurso.", modo: "suspenso" },
     { key: "concluidos", label: "Concluídas", itens: grupos.concluidos, vazio: "Nenhum procedimento concluído.", modo: "suspenso" },
   ];
   const abaCorrente = abas.find((a) => a.key === abaAtiva)!;
@@ -479,6 +483,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     | { kind: "excluir" }
     | { kind: "cancelarMov"; movimento_id: string; resumo: string }
     | { kind: "recurso" }
+    | { kind: "resultadoRecurso" }
     | { kind: "intimar" }
     | null
   >(null);
@@ -575,6 +580,9 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     status === "ag_decurso_prazo" &&
     !denuncia.certidao_gerada &&
     (cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor");
+  const podeCertificarResultado =
+    status === "em_recurso" &&
+    (cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor");
 
   return (
     <div className="space-y-4">
@@ -635,6 +643,15 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 className="inline-flex items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-100 hover:bg-amber-500/20"
               >
                 Registrar recurso
+              </button>
+            )}
+            {podeCertificarResultado && (
+              <button
+                onClick={() => setDialog({ kind: "resultadoRecurso" })}
+                title="Certificar o resultado do julgamento do recurso"
+                className="inline-flex items-center gap-1 rounded-md border border-violet-500/40 bg-violet-500/10 px-3 py-1.5 text-xs text-violet-100 hover:bg-violet-500/20"
+              >
+                Certificar resultado
               </button>
             )}
             {(cargo === "delegado_geral" || cargo === "delegado_corregedor") && (
@@ -1390,6 +1407,9 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
       {dialog?.kind === "recurso" && (
         <RecursoDialog id={id} onClose={() => setDialog(null)} />
       )}
+      {dialog?.kind === "resultadoRecurso" && (
+        <ResultadoRecursoDialog id={id} onClose={() => setDialog(null)} />
+      )}
 
 
 
@@ -1700,6 +1720,82 @@ function RecursoDialog({ id, onClose }: { id: string; onClose: () => void }) {
           className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
           {m.isPending ? "Registrando..." : "Registrar recurso"}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+type ResultadoRecurso = "provido" | "parcialmente_provido" | "indeferido" | "nao_conhecido";
+const RESULTADO_LABELS: Record<ResultadoRecurso, string> = {
+  provido: "Provido",
+  parcialmente_provido: "Parcialmente provido",
+  indeferido: "Indeferido",
+  nao_conhecido: "Não conhecido",
+};
+
+function ResultadoRecursoDialog({ id, onClose }: { id: string; onClose: () => void }) {
+  const qc = useQueryClient();
+  const fn = useServerFn(certificarResultadoRecurso);
+  const [resultado, setResultado] = useState<ResultadoRecurso | "">("");
+  const m = useMutation({
+    mutationFn: () =>
+      fn({ data: { denuncia_id: id, resultado: resultado as ResultadoRecurso } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["denuncia", id] });
+      qc.invalidateQueries({ queryKey: ["denuncias"] });
+      onClose();
+    },
+  });
+  const encerra = resultado === "indeferido" || resultado === "nao_conhecido";
+  return (
+    <Modal title="Certificar resultado do recurso" onClose={onClose}>
+      <p className="text-xs text-muted-foreground">
+        Uma certidão será juntada aos autos com o resultado do julgamento do recurso administrativo.
+        Se Indeferido ou Não conhecido, o procedimento é arquivado automaticamente.
+      </p>
+      <div className="mt-3 grid gap-2">
+        {(Object.keys(RESULTADO_LABELS) as ResultadoRecurso[]).map((r) => (
+          <label
+            key={r}
+            className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm ${
+              resultado === r ? "border-primary bg-primary/10" : "border-border hover:bg-surface-2"
+            }`}
+          >
+            <input
+              type="radio"
+              name="resultado"
+              value={r}
+              checked={resultado === r}
+              onChange={() => setResultado(r)}
+            />
+            <span>{RESULTADO_LABELS[r]}</span>
+            {(r === "indeferido" || r === "nao_conhecido") && (
+              <span className="ml-auto text-[10px] uppercase tracking-wider text-muted-foreground">
+                encerra o processo
+              </span>
+            )}
+          </label>
+        ))}
+      </div>
+      {encerra && (
+        <p className="mt-3 text-xs text-amber-300">
+          Ao confirmar, o procedimento será movido para Concluídas.
+        </p>
+      )}
+      {m.error instanceof Error && (
+        <p className="mt-2 text-xs text-destructive">{m.error.message}</p>
+      )}
+      <div className="mt-4 flex justify-end gap-2">
+        <button onClick={onClose} className="rounded-md border border-border px-4 py-2 text-sm">
+          Cancelar
+        </button>
+        <button
+          onClick={() => m.mutate()}
+          disabled={m.isPending || !resultado}
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+        >
+          {m.isPending ? "Certificando..." : "Certificar"}
         </button>
       </div>
     </Modal>

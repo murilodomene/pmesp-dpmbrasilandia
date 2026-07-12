@@ -666,6 +666,10 @@ export type Database = {
         Args: { _motivo: string; _movimento_id: string }
         Returns: undefined
       }
+      certificar_resultado_recurso: {
+        Args: { _denuncia_id: string; _resultado: string }
+        Returns: undefined
+      }
       conceder_acesso_mp: {
         Args: { _denuncia_id: string; _mp_user_id: string }
         Returns: undefined
@@ -742,6 +746,7 @@ export type Database = {
         | "arquivada"
         | "ag_decurso_prazo"
         | "transito_julgado"
+        | "em_recurso"
       movimento_especie:
         | "despacho"
         | "decisao"
@@ -908,6 +913,7 @@ export const Constants = {
         "arquivada",
         "ag_decurso_prazo",
         "transito_julgado",
+        "em_recurso",
       ],
       movimento_especie: [
         "despacho",

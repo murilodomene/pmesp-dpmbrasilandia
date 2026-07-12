@@ -285,6 +285,25 @@ export const registrarRecurso = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const certificarResultadoRecurso = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        denuncia_id: z.string().uuid(),
+        resultado: z.enum(["provido", "parcialmente_provido", "indeferido", "nao_conhecido"]),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.rpc("certificar_resultado_recurso" as never, {
+      _denuncia_id: data.denuncia_id,
+      _resultado: data.resultado,
+    } as never);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 export const receberDenuncia = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>

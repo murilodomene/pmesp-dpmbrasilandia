@@ -477,6 +477,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
   const lancarFn = useServerFn(lancarMovimento);
   const [especie, setEspecie] = useState<"despacho" | "decisao" | "ipc">("despacho");
   const [teor, setTeor] = useState("");
+  const [anexos, setAnexos] = useState<AtoAnexo[]>([]);
 
   const obsFn = useServerFn(atualizarObservacoes);
   const [obsPub, setObsPub] = useState<string | null>(null);
@@ -506,10 +507,16 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
       } else {
         teorFinal = sanitizeAtoHtml(teor);
       }
-      return lancarFn({ data: { denuncia_id: id, especie, teor: teorFinal } });
+      // Anexos só se aplicam a despacho e decisão.
+      const anexosPayload =
+        especie === "despacho" || especie === "decisao" ? anexos : [];
+      return lancarFn({
+        data: { denuncia_id: id, especie, teor: teorFinal, anexos: anexosPayload },
+      });
     },
     onSuccess: () => {
       setTeor("");
+      setAnexos([]);
       qc.invalidateQueries({ queryKey: ["denuncia", id] });
       qc.invalidateQueries({ queryKey: ["denuncias"] });
     },

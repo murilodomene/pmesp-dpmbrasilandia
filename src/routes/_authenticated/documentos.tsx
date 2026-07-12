@@ -491,7 +491,9 @@ function DocumentosPage() {
                           {selected.titulo}
                         </h2>
                         <p className="mt-1 text-xs italic text-muted-foreground sm:text-sm">
-                          Diretrizes, condutas e regras gerais da Polícia Civil.
+                          {selected.id === "regimento"
+                            ? "Estrutura, competências e funcionamento da Corregedoria."
+                            : "Diretrizes, condutas e regras gerais da Polícia Civil."}
                         </p>
                       </div>
                     </div>

@@ -609,6 +609,9 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                     : `Recurso: ${decurso.diasRestantes === 1 ? "1 dia restante" : `${decurso.diasRestantes} dias restantes`}`}
                 </span>
               )}
+              {isInternoCorregedoria && (
+                <ObservacoesIndicador denunciaId={denuncia.id} numero={denuncia.numero_protocolo} />
+              )}
             </div>
             <div className="mt-2">
               <TarjasManager

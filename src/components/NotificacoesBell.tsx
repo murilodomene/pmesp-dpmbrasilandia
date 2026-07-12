@@ -21,7 +21,9 @@ export function NotificacoesBell() {
   const listFn = useServerFn(listMinhasNotificacoes);
   const countFn = useServerFn(contarNaoLidasNotif);
   const marcarFn = useServerFn(marcarNotificacaoLida);
+  const marcarTodasFn = useServerFn(marcarTodasLidas);
   const qc = useQueryClient();
+
 
   const { data: count = 0 } = useQuery({
     queryKey: ["notif-count"],

@@ -3,20 +3,22 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const ROLES = ["delegado_geral", "delegado_corregedor", "corregedor", "cidadao", "mp"] as const;
-const EDITABLE_ROLES = ["cidadao", "mp"] as const;
+const EDITABLE_ROLES = ["delegado_geral", "cidadao", "mp"] as const;
 const STATUS = ["pendente", "ativo", "inativo"] as const;
 const DELEGADO_ROLES = ["delegado_geral", "delegado_corregedor"] as const;
 
-async function assertDelegado(context: { supabase: any; userId: string }) {
+async function assertCorregedor(context: { supabase: any; userId: string }) {
   const { data } = await context.supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", context.userId)
-    .in("role", DELEGADO_ROLES as unknown as string[]);
-  if (!data || data.length === 0) {
-    throw new Error("403: Acesso Negado. Apenas Delegado Geral ou Delegado Corregedor.");
+    .eq("role", "delegado_corregedor")
+    .maybeSingle();
+  if (!data) {
+    throw new Error("403: Acesso Negado. Apenas Delegado Corregedor.");
   }
 }
+const assertDelegado = assertCorregedor;
 
 export const excluirUsuario = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -33,8 +35,8 @@ export const excluirUsuario = createServerFn({ method: "POST" })
       .select("role")
       .eq("user_id", data.user_id)
       .maybeSingle();
-    if (alvo && (DELEGADO_ROLES as readonly string[]).includes(alvo.role)) {
-      throw new Error("Delegados não podem ser excluídos por esta ação.");
+    if (alvo && alvo.role === "delegado_corregedor") {
+      throw new Error("O Delegado Corregedor não pode ser excluído por esta ação.");
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.auth.admin.deleteUser(data.user_id);
@@ -116,14 +118,14 @@ export const alterarStatusUsuario = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertDelegado(context as never);
-    // Verifica se alvo é editável (cidadão/mp) — delegados não alteram delegados
+    // Corregedor não altera o próprio cargo
     const { data: alvo } = await context.supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", data.user_id)
       .maybeSingle();
-    if (alvo && (DELEGADO_ROLES as readonly string[]).includes(alvo.role)) {
-      throw new Error("Delegados não podem alterar o status de outros Delegados.");
+    if (alvo && alvo.role === "delegado_corregedor") {
+      throw new Error("O Delegado Corregedor não pode ter seu status alterado por esta ação.");
     }
     const { error } = await context.supabase
       .from("profiles")
@@ -155,7 +157,7 @@ export const editarUsuarioPublico = createServerFn({ method: "POST" })
       .eq("user_id", data.user_id)
       .maybeSingle();
     if (!alvo || !(EDITABLE_ROLES as readonly string[]).includes(alvo.role)) {
-      throw new Error("Apenas usuários Cidadão ou Ministério Público podem ser editados.");
+      throw new Error("Este usuário não pode ser editado por esta ação.");
     }
 
     const { error: e1 } = await context.supabase

@@ -628,6 +628,10 @@ export type Database = {
         Args: { _motivo: string; _movimento_id: string }
         Returns: undefined
       }
+      conceder_acesso_mp: {
+        Args: { _denuncia_id: string; _mp_user_id: string }
+        Returns: undefined
+      }
       criar_intimacao: {
         Args: { _denuncia_id: string; _destinatario_id: string; _teor: string }
         Returns: string

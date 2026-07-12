@@ -500,7 +500,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
       let teorFinal: string;
       if (especie === "ipc") {
         teorFinal = montarTeorIpc({
-          unidade: (data?.denuncia.unidade as string | null) ?? null,
+          unidade: ipcUnidade || null,
           protocolo: data?.denuncia.numero_protocolo ?? "",
           policiais: (data?.policiais ?? []).map((p) => ({
             nome: p.nome,

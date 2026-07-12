@@ -3,20 +3,22 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const ROLES = ["delegado_geral", "delegado_corregedor", "corregedor", "cidadao", "mp"] as const;
-const EDITABLE_ROLES = ["cidadao", "mp"] as const;
+const EDITABLE_ROLES = ["delegado_geral", "cidadao", "mp"] as const;
 const STATUS = ["pendente", "ativo", "inativo"] as const;
 const DELEGADO_ROLES = ["delegado_geral", "delegado_corregedor"] as const;
 
-async function assertDelegado(context: { supabase: any; userId: string }) {
+async function assertCorregedor(context: { supabase: any; userId: string }) {
   const { data } = await context.supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", context.userId)
-    .in("role", DELEGADO_ROLES as unknown as string[]);
-  if (!data || data.length === 0) {
-    throw new Error("403: Acesso Negado. Apenas Delegado Geral ou Delegado Corregedor.");
+    .eq("role", "delegado_corregedor")
+    .maybeSingle();
+  if (!data) {
+    throw new Error("403: Acesso Negado. Apenas Delegado Corregedor.");
   }
 }
+const assertDelegado = assertCorregedor;
 
 export const excluirUsuario = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

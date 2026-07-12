@@ -10,7 +10,7 @@ const AnexoSchema = z.object({
 });
 
 const ObsInput = z.object({
-  policial_nome: z.string().trim().min(2).max(200),
+  policial_nome: z.string().trim().max(200).optional().nullable(),
   policial_matricula: z.string().trim().max(50).optional().nullable(),
   policial_cargo: z.string().trim().max(60).optional().nullable(),
   policial_unidade: z.string().trim().max(60).optional().nullable(),

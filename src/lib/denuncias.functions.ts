@@ -364,7 +364,7 @@ export const prorrogar = createServerFn({ method: "POST" })
     await context.supabase.from("movimentos").insert({
       denuncia_id: data.denuncia_id,
       especie: "despacho",
-      teor: `PRORROGAÇÃO +30 DIAS — remarcação de oitiva a pedido do denunciado. Justificativa: ${data.justificativa}`,
+      teor: `Prorrogue-se por 30 (trinta) dias o presente procedimento, considerando a remarcação da oitiva por parte do(s) denunciado(s), nos termos do art.93-C do Manual de Procedimentos.`,
       prorroga: true,
       anexos: anexos as never,
       ...p,

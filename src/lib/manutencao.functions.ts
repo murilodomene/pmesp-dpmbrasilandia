@@ -9,17 +9,18 @@ const CONFIRMACOES: Record<(typeof TIPOS)[number], string> = {
   avisos: "AVISOS",
 };
 
-async function requireDelegadoGeral(context: { supabase: any; userId: string }) {
+async function requireDelegadoCorregedor(context: { supabase: any; userId: string }) {
   const { data: role, error } = await context.supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", context.userId)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!role || (role as { role: string }).role !== "delegado_geral") {
-    throw new Error("Apenas o Delegado Geral pode acessar a Manutenção.");
+  if (!role || (role as { role: string }).role !== "delegado_corregedor") {
+    throw new Error("Apenas o Delegado Corregedor pode acessar a Manutenção.");
   }
 }
+
 
 export const limparDados = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -32,7 +33,7 @@ export const limparDados = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    await requireDelegadoGeral(context as any);
+    await requireDelegadoCorregedor(context as any);
     if (data.confirmacao.trim().toUpperCase() !== CONFIRMACOES[data.tipo]) {
       throw new Error(`Digite exatamente ${CONFIRMACOES[data.tipo]} para confirmar.`);
     }

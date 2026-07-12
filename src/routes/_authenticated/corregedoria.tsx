@@ -22,7 +22,7 @@ import {
   desentranharOitiva,
   atualizarObservacoes,
   atualizarNatureza,
-  atualizarUnidade,
+  
   retificarDenunciado,
   lavrarPortaria,
   alternarPublicacaoIpc,
@@ -467,7 +467,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
       }
     | { kind: "prorrogar" }
     | { kind: "oitiva" }
-    | { kind: "retificar"; policial: { id: string; nome: string; rg_funcional: string | null } }
+    | { kind: "retificar"; policial: { id: string; nome: string; rg_funcional: string | null; unidade: string | null } }
     | { kind: "excluir" }
     | { kind: "cancelarMov"; movimento_id: string; resumo: string }
     | { kind: "recurso" }
@@ -491,7 +491,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     }
   }, [data?.denuncia]);
 
-  const unidadeFn = useServerFn(atualizarUnidade);
+  
 
   const mLancar = useMutation({
     mutationFn: () => {
@@ -665,7 +665,12 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                         onClick={() =>
                           setDialog({
                             kind: "retificar",
-                            policial: { id: p.id, nome: p.nome, rg_funcional: p.rg_funcional ?? null },
+                            policial: {
+                              id: p.id,
+                              nome: p.nome,
+                              rg_funcional: p.rg_funcional ?? null,
+                              unidade: p.unidade ?? null,
+                            },
                           })
                         }
                         className="rounded-md border border-border p-1 text-muted-foreground hover:bg-surface-2 hover:text-foreground"
@@ -678,24 +683,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
               </div>
             </Row>
 
-            <Row k="Unidade">
-              <select
-                value={denuncia.unidade ?? ""}
-                onChange={(e) =>
-                  unidadeFn({ data: { denuncia_id: id, unidade: e.target.value as typeof UNIDADES[number] } }).then(
-                    () => qc.invalidateQueries({ queryKey: ["denuncia", id] }),
-                  )
-                }
-                className="rounded-md border border-border bg-input px-2 py-1 text-sm"
-              >
-                <option value="">Selecionar...</option>
-                {UNIDADES.map((u) => (
-                  <option key={u} value={u}>
-                    {u}
-                  </option>
-                ))}
-              </select>
-            </Row>
+
             <Row k="Ocorrência">
               {denuncia.ocorrencia_data
                 ? new Date(denuncia.ocorrencia_data).toLocaleDateString("pt-BR")
@@ -2275,13 +2263,14 @@ function RetificarDialog({
   onClose,
 }: {
   denunciaId: string;
-  policial: { id: string; nome: string; rg_funcional: string | null };
+  policial: { id: string; nome: string; rg_funcional: string | null; unidade: string | null };
   onClose: () => void;
 }) {
   const qc = useQueryClient();
   const fn = useServerFn(retificarDenunciado);
   const [nome, setNome] = useState(policial.nome);
   const [mat, setMat] = useState(policial.rg_funcional ?? "");
+  const [unidade, setUnidade] = useState<string>(policial.unidade ?? "");
   const [motivo, setMotivo] = useState("");
   const m = useMutation({
     mutationFn: () =>
@@ -2290,6 +2279,7 @@ function RetificarDialog({
           policial_id: policial.id,
           nome,
           rg_funcional: mat || null,
+          unidade: (unidade || null) as typeof UNIDADES[number] | null,
           motivo: motivo || null,
         },
       }),
@@ -2300,7 +2290,9 @@ function RetificarDialog({
     },
   });
   const semMudanca =
-    nome.trim() === policial.nome && (mat.trim() || null) === (policial.rg_funcional ?? null);
+    nome.trim() === policial.nome &&
+    (mat.trim() || null) === (policial.rg_funcional ?? null) &&
+    (unidade || null) === (policial.unidade ?? null);
   return (
     <Modal title="Retificar denunciado" onClose={onClose}>
       <label className="grid gap-1.5">
@@ -2311,6 +2303,22 @@ function RetificarDialog({
         <span className="text-xs uppercase tracking-wider text-muted-foreground">Matrícula</span>
         <input className="input" value={mat} onChange={(e) => setMat(e.target.value)} />
       </label>
+      <label className="mt-3 grid gap-1.5">
+        <span className="text-xs uppercase tracking-wider text-muted-foreground">Unidade</span>
+        <select
+          className="input"
+          value={unidade}
+          onChange={(e) => setUnidade(e.target.value)}
+        >
+          <option value="">Selecionar...</option>
+          {UNIDADES.map((u) => (
+            <option key={u} value={u}>
+              {u}
+            </option>
+          ))}
+        </select>
+      </label>
+
       <label className="mt-3 grid gap-1.5">
         <span className="text-xs uppercase tracking-wider text-muted-foreground">
           Motivo (opcional)

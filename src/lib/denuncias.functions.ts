@@ -497,6 +497,7 @@ export const retificarDenunciado = createServerFn({ method: "POST" })
         policial_id: z.string().uuid(),
         nome: z.string().trim().min(1).max(200),
         rg_funcional: z.string().trim().max(50).optional().nullable(),
+        unidade: z.enum(UNIDADES).optional().nullable(),
         motivo: z.string().trim().max(2000).optional().nullable(),
       })
       .parse(data),
@@ -516,24 +517,28 @@ export const retificarDenunciado = createServerFn({ method: "POST" })
 
     const novoNome = data.nome.trim();
     const novaMat = (data.rg_funcional ?? "").trim() || null;
+    const novaUnidade = data.unidade ?? null;
     const antigoNome = pol.nome;
     const antigaMat = pol.rg_funcional ?? null;
+    const antigaUnidade = pol.unidade ?? null;
 
-    if (novoNome === antigoNome && novaMat === antigaMat) {
+    if (novoNome === antigoNome && novaMat === antigaMat && novaUnidade === antigaUnidade) {
       return { changed: false };
     }
 
     const { error: updErr } = await context.supabase
       .from("denuncia_policiais")
-      .update({ nome: novoNome, rg_funcional: novaMat })
+      .update({ nome: novoNome, rg_funcional: novaMat, unidade: novaUnidade })
       .eq("id", data.policial_id);
     if (updErr) throw new Error(updErr.message);
 
-    const fmt = (n: string, m: string | null) => `"${n} (${m ?? "sem matrícula"})"`;
+    const fmt = (n: string, m: string | null, u: string | null) =>
+      `"${n} (${m ?? "sem matrícula"}${u ? `, ${u}` : ""})"`;
     const motivoTxt = data.motivo?.trim() ? ` Motivo: ${data.motivo.trim()}.` : "";
     const teor =
-      `Denunciado retificado de ${fmt(antigoNome, antigaMat)} para ${fmt(novoNome, novaMat)}.` +
+      `Denunciado retificado de ${fmt(antigoNome, antigaMat, antigaUnidade)} para ${fmt(novoNome, novaMat, novaUnidade)}.` +
       motivoTxt;
+
 
     const { error: movErr } = await context.supabase.from("movimentos").insert({
       denuncia_id: pol.denuncia_id,

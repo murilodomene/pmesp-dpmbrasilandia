@@ -2,11 +2,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const TIPOS = ["processos", "pdos", "avisos"] as const;
+const TIPOS = ["processos", "pdos", "avisos", "observacoes"] as const;
 const CONFIRMACOES: Record<(typeof TIPOS)[number], string> = {
   processos: "PROCESSOS",
   pdos: "PDOS",
   avisos: "AVISOS",
+  observacoes: "OBSERVACOES",
 };
 
 async function requireDelegadoCorregedor(context: { supabase: any; userId: string }) {
@@ -42,7 +43,9 @@ export const limparDados = createServerFn({ method: "POST" })
         ? "manutencao_limpar_processos"
         : data.tipo === "pdos"
           ? "manutencao_limpar_pdos"
-          : "manutencao_limpar_avisos";
+          : data.tipo === "avisos"
+            ? "manutencao_limpar_avisos"
+            : "manutencao_limpar_observacoes";
     const { data: res, error } = await (context.supabase as any).rpc(rpc);
     if (error) throw new Error(error.message);
     return res as { removidos: number };

@@ -777,6 +777,7 @@ export type Database = {
       is_active_staff: { Args: { _user_id: string }; Returns: boolean }
       is_delegado: { Args: { _user_id: string }; Returns: boolean }
       manutencao_limpar_avisos: { Args: never; Returns: Json }
+      manutencao_limpar_observacoes: { Args: never; Returns: Json }
       manutencao_limpar_pdos: { Args: never; Returns: Json }
       manutencao_limpar_processos: { Args: never; Returns: Json }
       marcar_notificacao_lida: {

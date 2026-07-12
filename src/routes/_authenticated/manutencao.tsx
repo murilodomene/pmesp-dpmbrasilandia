@@ -41,7 +41,7 @@ export const Route = createFileRoute("/_authenticated/manutencao")({
   component: ManutencaoPage,
 });
 
-type Tipo = "processos" | "pdos" | "avisos";
+type Tipo = "processos" | "pdos" | "avisos" | "observacoes";
 
 const CARDS: Array<{
   tipo: Tipo;
@@ -67,6 +67,13 @@ const CARDS: Array<{
     titulo: "Limpar avisos",
     descricao: "Remove TODOS os avisos publicados. Reinicia a numeração dos avisos.",
     palavra: "AVISOS",
+  },
+  {
+    tipo: "observacoes",
+    titulo: "Limpar observações da Corregedoria",
+    descricao:
+      "Remove TODAS as observações internas da Corregedoria, seus vínculos com PADs e as imagens anexadas no armazenamento privado. Os indicadores de observação nos PADs desaparecem automaticamente.",
+    palavra: "OBSERVACOES",
   },
 ];
 

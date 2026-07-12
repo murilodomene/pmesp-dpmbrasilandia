@@ -606,21 +606,26 @@ export const retificarDenunciado = createServerFn({ method: "POST" })
       .eq("id", data.policial_id);
     if (updErr) throw new Error(updErr.message);
 
-    const fmt = (n: string, m: string | null, u: string | null, c: string | null) =>
-      `"${n} (${m ?? "sem matrícula"}${u ? `, ${u}` : ""}${c ? `, ${c}` : ""})"`;
-    const motivoTxt = data.motivo?.trim() ? ` Motivo: ${data.motivo.trim()}.` : "";
-    const teor =
-      `Denunciado retificado de ${fmt(antigoNome, antigaMat, antigaUnidade, antigoCargo)} para ${fmt(novoNome, novaMat, novaUnidade, novoCargo)}.` +
-      motivoTxt;
+    const outrosMudaram =
+      novoNome !== antigoNome || novaMat !== antigaMat || novaUnidade !== antigaUnidade;
 
+    if (outrosMudaram) {
+      const fmt = (n: string, m: string | null, u: string | null, c: string | null) =>
+        `"${n} (${m ?? "sem matrícula"}${u ? `, ${u}` : ""}${c ? `, ${c}` : ""})"`;
+      const motivoTxt = data.motivo?.trim() ? ` Motivo: ${data.motivo.trim()}.` : "";
+      const teor =
+        `Denunciado retificado de ${fmt(antigoNome, antigaMat, antigaUnidade, antigoCargo)} para ${fmt(novoNome, novaMat, novaUnidade, novoCargo)}.` +
+        motivoTxt;
 
-    const { error: movErr } = await context.supabase.from("movimentos").insert({
-      denuncia_id: pol.denuncia_id,
-      especie: "retificacao",
-      teor,
-      ...p,
-    });
-    if (movErr) throw new Error(movErr.message);
+      const { error: movErr } = await context.supabase.from("movimentos").insert({
+        denuncia_id: pol.denuncia_id,
+        especie: "retificacao",
+        teor,
+        ...p,
+      });
+      if (movErr) throw new Error(movErr.message);
+    }
+
 
     return { changed: true };
   });

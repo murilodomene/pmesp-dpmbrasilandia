@@ -21,9 +21,11 @@ type Doc = {
 
 const DOC_ORDER = ["manual", "regimento", "fardamentos", "hierarquia"];
 
+type TocEntry = { id: string; label: string; chapter?: string };
+
 // Insert stable anchor IDs into headings referencing articles.
-function anchorize(html: string): { html: string; toc: { id: string; label: string }[] } {
-  const toc: { id: string; label: string }[] = [];
+function anchorize(html: string): { html: string; toc: TocEntry[] } {
+  const toc: TocEntry[] = [];
   const seen = new Set<string>();
   const re = /(Artigo|Art\.?)\s*(\d+)\s*(º|°)?/gi;
   const withAnchors = html.replace(re, (match, _p1, num) => {
@@ -36,12 +38,113 @@ function anchorize(html: string): { html: string; toc: { id: string; label: stri
   return { html: withAnchors, toc };
 }
 
+// Detect legal-style content (Manual, Regimento): has "Art. N" markers.
+function isLegalDoc(md: string): boolean {
+  return /^\s*Art\.?\s*\d+/m.test(md);
+}
+
+const escHtml = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+// Legal document formatter: recognizes CAPÍTULO/TÍTULO/SEÇÃO, section headings
+// in all caps, "Art. N", incisos (I., II., ...), and § / Parágrafo único.
+// Preserves stable `art-N` anchors used by Portaria Inaugural links.
+function legalToHtml(md: string): { html: string; toc: TocEntry[] } {
+  const toc: TocEntry[] = [];
+  const seen = new Set<string>();
+  let currentChapter: string | undefined;
+
+  const chapterRe = /^(CAPÍTULO|TÍTULO|LIVRO|SEÇÃO|SUBSEÇÃO|PARTE)\s+[IVXLCDM\d]+.*$/i;
+  const articleRe = /^(Art\.?\s*\d+[ºo°]?)\s*[-–.]?\s*(.*)$/;
+  const paragraphRe = /^(§\s*\d+[ºo°]?|Parágrafo único\.?)\s*[-–.]?\s*(.*)$/i;
+  const romanRe = /^([IVXLCDM]+)\s*[.\-–)]\s+(.+)$/;
+  const allCapsRe = /^[A-ZÁÉÍÓÚÂÊÔÛÃÕÇÑ0-9 ,\-–:'"()/º°ª§]+$/;
+
+  const lines = md.split(/\n/);
+  const out: string[] = [];
+  let inList = false;
+  const closeList = () => {
+    if (inList) {
+      out.push("</ol>");
+      inList = false;
+    }
+  };
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) {
+      closeList();
+      continue;
+    }
+
+    if (chapterRe.test(line)) {
+      closeList();
+      currentChapter = line;
+      out.push(
+        `<h2 class="mt-10 mb-3 border-b border-border/60 pb-2 font-serif text-lg font-semibold uppercase tracking-[0.2em] text-primary">${escHtml(line)}</h2>`,
+      );
+      continue;
+    }
+
+    let m: RegExpMatchArray | null;
+    if ((m = line.match(articleRe))) {
+      closeList();
+      const label = m[1].replace(/\s+/g, " ").trim();
+      const numMatch = label.match(/(\d+)/);
+      const num = numMatch?.[1];
+      const id = num ? `art-${num}` : "";
+      let idAttr = "";
+      if (id && !seen.has(id)) {
+        seen.add(id);
+        idAttr = ` id="${id}"`;
+        toc.push({ id, label: `Art. ${num}`, chapter: currentChapter });
+      }
+      const rest = inline(escHtml(m[2] ?? ""));
+      out.push(
+        `<p${idAttr} class="mt-6 scroll-mt-24 text-justify leading-relaxed"><strong class="text-primary">${escHtml(label)}</strong> ${rest}</p>`,
+      );
+      continue;
+    }
+
+    if ((m = line.match(paragraphRe))) {
+      closeList();
+      const label = m[1].trim();
+      const rest = inline(escHtml(m[2] ?? ""));
+      out.push(
+        `<p class="mt-3 pl-4 text-justify leading-relaxed"><strong class="text-foreground">${escHtml(label)}</strong> ${rest}</p>`,
+      );
+      continue;
+    }
+
+    if ((m = line.match(romanRe))) {
+      if (!inList) {
+        out.push(`<ol class="my-3 list-none space-y-1 pl-8">`);
+        inList = true;
+      }
+      out.push(
+        `<li class="text-justify leading-relaxed"><span class="mr-2 font-medium text-muted-foreground">${escHtml(m[1])}.</span>${inline(escHtml(m[2]))}</li>`,
+      );
+      continue;
+    }
+
+    if (line.length > 3 && line.length < 140 && allCapsRe.test(line)) {
+      closeList();
+      out.push(
+        `<h3 class="mt-8 mb-2 font-serif text-base font-semibold uppercase tracking-widest text-foreground/90">${escHtml(line)}</h3>`,
+      );
+      continue;
+    }
+
+    closeList();
+    out.push(`<p class="mt-2 leading-relaxed">${inline(escHtml(line))}</p>`);
+  }
+  closeList();
+  return { html: out.join("\n"), toc };
+}
+
 // Very small markdown -> HTML (headings, bold, italics, lists, paragraphs).
 function mdToHtml(md: string): string {
-  const esc = md
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  const esc = escHtml(md);
   const lines = esc.split(/\n/);
   const out: string[] = [];
   let inList = false;

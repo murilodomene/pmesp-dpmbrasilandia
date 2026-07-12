@@ -317,7 +317,9 @@ function DocumentosPage() {
               )}
             </header>
 
-            {isHierarquia ? (
+            {isFluxo ? (
+              <FluxoPAD />
+            ) : isHierarquia ? (
               <HierarquiaQuadro cargo={cargo} />
             ) : editando ? (
               <div className="p-6">

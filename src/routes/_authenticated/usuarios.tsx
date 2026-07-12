@@ -52,7 +52,7 @@ const CARGO_LABEL: Record<string, string> = {
   mp: "Ministério Público",
 };
 
-const DELEGADO_CARGOS = new Set(["delegado_geral", "delegado_corregedor"]);
+const DELEGADO_CARGOS = new Set(["delegado_corregedor"]);
 const EDITAVEIS = new Set(["cidadao", "mp"]);
 
 interface Usuario {
@@ -111,7 +111,7 @@ function UsuariosPage() {
           <ShieldAlert className="h-12 w-12 text-destructive" />
           <h1 className="mt-4 font-serif text-2xl">403 — Acesso Negado</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Apenas Delegado Geral ou Delegado Corregedor podem acessar esta área.
+            Apenas o Delegado Corregedor pode acessar esta área.
           </p>
         </div>
       </div>

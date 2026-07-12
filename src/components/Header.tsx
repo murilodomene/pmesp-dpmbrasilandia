@@ -43,6 +43,7 @@ export function Header() {
   const isCidadao = cargo === "cidadao";
   const isMp = cargo === "mp";
   const isStaff = ativo && cargo && !isCidadao && !isMp;
+  const isDelegadoCorregedor = ativo && cargo === "delegado_corregedor";
 
 
   return (
@@ -76,6 +77,7 @@ export function Header() {
               <NavLink to="/corregedoria">Corregedoria</NavLink>
               <NavLink to="/pdo">PDO</NavLink>
               <NavLink to="/documentos">Documentos</NavLink>
+              {isDelegadoCorregedor && <NavLink to="/usuarios">Gestão de Usuários</NavLink>}
             </>
           )}
 

@@ -480,6 +480,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
   const [especie, setEspecie] = useState<"despacho" | "decisao" | "ipc" | null>(null);
   const [teor, setTeor] = useState("");
   const [ipcUnidade, setIpcUnidade] = useState<string>("");
+  const [ipcIdent, setIpcIdent] = useState<string>("");
   const [anexos, setAnexos] = useState<AtoAnexo[]>([]);
 
   const obsFn = useServerFn(atualizarObservacoes);
@@ -502,10 +503,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
         teorFinal = montarTeorIpc({
           unidade: ipcUnidade || null,
           protocolo: data?.denuncia.numero_protocolo ?? "",
-          policiais: (data?.policiais ?? []).map((p) => ({
-            nome: p.nome,
-            rg_funcional: p.rg_funcional ?? null,
-          })),
+          identificacao: ipcIdent.trim(),
           relato: sanitizeAtoHtml(teor),
         });
       } else {
@@ -871,7 +869,16 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 } else {
                   setTeor("");
                   setAnexos([]);
-                  if (e.v === "ipc") setIpcUnidade((denuncia.unidade as string | null) ?? "");
+                  if (e.v === "ipc") {
+                    setIpcUnidade((denuncia.unidade as string | null) ?? "");
+                    setIpcIdent(
+                      policiais.length
+                        ? policiais
+                            .map((p) => `${p.nome}${p.rg_funcional ? ` — ${p.rg_funcional}` : ""}`)
+                            .join("; ")
+                        : "",
+                    );
+                  }
                   setEspecie(e.v);
                 }
               }}
@@ -903,16 +910,18 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                   </select>
                 </div>
                 <IpcCampoAuto label="1º Processo número" valor={denuncia.numero_protocolo} />
-                <IpcCampoAuto
-                  label="2º Identificação do policial"
-                  valor={
-                    policiais.length
-                      ? policiais
-                          .map((p) => `${p.nome}${p.rg_funcional ? ` — ${p.rg_funcional}` : ""}`)
-                          .join("; ")
-                      : "Não identificado"
-                  }
-                />
+                <div>
+                  <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                    2º Identificação do policial
+                  </span>
+                  <textarea
+                    value={ipcIdent}
+                    onChange={(ev) => setIpcIdent(ev.target.value)}
+                    rows={2}
+                    placeholder="Nome — RG; Nome — RG"
+                    className="mt-1 w-full rounded-md border border-border bg-surface-2 px-2 py-1.5 text-sm"
+                  />
+                </div>
                 <div>
                   <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
                     3º Relato do fato
@@ -1347,20 +1356,15 @@ function IpcCampoAuto({ label, valor }: { label: string; valor: string }) {
 function montarTeorIpc(params: {
   unidade: string | null;
   protocolo: string;
-  policiais: Array<{ nome: string; rg_funcional: string | null }>;
+  identificacao: string;
   relato: string;
 }): string {
-  const ident = params.policiais.length
-    ? params.policiais
-        .map((p) => `${p.nome}${p.rg_funcional ? ` — ${p.rg_funcional}` : ""}`)
-        .join("; ")
-    : "";
   return [
     `| UNIDADE: ${params.unidade || "—"}`,
     ``,
     `| 1º PROCESSO NÚMERO: ${params.protocolo}`,
     ``,
-    `| 2º IDENTIFICAÇÃO DO POLICIAL: ${ident}`,
+    `| 2º IDENTIFICAÇÃO DO POLICIAL: ${params.identificacao || "—"}`,
     ``,
     `| 3º RELATO DO FATO:`,
     params.relato.trim(),

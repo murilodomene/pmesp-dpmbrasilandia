@@ -81,6 +81,10 @@ interface Usuario {
   cargo: string | null;
   email: string | null;
   created_at: string;
+  rg: string | null;
+  discord_id: string | null;
+  telefone: string | null;
+  foto_path: string | null;
 }
 
 function UsuariosPage() {

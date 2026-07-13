@@ -41,7 +41,7 @@ export function Header() {
     }
     supabase
       .from("profiles")
-      .select("nome, status")
+      .select("nome, status, foto_path")
       .eq("id", session.user.id)
       .maybeSingle()
       .then(({ data }) => setProfile(data as Profile | null));

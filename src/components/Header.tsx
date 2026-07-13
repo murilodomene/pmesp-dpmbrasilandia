@@ -1,20 +1,31 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, LogOut, UserCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { NotificacoesBell } from "@/components/NotificacoesBell";
+import { UserAvatar } from "@/components/UserAvatar";
 
 interface Profile {
   nome: string;
   status: "pendente" | "ativo" | "inativo";
+  foto_path: string | null;
 }
+
+const CARGO_LABEL: Record<string, string> = {
+  delegado_geral: "Delegado Geral",
+  delegado_corregedor: "Delegado Corregedor",
+  corregedor: "Corregedor",
+  cidadao: "Cidadão",
+  mp: "Ministério Público",
+};
 
 export function Header() {
   const { session, loading } = useSession();

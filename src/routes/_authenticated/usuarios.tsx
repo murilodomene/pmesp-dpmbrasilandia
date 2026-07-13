@@ -119,6 +119,7 @@ function UsuariosPage() {
       return (
         u.nome.toLowerCase().includes(q) ||
         (u.email ?? "").toLowerCase().includes(q) ||
+        (u.rg ?? "").toLowerCase().includes(q) ||
         (u.cargo ? CARGO_LABEL[u.cargo] ?? u.cargo : "").toLowerCase().includes(q)
       );
     });

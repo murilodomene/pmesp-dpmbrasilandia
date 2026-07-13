@@ -670,26 +670,38 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          discord_id: string | null
+          foto_path: string | null
           id: string
           matricula: string
           nome: string
+          rg: string | null
           status: Database["public"]["Enums"]["profile_status"]
+          telefone: string | null
           unidade: Database["public"]["Enums"]["unidade_pc"] | null
         }
         Insert: {
           created_at?: string
+          discord_id?: string | null
+          foto_path?: string | null
           id: string
           matricula: string
           nome: string
+          rg?: string | null
           status?: Database["public"]["Enums"]["profile_status"]
+          telefone?: string | null
           unidade?: Database["public"]["Enums"]["unidade_pc"] | null
         }
         Update: {
           created_at?: string
+          discord_id?: string | null
+          foto_path?: string | null
           id?: string
           matricula?: string
           nome?: string
+          rg?: string | null
           status?: Database["public"]["Enums"]["profile_status"]
+          telefone?: string | null
           unidade?: Database["public"]["Enums"]["unidade_pc"] | null
         }
         Relationships: []

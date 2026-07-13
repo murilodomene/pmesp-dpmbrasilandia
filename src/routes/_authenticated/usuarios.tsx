@@ -3,10 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Search, Edit3, ShieldAlert, UserX, UserCheck, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Header } from "@/components/Header";
+import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -81,6 +82,10 @@ interface Usuario {
   cargo: string | null;
   email: string | null;
   created_at: string;
+  rg: string | null;
+  discord_id: string | null;
+  telefone: string | null;
+  foto_path: string | null;
 }
 
 function UsuariosPage() {
@@ -115,6 +120,7 @@ function UsuariosPage() {
       return (
         u.nome.toLowerCase().includes(q) ||
         (u.email ?? "").toLowerCase().includes(q) ||
+        (u.rg ?? "").toLowerCase().includes(q) ||
         (u.cargo ? CARGO_LABEL[u.cargo] ?? u.cargo : "").toLowerCase().includes(q)
       );
     });
@@ -159,7 +165,7 @@ function UsuariosPage() {
             <Input
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
-              placeholder="Buscar por nome, e-mail ou perfil…"
+              placeholder="Buscar por nome, RG, e-mail ou perfil…"
               className="pl-9"
             />
           </div>
@@ -292,6 +298,12 @@ function EditarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: (
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [cargo, setCargo] = useState<"delegado_geral" | "corregedor" | "cidadao" | "mp">("cidadao");
+  const [rg, setRg] = useState("");
+  const [discord, setDiscord] = useState("");
+  const [telefone, setTelefone] = useState("");
+  const [fotoPath, setFotoPath] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const open = !!usuario;
 
@@ -300,12 +312,27 @@ function EditarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: (
       setNome(usuario.nome);
       setEmail(usuario.email ?? "");
       setCargo((usuario.cargo as "delegado_geral" | "corregedor" | "cidadao" | "mp") ?? "cidadao");
+      setRg(usuario.rg ?? "");
+      setDiscord(usuario.discord_id ?? "");
+      setTelefone(usuario.telefone ?? "");
+      setFotoPath(usuario.foto_path);
     }
   });
 
   const m = useMutation({
     mutationFn: () =>
-      editarFn({ data: { user_id: usuario!.id, nome, email, cargo } }),
+      editarFn({
+        data: {
+          user_id: usuario!.id,
+          nome,
+          email,
+          cargo,
+          rg: rg.trim() || null,
+          discord_id: discord.trim() || null,
+          telefone: telefone.trim() || null,
+          foto_path: fotoPath,
+        },
+      }),
     onSuccess: () => {
       toast.success("Usuário atualizado com sucesso.");
       qc.invalidateQueries({ queryKey: ["usuarios"] });
@@ -314,38 +341,88 @@ function EditarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: (
     onError: (e) => toast.error(e instanceof Error ? e.message : "Erro ao atualizar."),
   });
 
+  async function onSelectFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !usuario) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Selecione uma imagem.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Imagem até 5 MB.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `${usuario.id}/avatar-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (error) throw error;
+      setFotoPath(path);
+      toast.success("Foto enviada.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha no upload.");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar usuário</DialogTitle>
-          <DialogDescription>Altere os dados do cadastro público.</DialogDescription>
+          <DialogDescription>Altere os dados do cadastro.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
-          <div>
-            <Label>Nome</Label>
-            <Input value={nome} onChange={(e) => setNome(e.target.value)} />
+          <div className="flex items-center gap-3">
+            <UserAvatar path={fotoPath} name={nome} size={56} />
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onSelectFile} />
+            <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading}>
+              {uploading ? "Enviando…" : "Trocar foto"}
+            </Button>
           </div>
-          <div>
-            <Label>E-mail</Label>
-            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-          </div>
-          <div>
-            <Label>Perfil</Label>
-            <Select value={cargo} onValueChange={(v) => setCargo(v as "delegado_geral" | "corregedor" | "cidadao" | "mp")}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="cidadao">Cidadão</SelectItem>
-                <SelectItem value="mp">Ministério Público</SelectItem>
-                <SelectItem value="corregedor">Corregedor</SelectItem>
-                <SelectItem value="delegado_geral">Delegado Geral</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <Label>Nome</Label>
+              <Input value={nome} onChange={(e) => setNome(e.target.value)} />
+            </div>
+            <div>
+              <Label>E-mail</Label>
+              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            </div>
+            <div>
+              <Label>RG</Label>
+              <Input value={rg} onChange={(e) => setRg(e.target.value)} />
+            </div>
+            <div>
+              <Label>Discord ID</Label>
+              <Input value={discord} onChange={(e) => setDiscord(e.target.value)} />
+            </div>
+            <div>
+              <Label>Telefone</Label>
+              <Input value={telefone} onChange={(e) => setTelefone(e.target.value)} />
+            </div>
+            <div>
+              <Label>Perfil</Label>
+              <Select value={cargo} onValueChange={(v) => setCargo(v as "delegado_geral" | "corregedor" | "cidadao" | "mp")}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cidadao">Cidadão</SelectItem>
+                  <SelectItem value="mp">Ministério Público</SelectItem>
+                  <SelectItem value="corregedor">Corregedor</SelectItem>
+                  <SelectItem value="delegado_geral">Delegado Geral</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button onClick={() => m.mutate()} disabled={m.isPending}>
+          <Button onClick={() => m.mutate()} disabled={m.isPending || uploading}>
             {m.isPending ? "Salvando…" : "Salvar"}
           </Button>
         </DialogFooter>

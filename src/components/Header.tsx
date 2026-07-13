@@ -1,20 +1,31 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, LogOut, UserCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { NotificacoesBell } from "@/components/NotificacoesBell";
+import { UserAvatar } from "@/components/UserAvatar";
 
 interface Profile {
   nome: string;
   status: "pendente" | "ativo" | "inativo";
+  foto_path: string | null;
 }
+
+const CARGO_LABEL: Record<string, string> = {
+  delegado_geral: "Delegado Geral",
+  delegado_corregedor: "Delegado Corregedor",
+  corregedor: "Corregedor",
+  cidadao: "Cidadão",
+  mp: "Ministério Público",
+};
 
 export function Header() {
   const { session, loading } = useSession();
@@ -30,7 +41,7 @@ export function Header() {
     }
     supabase
       .from("profiles")
-      .select("nome, status")
+      .select("nome, status, foto_path")
       .eq("id", session.user.id)
       .maybeSingle()
       .then(({ data }) => setProfile(data as Profile | null));
@@ -119,15 +130,35 @@ export function Header() {
           {loading ? null : session ? (
             <div className="flex items-center gap-2 text-sm">
               {isStaff && <NotificacoesBell />}
-              <span className="hidden max-w-[160px] truncate text-muted-foreground sm:inline">
-                {profile?.nome ?? session.user.email}
-              </span>
-              <button
-                onClick={signOut}
-                className="whitespace-nowrap rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
-              >
-                Sair
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger className="group flex items-center gap-2 rounded-md border border-transparent px-2 py-1 transition-colors hover:bg-surface-2 focus:outline-none focus:ring-2 focus:ring-ring">
+                  <UserAvatar path={profile?.foto_path} name={profile?.nome ?? session.user.email} size={30} />
+                  <div className="hidden text-left leading-tight sm:block">
+                    <div className="max-w-[180px] truncate text-xs font-medium text-foreground">
+                      {profile?.nome ?? session.user.email}
+                    </div>
+                    {cargo && (
+                      <div className="max-w-[180px] truncate text-[10px] uppercase tracking-wide text-muted-foreground">
+                        {CARGO_LABEL[cargo] ?? cargo}
+                      </div>
+                    )}
+                  </div>
+                  <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-[200px]">
+                  <DropdownMenuItem asChild>
+                    <Link to="/perfil" className="cursor-pointer">
+                      <UserCircle className="mr-2 h-4 w-4" />
+                      Perfil
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={signOut} className="cursor-pointer text-destructive focus:text-destructive">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sair
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           ) : (
             <div className="flex flex-nowrap items-center gap-1.5">

@@ -20,6 +20,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
+import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedPendenteRouteImport } from './routes/_authenticated/pendente'
 import { Route as AuthenticatedPdoRouteImport } from './routes/_authenticated/pdo'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
@@ -83,6 +84,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
   id: '/usuarios',
   path: '/usuarios',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPerfilRoute = AuthenticatedPerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedPendenteRoute = AuthenticatedPendenteRouteImport.update({
@@ -160,6 +166,7 @@ export interface FileRoutesByFullPath {
   '/painel': typeof AuthenticatedPainelRoute
   '/pdo': typeof AuthenticatedPdoRoute
   '/pendente': typeof AuthenticatedPendenteRoute
+  '/perfil': typeof AuthenticatedPerfilRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
 }
 export interface FileRoutesByTo {
@@ -182,6 +189,7 @@ export interface FileRoutesByTo {
   '/painel': typeof AuthenticatedPainelRoute
   '/pdo': typeof AuthenticatedPdoRoute
   '/pendente': typeof AuthenticatedPendenteRoute
+  '/perfil': typeof AuthenticatedPerfilRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
 }
 export interface FileRoutesById {
@@ -206,6 +214,7 @@ export interface FileRoutesById {
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
   '/_authenticated/pdo': typeof AuthenticatedPdoRoute
   '/_authenticated/pendente': typeof AuthenticatedPendenteRoute
+  '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
 }
 export interface FileRouteTypes {
@@ -230,6 +239,7 @@ export interface FileRouteTypes {
     | '/painel'
     | '/pdo'
     | '/pendente'
+    | '/perfil'
     | '/usuarios'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -252,6 +262,7 @@ export interface FileRouteTypes {
     | '/painel'
     | '/pdo'
     | '/pendente'
+    | '/perfil'
     | '/usuarios'
   id:
     | '__root__'
@@ -275,6 +286,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel'
     | '/_authenticated/pdo'
     | '/_authenticated/pendente'
+    | '/_authenticated/perfil'
     | '/_authenticated/usuarios'
   fileRoutesById: FileRoutesById
 }
@@ -370,6 +382,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUsuariosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/perfil': {
+      id: '/_authenticated/perfil'
+      path: '/perfil'
+      fullPath: '/perfil'
+      preLoaderRoute: typeof AuthenticatedPerfilRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/pendente': {
       id: '/_authenticated/pendente'
       path: '/pendente'
@@ -454,6 +473,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPainelRoute: typeof AuthenticatedPainelRoute
   AuthenticatedPdoRoute: typeof AuthenticatedPdoRoute
   AuthenticatedPendenteRoute: typeof AuthenticatedPendenteRoute
+  AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
 }
 
@@ -468,6 +488,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPainelRoute: AuthenticatedPainelRoute,
   AuthenticatedPdoRoute: AuthenticatedPdoRoute,
   AuthenticatedPendenteRoute: AuthenticatedPendenteRoute,
+  AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
 }
 
@@ -489,13 +510,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

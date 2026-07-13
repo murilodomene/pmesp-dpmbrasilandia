@@ -144,13 +144,16 @@ export const editarUsuarioPublico = createServerFn({ method: "POST" })
         nome: z.string().trim().min(2).max(200),
         email: z.string().trim().email().max(200),
         cargo: z.enum(EDITABLE_ROLES),
+        rg: z.string().trim().max(50).optional().nullable(),
+        discord_id: z.string().trim().max(100).optional().nullable(),
+        telefone: z.string().trim().max(30).optional().nullable(),
+        foto_path: z.string().trim().max(500).optional().nullable(),
       })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
     await assertDelegado(context as never);
 
-    // Garante que o alvo é cidadão/mp — nunca delegado
     const { data: alvo } = await context.supabase
       .from("user_roles")
       .select("role")
@@ -160,9 +163,15 @@ export const editarUsuarioPublico = createServerFn({ method: "POST" })
       throw new Error("Este usuário não pode ser editado por esta ação.");
     }
 
+    const updates: Record<string, any> = { nome: data.nome };
+    if (data.rg !== undefined) updates.rg = data.rg;
+    if (data.discord_id !== undefined) updates.discord_id = data.discord_id;
+    if (data.telefone !== undefined) updates.telefone = data.telefone;
+    if (data.foto_path !== undefined) updates.foto_path = data.foto_path;
+
     const { error: e1 } = await context.supabase
       .from("profiles")
-      .update({ nome: data.nome })
+      .update(updates as any)
       .eq("id", data.user_id);
     if (e1) throw new Error(e1.message);
 
@@ -188,8 +197,12 @@ export const atualizarPerfil = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) =>
     z
       .object({
-        nome: z.string().trim().min(2).max(200),
-        matricula: z.string().trim().min(1).max(50),
+        nome: z.string().trim().min(2).max(200).optional(),
+        matricula: z.string().trim().min(1).max(50).optional(),
+        rg: z.string().trim().max(50).optional().nullable(),
+        discord_id: z.string().trim().max(100).optional().nullable(),
+        telefone: z.string().trim().max(30).optional().nullable(),
+        foto_path: z.string().trim().max(500).optional().nullable(),
         unidade: z
           .enum(["DEIC", "CORREGEPOL", "DECAP", "DHPP", "CERCO", "GARRA", "DENARC", "GER", "SAT"])
           .optional()
@@ -198,9 +211,30 @@ export const atualizarPerfil = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
+    const { data: roleRow } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    const isCorregedor = roleRow?.role === "delegado_corregedor";
+
+    const updates: Record<string, any> = {};
+    if (data.telefone !== undefined) updates.telefone = data.telefone;
+    if (data.foto_path !== undefined) updates.foto_path = data.foto_path;
+
+    if (isCorregedor) {
+      if (data.nome !== undefined) updates.nome = data.nome;
+      if (data.matricula !== undefined) updates.matricula = data.matricula;
+      if (data.rg !== undefined) updates.rg = data.rg;
+      if (data.discord_id !== undefined) updates.discord_id = data.discord_id;
+      if (data.unidade !== undefined) updates.unidade = data.unidade ?? null;
+    }
+
+    if (Object.keys(updates).length === 0) return { ok: true };
+
     const { error } = await context.supabase
       .from("profiles")
-      .update({ nome: data.nome, matricula: data.matricula, unidade: data.unidade ?? null })
+      .update(updates as any)
       .eq("id", context.userId);
     if (error) throw new Error(error.message);
     return { ok: true };

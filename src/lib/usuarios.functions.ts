@@ -163,7 +163,7 @@ export const editarUsuarioPublico = createServerFn({ method: "POST" })
       throw new Error("Este usuário não pode ser editado por esta ação.");
     }
 
-    const updates: Record<string, unknown> = { nome: data.nome };
+    const updates: Record<string, any> = { nome: data.nome };
     if (data.rg !== undefined) updates.rg = data.rg;
     if (data.discord_id !== undefined) updates.discord_id = data.discord_id;
     if (data.telefone !== undefined) updates.telefone = data.telefone;
@@ -171,7 +171,7 @@ export const editarUsuarioPublico = createServerFn({ method: "POST" })
 
     const { error: e1 } = await context.supabase
       .from("profiles")
-      .update(updates)
+      .update(updates as any)
       .eq("id", data.user_id);
     if (e1) throw new Error(e1.message);
 
@@ -218,7 +218,7 @@ export const atualizarPerfil = createServerFn({ method: "POST" })
       .maybeSingle();
     const isCorregedor = roleRow?.role === "delegado_corregedor";
 
-    const updates: Record<string, unknown> = {};
+    const updates: Record<string, any> = {};
     if (data.telefone !== undefined) updates.telefone = data.telefone;
     if (data.foto_path !== undefined) updates.foto_path = data.foto_path;
 
@@ -234,7 +234,7 @@ export const atualizarPerfil = createServerFn({ method: "POST" })
 
     const { error } = await context.supabase
       .from("profiles")
-      .update(updates)
+      .update(updates as any)
       .eq("id", context.userId);
     if (error) throw new Error(error.message);
     return { ok: true };

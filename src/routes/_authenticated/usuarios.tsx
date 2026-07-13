@@ -164,7 +164,7 @@ function UsuariosPage() {
             <Input
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
-              placeholder="Buscar por nome, e-mail ou perfil…"
+              placeholder="Buscar por nome, RG, e-mail ou perfil…"
               className="pl-9"
             />
           </div>

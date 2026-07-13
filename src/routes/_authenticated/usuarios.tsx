@@ -7,6 +7,7 @@ import { useMemo, useRef, useState } from "react";
 import { Search, Edit3, ShieldAlert, UserX, UserCheck, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Header } from "@/components/Header";
+import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";

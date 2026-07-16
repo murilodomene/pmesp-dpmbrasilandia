@@ -3028,8 +3028,9 @@ function ExcluirMovSilenciosoDialog({
   );
 }
 
-
+function ExportarProcessoBtn({
   denuncia,
+
   policiais,
   movimentos,
 }: {

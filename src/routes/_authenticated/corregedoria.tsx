@@ -33,6 +33,8 @@ import {
   revogarAcessoMp,
   excluirDenuncia,
   cancelarMovimento,
+  excluirMovimentoSilencioso,
+
   registrarRecurso,
   certificarResultadoRecurso,
 } from "@/lib/denuncias.functions";

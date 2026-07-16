@@ -491,6 +491,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     | { kind: "excluir" }
     | { kind: "cancelarMov"; movimento_id: string; resumo: string }
     | { kind: "excluirMov"; movimento_id: string; resumo: string }
+    | { kind: "convocacao" }
 
     | { kind: "recurso" }
     | { kind: "resultadoRecurso" }
@@ -843,6 +844,13 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                     className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-40"
                   >
                     {portariaMov ? "Lavrar nova portaria" : "Lavrar portaria"}
+                  </button>
+                  <button
+                    onClick={() => setDialog({ kind: "convocacao" })}
+                    disabled={suspenso}
+                    className="rounded-md border border-primary/60 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 disabled:opacity-40"
+                  >
+                    Expedir Convocação
                   </button>
                 </div>
               </div>
@@ -1450,6 +1458,13 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
           movimentoId={dialog.movimento_id}
           resumo={dialog.resumo}
           denunciaId={id}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {dialog?.kind === "convocacao" && (
+        <ConvocacaoDialog
+          denunciaId={id}
+          numeroProtocolo={denuncia.numero_protocolo}
           onClose={() => setDialog(null)}
         />
       )}
@@ -3025,6 +3040,161 @@ function ExcluirMovSilenciosoDialog({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  );
+}
+
+const MESES_PT = [
+  "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+  "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
+];
+
+function ConvocacaoDialog({
+  denunciaId,
+  numeroProtocolo,
+  onClose,
+}: {
+  denunciaId: string;
+  numeroProtocolo: string;
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const fn = useServerFn(lancarMovimento);
+  const sessionFn = useServerFn(getSessionInfo);
+  const { data: session } = useQuery({ queryKey: ["session-info"], queryFn: () => sessionFn() });
+
+  const [nome, setNome] = useState("");
+  const [rg, setRg] = useState("");
+  const [unidade, setUnidade] = useState("");
+  const [data, setData] = useState("");
+  const [hora, setHora] = useState("");
+  const [corpo, setCorpo] = useState("");
+  const [modeloAplicado, setModeloAplicado] = useState(false);
+
+  function aplicarModelo() {
+    if (!session?.profile || !session.cargo) return;
+    const nomeFmt = nome.trim() || "[NOME DO POLICIAL CONVOCADO]";
+    const rgFmt = rg.trim() || "[RG]";
+    const uniFmt = unidade.trim() || "[UNIDADE]";
+    let dataHoraLinha = "**DATA E HORA: [DATA] às [HORA]**";
+    if (data) {
+      const [yyyy, mm, dd] = data.split("-");
+      const mesNome = MESES_PT[Math.max(0, Math.min(11, Number(mm) - 1))] ?? "";
+      const [hh, mi] = (hora || "00:00").split(":");
+      dataHoraLinha = `**DATA E HORA: ${Number(dd)} de ${mesNome} de ${yyyy}, às ${hh}h${mi}min**`;
+    }
+    const nomeCorr = session.profile.nome;
+    const cargoCorr = cargoLabelFull(session.cargo);
+
+    const html =
+      `<p><strong>MANDADO DE CITAÇÃO</strong></p>` +
+      `<p>Autos nº ${numeroProtocolo}<br/>Convocado(a): ${nomeFmt}, RG ${rgFmt}, ${uniFmt}</p>` +
+      `<p>${dataHoraLinha.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</p>` +
+      `<p>A Corregedoria Geral da Polícia Civil, no uso de suas atribuições legais e regulamentares, <strong>CONVOCA</strong> o servidor público qualificado neste instrumento a comparecer à 1ª Delegacia da Polícia Civil, no dia e horário indicados, a fim de prestar esclarecimentos.</p>` +
+      `<p>O não comparecimento sem justificativa acarretará em sanções disciplinares administrativas. Caso não possa comparecer na data e local informados, deve-se entrar em contato via ticket, apresentando justificativa.</p>` +
+      `<p>Fica o servidor, ainda, <strong>CIENTIFICADO</strong> dos seguintes termos:</p>` +
+      `<p><strong>1)</strong> Da faculdade de constituir advogado regularmente inscrito na OAB para acompanhar o ato;</p>` +
+      `<p><strong>2)</strong> De que a ausência de defensor constituído não impedirá a realização do ato, resguardado o direito ao silêncio quanto a perguntas que possam implicar autoacusação;</p>` +
+      `<p><strong>3)</strong> Do dever de manter seus dados cadastrais e de contato devidamente atualizados perante a administração policial.</p>` +
+      `<p>São Paulo/SP, na data da assinatura digital.</p>` +
+      `<p style="text-align:center"><strong>${nomeCorr}</strong></p>` +
+      `<p style="text-align:center"><strong>${cargoCorr}</strong></p>`;
+
+    setCorpo(html);
+    setModeloAplicado(true);
+  }
+
+  const m = useMutation({
+    mutationFn: () =>
+      fn({
+        data: {
+          denuncia_id: denunciaId,
+          especie: "despacho",
+          teor: sanitizeAtoHtml(corpo),
+          anexos: [],
+        },
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["denuncia", denunciaId] });
+      qc.invalidateQueries({ queryKey: ["denuncias"] });
+      toast.success("Convocação expedida.");
+      onClose();
+    },
+    onError: (e) => {
+      toast.error(e instanceof Error ? e.message : "Falha ao expedir convocação.");
+    },
+  });
+
+  const camposFaltando = !nome.trim() || !rg.trim() || !unidade.trim() || !data || !hora;
+
+  return (
+    <Modal title="Expedir Convocação" onClose={onClose} size="3xl">
+      <div className="grid gap-3 rounded-md border border-border/60 p-3 md:grid-cols-2">
+        <label className="grid gap-1 text-xs md:col-span-2">
+          <span className="text-muted-foreground">Nome do policial convocado</span>
+          <input className="input" value={nome} onChange={(e) => setNome(e.target.value)} />
+        </label>
+        <label className="grid gap-1 text-xs">
+          <span className="text-muted-foreground">RG</span>
+          <input className="input" value={rg} onChange={(e) => setRg(e.target.value)} />
+        </label>
+        <label className="grid gap-1 text-xs">
+          <span className="text-muted-foreground">Unidade</span>
+          <input className="input" value={unidade} onChange={(e) => setUnidade(e.target.value)} />
+        </label>
+        <label className="grid gap-1 text-xs">
+          <span className="text-muted-foreground">Data</span>
+          <input type="date" className="input" value={data} onChange={(e) => setData(e.target.value)} />
+        </label>
+        <label className="grid gap-1 text-xs">
+          <span className="text-muted-foreground">Horário</span>
+          <input type="time" className="input" value={hora} onChange={(e) => setHora(e.target.value)} />
+        </label>
+        <div className="md:col-span-2">
+          <button
+            type="button"
+            onClick={aplicarModelo}
+            disabled={camposFaltando || !session?.profile || !session.cargo}
+            className="rounded-md border border-primary/60 bg-primary/10 px-3 py-2 text-xs font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
+          >
+            Usar texto pré-formatado
+          </button>
+          {camposFaltando && (
+            <span className="ml-2 text-[11px] text-muted-foreground">
+              Preencha nome, RG, unidade, data e horário antes de gerar o texto.
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-3 grid gap-1">
+        <span className="text-xs uppercase tracking-wider text-muted-foreground">
+          Corpo da convocação (editável)
+        </span>
+        <RichTextEditor
+          value={corpo}
+          onChange={setCorpo}
+          placeholder={
+            modeloAplicado
+              ? ""
+              : "Clique em «Usar texto pré-formatado» ou digite a convocação livremente."
+          }
+          minHeight={220}
+        />
+      </div>
+
+      <div className="mt-4 flex justify-end gap-2">
+        <button onClick={onClose} className="rounded-md border border-border px-4 py-2 text-sm">
+          Cancelar
+        </button>
+        <button
+          onClick={() => m.mutate()}
+          disabled={corpo.replace(/<[^>]+>/g, "").trim().length < 50 || m.isPending}
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+        >
+          {m.isPending ? "Expedindo..." : "Expedir convocação"}
+        </button>
+      </div>
+    </Modal>
   );
 }
 

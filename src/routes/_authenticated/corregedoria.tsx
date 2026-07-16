@@ -2971,7 +2971,64 @@ function CancelarMovDialog({
   );
 }
 
-function ExportarProcessoBtn({
+function ExcluirMovSilenciosoDialog({
+  movimentoId,
+  resumo,
+  denunciaId,
+  onClose,
+}: {
+  movimentoId: string;
+  resumo: string;
+  denunciaId: string;
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const fn = useServerFn(excluirMovimentoSilencioso);
+  const m = useMutation({
+    mutationFn: () => fn({ data: { movimento_id: movimentoId } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["denuncia", denunciaId] });
+      qc.invalidateQueries({ queryKey: ["denuncias"] });
+      toast.success("Movimentação excluída.");
+      onClose();
+    },
+    onError: (e) => {
+      toast.error(
+        e instanceof Error && e.message ? e.message : "Falha ao excluir.",
+      );
+    },
+  });
+
+  return (
+    <AlertDialog open onOpenChange={(o) => !o && !m.isPending && onClose()}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Excluir movimentação permanentemente</AlertDialogTitle>
+          <AlertDialogDescription>
+            A movimentação <strong>{resumo}</strong> será removida do processo em definitivo,
+            sem gerar notificação nem qualquer registro de auditoria. Esta ação é
+            exclusiva do Delegado Corregedor e é irreversível.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={m.isPending}>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={m.isPending}
+            onClick={(e) => {
+              e.preventDefault();
+              m.mutate();
+            }}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {m.isPending ? "Excluindo..." : "Excluir definitivamente"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+
   denuncia,
   policiais,
   movimentos,

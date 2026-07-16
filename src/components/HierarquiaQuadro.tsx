@@ -38,6 +38,7 @@ const PATENTES = [
   "Corregedor Geral",
   "Subcorregedor Geral",
   "Escrivão",
+  "Coordenador",
   "Investigador Chefe",
   "Investigador",
   "Agente Classe Especial",
@@ -45,7 +46,7 @@ const PATENTES = [
 ];
 const TRANSFERIDOS = ["Transferência", "Convite", "Reintegração"];
 const STATUSES = ["Ativo", "Inativo"];
-const CARGOS = ["Delegado", "RH", "Supervisor", "Coordenador", "Cúpula", "N/A"];
+const CARGOS = ["Delegado", "RH", "Supervisor", "Cúpula", "N/A"];
 const INSTRUTORES = ["Instrutor CORREGEPOL", "N/A"];
 
 function badgeCls(kind: "status" | "patente" | "transferido" | "cargo", value: string) {
@@ -65,6 +66,8 @@ function badgeCls(kind: "status" | "patente" | "transferido" | "cargo", value: s
       return `${base} bg-yellow-500/15 text-yellow-300 ring-yellow-500/30`;
     if (/Escriv/i.test(value))
       return `${base} bg-fuchsia-500/15 text-fuchsia-300 ring-fuchsia-500/30`;
+    if (/Coordenador/i.test(value))
+      return `${base} bg-emerald-500/15 text-emerald-300 ring-emerald-500/30`;
     if (/Chefe/i.test(value))
       return `${base} bg-indigo-500/15 text-indigo-300 ring-indigo-500/30`;
     if (/Classe Especial/i.test(value))
@@ -89,8 +92,6 @@ function badgeCls(kind: "status" | "patente" | "transferido" | "cargo", value: s
     return `${base} bg-amber-500/15 text-amber-300 ring-amber-500/30`;
   if (value === "Cúpula")
     return `${base} bg-indigo-500/15 text-indigo-300 ring-indigo-500/30`;
-  if (value === "Coordenador")
-    return `${base} bg-emerald-500/15 text-emerald-300 ring-emerald-500/30`;
   if (value === "RH" || value === "Supervisor")
     return `${base} bg-sky-500/15 text-sky-300 ring-sky-500/30`;
   return `${base} bg-muted text-muted-foreground ring-border`;

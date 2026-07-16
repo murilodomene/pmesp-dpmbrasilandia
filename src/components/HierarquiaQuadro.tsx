@@ -66,6 +66,8 @@ function badgeCls(kind: "status" | "patente" | "transferido" | "cargo", value: s
       return `${base} bg-yellow-500/15 text-yellow-300 ring-yellow-500/30`;
     if (/Escriv/i.test(value))
       return `${base} bg-fuchsia-500/15 text-fuchsia-300 ring-fuchsia-500/30`;
+    if (/Coordenador/i.test(value))
+      return `${base} bg-emerald-500/15 text-emerald-300 ring-emerald-500/30`;
     if (/Chefe/i.test(value))
       return `${base} bg-indigo-500/15 text-indigo-300 ring-indigo-500/30`;
     if (/Classe Especial/i.test(value))

@@ -38,6 +38,7 @@ const PATENTES = [
   "Corregedor Geral",
   "Subcorregedor Geral",
   "Escrivão",
+  "Coordenador",
   "Investigador Chefe",
   "Investigador",
   "Agente Classe Especial",
@@ -45,7 +46,7 @@ const PATENTES = [
 ];
 const TRANSFERIDOS = ["Transferência", "Convite", "Reintegração"];
 const STATUSES = ["Ativo", "Inativo"];
-const CARGOS = ["Delegado", "RH", "Supervisor", "Coordenador", "Cúpula", "N/A"];
+const CARGOS = ["Delegado", "RH", "Supervisor", "Cúpula", "N/A"];
 const INSTRUTORES = ["Instrutor CORREGEPOL", "N/A"];
 
 function badgeCls(kind: "status" | "patente" | "transferido" | "cargo", value: string) {

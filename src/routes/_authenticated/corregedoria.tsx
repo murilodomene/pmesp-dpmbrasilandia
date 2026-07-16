@@ -469,6 +469,8 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
   const podeEditarCargo = cargo === "delegado_corregedor" || cargo === "corregedor";
 
   const podeExcluir = cargo === "delegado_geral" || cargo === "delegado_corregedor";
+  const podeExcluirMovSilencioso = cargo === "delegado_corregedor";
+
 
   const [dialog, setDialog] = useState<
     | { kind: "status" }

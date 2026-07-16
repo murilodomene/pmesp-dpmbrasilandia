@@ -845,6 +845,13 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                   >
                     {portariaMov ? "Lavrar nova portaria" : "Lavrar portaria"}
                   </button>
+                  <button
+                    onClick={() => setDialog({ kind: "convocacao" })}
+                    disabled={suspenso}
+                    className="rounded-md border border-primary/60 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 disabled:opacity-40"
+                  >
+                    Expedir Convocação
+                  </button>
                 </div>
               </div>
             );

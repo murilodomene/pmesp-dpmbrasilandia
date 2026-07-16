@@ -92,8 +92,6 @@ function badgeCls(kind: "status" | "patente" | "transferido" | "cargo", value: s
     return `${base} bg-amber-500/15 text-amber-300 ring-amber-500/30`;
   if (value === "Cúpula")
     return `${base} bg-indigo-500/15 text-indigo-300 ring-indigo-500/30`;
-  if (value === "Coordenador")
-    return `${base} bg-emerald-500/15 text-emerald-300 ring-emerald-500/30`;
   if (value === "RH" || value === "Supervisor")
     return `${base} bg-sky-500/15 text-sky-300 ring-sky-500/30`;
   return `${base} bg-muted text-muted-foreground ring-border`;

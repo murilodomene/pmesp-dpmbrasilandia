@@ -1155,6 +1155,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                         {new Date(m.criado_em).toLocaleString("pt-BR")}
                       </span>
                       {btnCancelar}
+                      {btnExcluirSilencioso}
                     </div>
                     <div className={canceladoEm ? "line-through decoration-destructive/60" : ""}>
                       <TimelineAtoCard
@@ -1215,6 +1216,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                         {new Date(m.criado_em).toLocaleString("pt-BR")}
                       </span>
                       {btnCancelar}
+                      {btnExcluirSilencioso}
                     </div>
                     <div className={canceladoEm ? "line-through decoration-destructive/60" : ""}>
                       <TimelineIpcCard
@@ -1264,6 +1266,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                         {new Date(m.criado_em).toLocaleString("pt-BR")}
                       </span>
                       {btnCancelar}
+                      {btnExcluirSilencioso}
                     </div>
                     <div className={canceladoEm ? "line-through decoration-destructive/60" : ""}>
                       <TimelineCertidaoCard
@@ -1326,6 +1329,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                     </span>
                     <div className="flex items-center gap-2">
                       {btnCancelar}
+                      {btnExcluirSilencioso}
                     </div>
                   </div>
                   {canceladoFooter}

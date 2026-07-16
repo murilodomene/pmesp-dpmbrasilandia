@@ -33,6 +33,8 @@ import {
   revogarAcessoMp,
   excluirDenuncia,
   cancelarMovimento,
+  excluirMovimentoSilencioso,
+
   registrarRecurso,
   certificarResultadoRecurso,
 } from "@/lib/denuncias.functions";
@@ -469,6 +471,8 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
   const podeEditarCargo = cargo === "delegado_corregedor" || cargo === "corregedor";
 
   const podeExcluir = cargo === "delegado_geral" || cargo === "delegado_corregedor";
+  const podeExcluirMovSilencioso = cargo === "delegado_corregedor";
+
 
   const [dialog, setDialog] = useState<
     | { kind: "status" }
@@ -486,6 +490,8 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     | { kind: "retificar"; policial: { id: string; nome: string; rg_funcional: string | null; unidade: string | null; cargo: string | null } }
     | { kind: "excluir" }
     | { kind: "cancelarMov"; movimento_id: string; resumo: string }
+    | { kind: "excluirMov"; movimento_id: string; resumo: string }
+
     | { kind: "recurso" }
     | { kind: "resultadoRecurso" }
     | { kind: "intimar" }
@@ -1110,6 +1116,20 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 <Trash2 className="h-3.5 w-3.5" /> Cancelar
               </button>
             );
+            const btnExcluirSilencioso = podeExcluirMovSilencioso && m.especie !== "cancelamento" && (
+              <button
+                type="button"
+                onClick={() =>
+                  setDialog({ kind: "excluirMov", movimento_id: m.id, resumo: resumoMov })
+                }
+                aria-label="Excluir movimentação permanentemente"
+                title="Excluir permanentemente (sem registro)"
+                className="inline-flex items-center gap-1 rounded-md border border-transparent px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:border-destructive/60 hover:bg-destructive/15 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"
+              >
+                <Trash2 className="h-3.5 w-3.5" /> Excluir
+              </button>
+            );
+
 
             if (isAto) {
               return (
@@ -1139,6 +1159,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                         {new Date(m.criado_em).toLocaleString("pt-BR")}
                       </span>
                       {btnCancelar}
+                      {btnExcluirSilencioso}
                     </div>
                     <div className={canceladoEm ? "line-through decoration-destructive/60" : ""}>
                       <TimelineAtoCard
@@ -1199,6 +1220,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                         {new Date(m.criado_em).toLocaleString("pt-BR")}
                       </span>
                       {btnCancelar}
+                      {btnExcluirSilencioso}
                     </div>
                     <div className={canceladoEm ? "line-through decoration-destructive/60" : ""}>
                       <TimelineIpcCard
@@ -1248,6 +1270,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                         {new Date(m.criado_em).toLocaleString("pt-BR")}
                       </span>
                       {btnCancelar}
+                      {btnExcluirSilencioso}
                     </div>
                     <div className={canceladoEm ? "line-through decoration-destructive/60" : ""}>
                       <TimelineCertidaoCard
@@ -1310,6 +1333,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                     </span>
                     <div className="flex items-center gap-2">
                       {btnCancelar}
+                      {btnExcluirSilencioso}
                     </div>
                   </div>
                   {canceladoFooter}
@@ -1421,6 +1445,15 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
           onClose={() => setDialog(null)}
         />
       )}
+      {dialog?.kind === "excluirMov" && (
+        <ExcluirMovSilenciosoDialog
+          movimentoId={dialog.movimento_id}
+          resumo={dialog.resumo}
+          denunciaId={id}
+          onClose={() => setDialog(null)}
+        />
+      )}
+
       {dialog?.kind === "recurso" && (
         <RecursoDialog id={id} onClose={() => setDialog(null)} />
       )}
@@ -2938,8 +2971,66 @@ function CancelarMovDialog({
   );
 }
 
+function ExcluirMovSilenciosoDialog({
+  movimentoId,
+  resumo,
+  denunciaId,
+  onClose,
+}: {
+  movimentoId: string;
+  resumo: string;
+  denunciaId: string;
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const fn = useServerFn(excluirMovimentoSilencioso);
+  const m = useMutation({
+    mutationFn: () => fn({ data: { movimento_id: movimentoId } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["denuncia", denunciaId] });
+      qc.invalidateQueries({ queryKey: ["denuncias"] });
+      toast.success("Movimentação excluída.");
+      onClose();
+    },
+    onError: (e) => {
+      toast.error(
+        e instanceof Error && e.message ? e.message : "Falha ao excluir.",
+      );
+    },
+  });
+
+  return (
+    <AlertDialog open onOpenChange={(o) => !o && !m.isPending && onClose()}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Excluir movimentação permanentemente</AlertDialogTitle>
+          <AlertDialogDescription>
+            A movimentação <strong>{resumo}</strong> será removida do processo em definitivo,
+            sem gerar notificação nem qualquer registro de auditoria. Esta ação é
+            exclusiva do Delegado Corregedor e é irreversível.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={m.isPending}>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={m.isPending}
+            onClick={(e) => {
+              e.preventDefault();
+              m.mutate();
+            }}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {m.isPending ? "Excluindo..." : "Excluir definitivamente"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 function ExportarProcessoBtn({
   denuncia,
+
   policiais,
   movimentos,
 }: {

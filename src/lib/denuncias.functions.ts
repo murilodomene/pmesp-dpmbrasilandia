@@ -1002,6 +1002,35 @@ export const cancelarMovimento = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// Exclusão silenciosa de movimentação — SOMENTE Delegado Corregedor.
+// Não gera notificação nem registro de auditoria. Uso restrito e discricionário.
+export const excluirMovimentoSilencioso = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ movimento_id: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase as unknown as ReturnType<typeof createClient<Database>>;
+    const { data: rows, error: eRole } = await sb
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId)
+      .limit(1);
+    if (eRole) throw new Error(eRole.message);
+    const role = rows?.[0]?.role;
+    if (role !== "delegado_corregedor") {
+      throw new Error("Apenas o Delegado Corregedor pode executar esta ação.");
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("movimentos")
+      .delete()
+      .eq("id", data.movimento_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+
 
 // ============ TARJAS DE SINALIZAÇÃO ============
 

@@ -1112,6 +1112,20 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 <Trash2 className="h-3.5 w-3.5" /> Cancelar
               </button>
             );
+            const btnExcluirSilencioso = podeExcluirMovSilencioso && m.especie !== "cancelamento" && (
+              <button
+                type="button"
+                onClick={() =>
+                  setDialog({ kind: "excluirMov", movimento_id: m.id, resumo: resumoMov })
+                }
+                aria-label="Excluir movimentação permanentemente"
+                title="Excluir permanentemente (sem registro)"
+                className="inline-flex items-center gap-1 rounded-md border border-transparent px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:border-destructive/60 hover:bg-destructive/15 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"
+              >
+                <Trash2 className="h-3.5 w-3.5" /> Excluir
+              </button>
+            );
+
 
             if (isAto) {
               return (

@@ -21,6 +21,7 @@ const CLASSES: Record<DenunciaStatus, string> = {
   em_analise: "bg-status-analise text-status-analise-fg",
   em_recurso: "bg-violet-500/15 text-violet-300 border border-violet-500/30",
   em_investigacao: "bg-status-investigacao text-status-investigacao-fg",
+  concluso: "bg-teal-500/15 text-teal-300 border border-teal-500/30",
   ag_decurso_prazo: "bg-amber-500/15 text-amber-300 border border-amber-500/30",
   transito_julgado: "bg-emerald-600/15 text-emerald-300 border border-emerald-600/30",
   arquivada: "bg-status-arquivada text-status-arquivada-fg",

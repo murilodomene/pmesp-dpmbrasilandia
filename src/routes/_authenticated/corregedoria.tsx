@@ -3113,7 +3113,7 @@ function ConvocacaoDialog({
       fn({
         data: {
           denuncia_id: denunciaId,
-          especie: "despacho",
+          especie: "mandado",
           teor: sanitizeAtoHtml(corpo),
           anexos: [],
         },

@@ -2109,18 +2109,21 @@ const ATO_ASSUNTO: Record<"despacho" | "decisao" | "portaria" | "mandado", strin
   despacho: "Despacho",
   decisao: "Decisão",
   portaria: "Portaria Inaugural",
+  mandado: "Mandado de Citação",
 };
 
 const ATO_TIPO: Record<"despacho" | "decisao" | "portaria" | "mandado", "DESPACHO" | "DECISÃO" | "PORTARIA" | "MANDADO"> = {
   despacho: "DESPACHO",
   decisao: "DECISÃO",
   portaria: "PORTARIA",
+  mandado: "MANDADO",
 };
 
 const ATO_MARKER: Record<"despacho" | "decisao" | "portaria" | "mandado", string> = {
   despacho: "bg-status-analise",
   decisao: "bg-destructive",
   portaria: "bg-primary",
+  mandado: "bg-primary",
 };
 
 /**

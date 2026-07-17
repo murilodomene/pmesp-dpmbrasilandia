@@ -24,6 +24,7 @@ export type DenunciaStatus =
   | "em_analise"
   | "em_recurso"
   | "em_investigacao"
+  | "concluso"
   | "ag_decurso_prazo"
   | "transito_julgado"
   | "arquivada"

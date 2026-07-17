@@ -492,6 +492,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     | { kind: "cancelarMov"; movimento_id: string; resumo: string }
     | { kind: "excluirMov"; movimento_id: string; resumo: string }
     | { kind: "convocacao" }
+    | { kind: "textoDiscord"; teor: string; numeroProtocolo: string; prolatorNome: string; prolatorCargo: string }
 
     | { kind: "recurso" }
     | { kind: "resultadoRecurso" }

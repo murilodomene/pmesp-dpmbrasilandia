@@ -1489,6 +1489,15 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
           onClose={() => setDialog(null)}
         />
       )}
+      {dialog?.kind === "textoDiscord" && (
+        <TextoDiscordDialog
+          teor={dialog.teor}
+          numeroProtocolo={dialog.numeroProtocolo}
+          prolatorNome={dialog.prolatorNome}
+          prolatorCargo={dialog.prolatorCargo}
+          onClose={() => setDialog(null)}
+        />
+      )}
 
       {dialog?.kind === "recurso" && (
         <RecursoDialog id={id} onClose={() => setDialog(null)} />

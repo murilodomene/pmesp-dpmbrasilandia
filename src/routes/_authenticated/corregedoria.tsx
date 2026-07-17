@@ -87,6 +87,7 @@ const STATUS_LIST_MANUAL: DenunciaStatus[] = [
   "aguardando_analise",
   "recebida",
   "em_investigacao",
+  "concluso",
   "ag_decurso_prazo",
   "arquivada",
 ];

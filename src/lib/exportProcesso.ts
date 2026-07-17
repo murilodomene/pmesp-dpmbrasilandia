@@ -116,7 +116,9 @@ function cargoLabel(c: string | null | undefined): string {
     ? "Delegado Geral"
     : c === "delegado_corregedor"
       ? "Delegado Corregedor"
-      : c === "corregedor"
+      : c === "coordenador"
+        ? "Coordenador"
+        : c === "corregedor"
         ? "Corregedor"
         : c;
 }

@@ -41,6 +41,7 @@ const DESFECHOS = [
 const CARGO_LABEL: Record<string, string> = {
   delegado_geral: "Delegado Geral",
   delegado_corregedor: "Delegado Corregedor",
+  coordenador: "Coordenador",
   corregedor: "Corregedor",
 };
 

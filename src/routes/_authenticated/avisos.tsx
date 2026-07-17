@@ -173,6 +173,8 @@ function AvisoViewer({
       ? "Delegado Geral"
       : aviso.autor_cargo === "delegado_corregedor"
         ? "Delegado Corregedor"
+        : aviso.autor_cargo === "coordenador"
+        ? "Coordenador"
         : "Corregedor";
 
   return (

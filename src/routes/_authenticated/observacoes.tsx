@@ -68,6 +68,7 @@ type Observacao = {
 function cargoLabel(c: string) {
   if (c === "delegado_geral") return "Delegado Geral";
   if (c === "delegado_corregedor") return "Delegado Corregedor";
+  if (c === "coordenador") return "Coordenador";
   if (c === "corregedor") return "Corregedor";
   return c;
 }

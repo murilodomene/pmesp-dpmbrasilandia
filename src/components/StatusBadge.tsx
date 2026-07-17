@@ -7,6 +7,7 @@ const LABELS: Record<DenunciaStatus, string> = {
   em_analise: "Em análise",
   em_recurso: "Em Recurso",
   em_investigacao: "Em investigação",
+  concluso: "Concluso",
   ag_decurso_prazo: "Aguardando Decurso do Prazo",
   transito_julgado: "Trânsito em Julgado",
   arquivada: "Arquivada",

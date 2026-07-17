@@ -1186,6 +1186,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                       <span className="ml-auto text-muted-foreground tabular">
                         {new Date(m.criado_em).toLocaleString("pt-BR")}
                       </span>
+                      {btnTextoDiscord}
                       {btnCancelar}
                       {btnExcluirSilencioso}
                     </div>

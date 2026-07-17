@@ -501,7 +501,7 @@ export const atualizarNatureza = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const p = await getProlator(context);
-    if (p.prolator_cargo !== "delegado_geral" && p.prolator_cargo !== "delegado_corregedor") {
+    if (p.prolator_cargo !== "delegado_geral" && p.prolator_cargo !== "delegado_corregedor" && p.prolator_cargo !== "coordenador") {
       throw new Error("Apenas Delegado Geral ou Delegado Corregedor podem editar a natureza.");
     }
     const { data: atual } = await context.supabase
@@ -561,7 +561,8 @@ export const retificarDenunciado = createServerFn({ method: "POST" })
     const podeRetificar =
       p.prolator_cargo === "delegado_geral" ||
       p.prolator_cargo === "delegado_corregedor" ||
-      p.prolator_cargo === "corregedor";
+      p.prolator_cargo === "corregedor" ||
+      p.prolator_cargo === "coordenador";
     if (!podeRetificar) {
       throw new Error("Apenas Delegado Geral, Delegado Corregedor ou Corregedor podem retificar o denunciado.");
     }
@@ -595,9 +596,10 @@ export const retificarDenunciado = createServerFn({ method: "POST" })
     if (
       cargoMudou &&
       p.prolator_cargo !== "delegado_corregedor" &&
-      p.prolator_cargo !== "corregedor"
+      p.prolator_cargo !== "corregedor" &&
+      p.prolator_cargo !== "coordenador"
     ) {
-      throw new Error("Apenas Delegado Corregedor ou Corregedor podem alterar o cargo do denunciado.");
+      throw new Error("Apenas Delegado Corregedor, Coordenador ou Corregedor podem alterar o cargo do denunciado.");
     }
 
     const { error: updErr } = await context.supabase
@@ -706,9 +708,10 @@ export const instaurarOficio = createServerFn({ method: "POST" })
     if (
       p.prolator_cargo !== "delegado_geral" &&
       p.prolator_cargo !== "delegado_corregedor" &&
-      p.prolator_cargo !== "corregedor"
+      p.prolator_cargo !== "corregedor" &&
+      p.prolator_cargo !== "coordenador"
     ) {
-      throw new Error("Apenas Delegado Geral, Delegado Corregedor ou Corregedor podem instaurar de ofício.");
+      throw new Error("Apenas Delegado Geral, Delegado Corregedor, Coordenador ou Corregedor podem instaurar de ofício.");
     }
 
     const agora = new Date().toISOString();
@@ -1018,7 +1021,7 @@ export const excluirMovimentoSilencioso = createServerFn({ method: "POST" })
       .limit(1);
     if (eRole) throw new Error(eRole.message);
     const role = rows?.[0]?.role;
-    if (role !== "delegado_corregedor") {
+    if (role !== "delegado_corregedor" && role !== "coordenador") {
       throw new Error("Apenas o Delegado Corregedor pode executar esta ação.");
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

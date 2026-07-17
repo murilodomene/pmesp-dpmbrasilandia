@@ -41,6 +41,7 @@ const DESFECHOS = [
 const CARGO_LABEL: Record<string, string> = {
   delegado_geral: "Delegado Geral",
   delegado_corregedor: "Delegado Corregedor",
+  coordenador: "Coordenador",
   corregedor: "Corregedor",
 };
 
@@ -57,9 +58,9 @@ function PdoPage() {
 
   const cargo = session?.cargo ?? null;
   const isStaff = cargo && cargo !== "cidadao" && cargo !== "mp";
-  const canDelete = cargo === "delegado_corregedor";
+  const canDelete = cargo === "delegado_corregedor" || cargo === "coordenador";
   const canGenerate =
-    cargo === "delegado_corregedor" || cargo === "delegado_geral" || cargo === "corregedor";
+    cargo === "delegado_corregedor" || cargo === "delegado_geral" || cargo === "corregedor" || cargo === "coordenador";
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();

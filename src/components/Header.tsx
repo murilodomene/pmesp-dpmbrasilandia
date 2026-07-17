@@ -22,6 +22,7 @@ interface Profile {
 const CARGO_LABEL: Record<string, string> = {
   delegado_geral: "Delegado Geral",
   delegado_corregedor: "Delegado Corregedor",
+  coordenador: "Coordenador",
   corregedor: "Corregedor",
   cidadao: "Cidadão",
   mp: "Ministério Público",
@@ -62,10 +63,10 @@ export function Header() {
   const isCidadao = cargo === "cidadao";
   const isMp = cargo === "mp";
   const isStaff = ativo && cargo && !isCidadao && !isMp;
-  const isDelegadoCorregedor = ativo && cargo === "delegado_corregedor";
+  const isDelegadoCorregedor = ativo && (cargo === "delegado_corregedor" || cargo === "coordenador");
 
   const isInternoCorregedoria =
-    ativo && (cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor");
+    ativo && (cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor" || cargo === "coordenador");
 
   const internalLinks: { to: string; label: string }[] = isStaff
     ? [

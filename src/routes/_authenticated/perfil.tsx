@@ -19,6 +19,7 @@ export const Route = createFileRoute("/_authenticated/perfil")({
 const CARGO_LABEL: Record<string, string> = {
   delegado_geral: "Delegado Geral",
   delegado_corregedor: "Delegado Corregedor",
+  coordenador: "Coordenador",
   corregedor: "Corregedor",
   cidadao: "Cidadão",
   mp: "Ministério Público",
@@ -34,7 +35,7 @@ function PerfilPage() {
     queryFn: () => sessionFn(),
   });
 
-  const isCorregedor = session?.cargo === "delegado_corregedor";
+  const isCorregedor = session?.cargo === "delegado_corregedor" || session?.cargo === "coordenador";
   const canEditAll = isCorregedor;
 
   const [nome, setNome] = useState("");

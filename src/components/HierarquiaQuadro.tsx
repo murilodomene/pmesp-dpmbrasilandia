@@ -108,7 +108,7 @@ const COLS: { key: keyof Membro; label: string; badge?: "status" | "patente" | "
 ];
 
 export function HierarquiaQuadro({ cargo }: { cargo: string | null }) {
-  const podeEditar = cargo === "delegado_corregedor";
+  const podeEditar = cargo === "delegado_corregedor" || cargo === "coordenador";
   const [membros, setMembros] = useState<Membro[]>([]);
   const [loading, setLoading] = useState(true);
   const [editId, setEditId] = useState<string | null>(null);

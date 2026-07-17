@@ -312,7 +312,7 @@ function EditarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: (
     if (usuario) {
       setNome(usuario.nome);
       setEmail(usuario.email ?? "");
-      setCargo((usuario.cargo as "delegado_geral" | "corregedor" | "cidadao" | "mp") ?? "cidadao");
+      setCargo((usuario.cargo as typeof cargo) ?? "cidadao");
       setRg(usuario.rg ?? "");
       setDiscord(usuario.discord_id ?? "");
       setTelefone(usuario.telefone ?? "");

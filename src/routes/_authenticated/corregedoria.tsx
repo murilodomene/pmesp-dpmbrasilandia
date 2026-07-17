@@ -479,7 +479,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     | { kind: "portaria" }
     | {
         kind: "verAto";
-        especie: "despacho" | "decisao" | "portaria";
+        especie: "despacho" | "decisao" | "portaria" | "mandado";
         teor: string;
         quando: string;
         prolator: string;
@@ -1077,7 +1077,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
               motivo_cancelamento?: string | null;
             };
             const isAto =
-              m.especie === "despacho" || m.especie === "decisao" || m.especie === "portaria";
+              m.especie === "despacho" || m.especie === "decisao" || m.especie === "portaria" || m.especie === "mandado";
             const isIpc = m.especie === "ipc";
             const isCertidao =
               m.especie === "certidao" ||
@@ -1171,7 +1171,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                     </div>
                     <div className={canceladoEm ? "line-through decoration-destructive/60" : ""}>
                       <TimelineAtoCard
-                        especie={m.especie as "despacho" | "decisao" | "portaria"}
+                        especie={m.especie as "despacho" | "decisao" | "portaria" | "mandado"}
                         teor={m.teor}
                         quando={m.criado_em}
                         prolator={m.prolator_nome}
@@ -1535,7 +1535,9 @@ function labelEspecie(e: string): string {
           ? "Retificação"
           : e === "portaria"
             ? "Portaria Inaugural"
-            : "Status";
+            : e === "mandado"
+              ? "Mandado"
+              : "Status";
 }
 
 // Reconhece referências a artigos do Manual — incluindo incisos, parágrafos e
@@ -2103,29 +2105,32 @@ function PortariaDialog({
 
 
 
-const ATO_ASSUNTO: Record<"despacho" | "decisao" | "portaria", string> = {
+const ATO_ASSUNTO: Record<"despacho" | "decisao" | "portaria" | "mandado", string> = {
   despacho: "Despacho",
   decisao: "Decisão",
   portaria: "Portaria Inaugural",
+  mandado: "Mandado de Citação",
 };
 
-const ATO_TIPO: Record<"despacho" | "decisao" | "portaria", "DESPACHO" | "DECISÃO" | "PORTARIA"> = {
+const ATO_TIPO: Record<"despacho" | "decisao" | "portaria" | "mandado", "DESPACHO" | "DECISÃO" | "PORTARIA" | "MANDADO"> = {
   despacho: "DESPACHO",
   decisao: "DECISÃO",
   portaria: "PORTARIA",
+  mandado: "MANDADO",
 };
 
-const ATO_MARKER: Record<"despacho" | "decisao" | "portaria", string> = {
+const ATO_MARKER: Record<"despacho" | "decisao" | "portaria" | "mandado", string> = {
   despacho: "bg-status-analise",
   decisao: "bg-destructive",
   portaria: "bg-primary",
+  mandado: "bg-primary",
 };
 
 /**
  * Renderiza o corpo do ato: HTML sanitizado quando salvo como rich text,
  * ou texto plano (com links, se portaria) para registros legados.
  */
-function renderAtoBody(_especie: "despacho" | "decisao" | "portaria", teor: string, pdf = false): React.ReactNode {
+function renderAtoBody(_especie: "despacho" | "decisao" | "portaria" | "mandado", teor: string, pdf = false): React.ReactNode {
   if (isHtmlAto(teor)) {
     return (
       <div
@@ -2146,7 +2151,7 @@ function TimelineAtoCard({
   procedimento,
   denunciado,
 }: {
-  especie: "despacho" | "decisao" | "portaria";
+  especie: "despacho" | "decisao" | "portaria" | "mandado";
   teor: string;
   quando: string;
   prolator: string;
@@ -2432,7 +2437,7 @@ function VerAtoDialog({
   denunciado,
   onClose,
 }: {
-  especie: "despacho" | "decisao" | "portaria";
+  especie: "despacho" | "decisao" | "portaria" | "mandado";
   teor: string;
   quando: string;
   prolator: string;
@@ -3082,8 +3087,8 @@ function ConvocacaoDialog({
       const [hh, mi] = (hora || "00:00").split(":");
       dataHoraLinha = `**DATA E HORA: ${Number(dd)} de ${mesNome} de ${yyyy}, às ${hh}h${mi}min**`;
     }
-    const nomeCorr = session.profile.nome;
-    const cargoCorr = cargoLabelFull(session.cargo);
+    const nomeCorr = session.profile.nome.toUpperCase();
+    const cargoCorr = cargoLabelFull(session.cargo).toUpperCase();
 
     const html =
       `<p><strong>MANDADO DE CITAÇÃO</strong></p>` +
@@ -3108,7 +3113,7 @@ function ConvocacaoDialog({
       fn({
         data: {
           denuncia_id: denunciaId,
-          especie: "despacho",
+          especie: "mandado",
           teor: sanitizeAtoHtml(corpo),
           anexos: [],
         },

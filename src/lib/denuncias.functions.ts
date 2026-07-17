@@ -28,7 +28,7 @@ const UNIDADES = [
   "SAT",
 ] as const;
 
-const ESPECIES = ["despacho", "decisao", "ipc"] as const;
+const ESPECIES = ["despacho", "decisao", "ipc", "mandado"] as const;
 const ESPECIES_PORTARIA = "portaria" as const;
 
 function publicClient() {

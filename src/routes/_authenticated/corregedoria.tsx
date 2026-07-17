@@ -3087,8 +3087,8 @@ function ConvocacaoDialog({
       const [hh, mi] = (hora || "00:00").split(":");
       dataHoraLinha = `**DATA E HORA: ${Number(dd)} de ${mesNome} de ${yyyy}, às ${hh}h${mi}min**`;
     }
-    const nomeCorr = session.profile.nome;
-    const cargoCorr = cargoLabelFull(session.cargo);
+    const nomeCorr = session.profile.nome.toUpperCase();
+    const cargoCorr = cargoLabelFull(session.cargo).toUpperCase();
 
     const html =
       `<p><strong>MANDADO DE CITAÇÃO</strong></p>` +

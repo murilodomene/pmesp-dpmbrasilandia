@@ -53,7 +53,7 @@ export const criarAviso = createServerFn({ method: "POST" })
       .maybeSingle();
     if (rErr) throw new Error(rErr.message);
     const cargo = ur?.role;
-    if (cargo !== "delegado_geral" && cargo !== "delegado_corregedor") {
+    if (cargo !== "delegado_geral" && cargo !== "delegado_corregedor" && cargo !== "coordenador") {
       throw new Error("Apenas Delegado Geral ou Delegado Corregedor podem publicar avisos.");
     }
 

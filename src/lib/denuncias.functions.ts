@@ -501,7 +501,7 @@ export const atualizarNatureza = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const p = await getProlator(context);
-    if (p.prolator_cargo !== "delegado_geral" && p.prolator_cargo !== "delegado_corregedor") {
+    if (p.prolator_cargo !== "delegado_geral" && p.prolator_cargo !== "delegado_corregedor" && p.prolator_cargo !== "coordenador") {
       throw new Error("Apenas Delegado Geral ou Delegado Corregedor podem editar a natureza.");
     }
     const { data: atual } = await context.supabase
@@ -1018,7 +1018,7 @@ export const excluirMovimentoSilencioso = createServerFn({ method: "POST" })
       .limit(1);
     if (eRole) throw new Error(eRole.message);
     const role = rows?.[0]?.role;
-    if (role !== "delegado_corregedor") {
+    if (role !== "delegado_corregedor" && role !== "coordenador") {
       throw new Error("Apenas o Delegado Corregedor pode executar esta ação.");
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

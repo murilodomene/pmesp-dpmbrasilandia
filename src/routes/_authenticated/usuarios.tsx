@@ -409,12 +409,14 @@ function EditarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: (
             </div>
             <div>
               <Label>Perfil</Label>
-              <Select value={cargo} onValueChange={(v) => setCargo(v as "delegado_geral" | "corregedor" | "cidadao" | "mp")}>
+              <Select value={cargo} onValueChange={(v) => setCargo(v as typeof cargo)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="cidadao">Cidadão</SelectItem>
                   <SelectItem value="mp">Ministério Público</SelectItem>
                   <SelectItem value="corregedor">Corregedor</SelectItem>
+                  <SelectItem value="coordenador">Coordenador</SelectItem>
+                  <SelectItem value="delegado_corregedor">Delegado Corregedor</SelectItem>
                   <SelectItem value="delegado_geral">Delegado Geral</SelectItem>
                 </SelectContent>
               </Select>

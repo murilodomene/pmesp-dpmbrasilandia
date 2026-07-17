@@ -524,7 +524,7 @@ function ExcluirModal({ usuario, onClose }: { usuario: Usuario | null; onClose: 
 function AprovarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: () => void }) {
   const qc = useQueryClient();
   const aprovarFn = useServerFn(aprovarUsuario);
-  const [cargo, setCargo] = useState<"cidadao" | "corregedor" | "delegado_geral" | "mp">("cidadao");
+  const [cargo, setCargo] = useState<"cidadao" | "corregedor" | "coordenador" | "delegado_corregedor" | "delegado_geral" | "mp">("cidadao");
 
   const m = useMutation({
     mutationFn: () => aprovarFn({ data: { user_id: usuario!.id, cargo } }),

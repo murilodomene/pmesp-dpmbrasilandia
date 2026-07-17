@@ -138,7 +138,7 @@ function Corregedoria() {
   }, [denuncias, busca, filtro]);
 
   const grupos = useMemo(() => {
-    const tramitacao: DenunciaStatus[] = ["novo", "recebida", "aguardando_analise", "em_analise", "em_investigacao"];
+    const tramitacao: DenunciaStatus[] = ["novo", "recebida", "aguardando_analise", "em_analise", "em_investigacao", "concluso"];
     const decurso: DenunciaStatus[] = ["ag_decurso_prazo"];
     const recurso: DenunciaStatus[] = ["em_recurso"];
     const concluidos: DenunciaStatus[] = ["transito_julgado", "arquivada"];

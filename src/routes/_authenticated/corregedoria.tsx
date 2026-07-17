@@ -1933,7 +1933,7 @@ function montarModeloPortaria(params: {
   const preamblePrefix = `A Corregedoria Geral da Polícia Civil do Estado de São Paulo, por intermédio do ${params.cargoProlator}, ${params.nomeProlator}, ${params.matriculaProlator}, com fundamento nos arts. 78, inciso I c/c 79 do Manual de Procedimentos, instaura o presente PROCESSO ADMINISTRATIVO DISCIPLINAR`;
   const providencias = params.providencias.trim() || PROVIDENCIAS_PADRAO;
   const dataFmt = new Date().toLocaleDateString("pt-BR");
-  const fecho = `\n\nCumpra-se.\n\nDatado e assinado digitalmente em ${dataFmt}.\n\n${params.nomeProlator}\n${params.cargoProlator}`;
+  const fecho = `\n\nCumpra-se.\n\nDatado e assinado digitalmente em ${dataFmt}.`;
 
   const dens = params.denunciados.length > 0
     ? params.denunciados
@@ -2019,7 +2019,12 @@ function PortariaDialog({
       .split(/\n{2,}/)
       .map((par) => `<p>${par.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br/>")}</p>`)
       .join("");
-    setCorpo(html);
+    const nomeUp = session.profile.nome.toUpperCase();
+    const cargoUp = cargoLabelFull(session.cargo).toUpperCase();
+    const assinatura =
+      `<p style="text-align:center"><strong>${nomeUp}</strong></p>` +
+      `<p style="text-align:center"><strong>${cargoUp}</strong></p>`;
+    setCorpo(html + assinatura);
     setModeloAplicado(true);
   }
 

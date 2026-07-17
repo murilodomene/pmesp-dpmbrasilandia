@@ -298,7 +298,7 @@ function EditarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: (
   const editarFn = useServerFn(editarUsuarioPublico);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  const [cargo, setCargo] = useState<"delegado_geral" | "corregedor" | "cidadao" | "mp">("cidadao");
+  const [cargo, setCargo] = useState<"delegado_geral" | "delegado_corregedor" | "coordenador" | "corregedor" | "cidadao" | "mp">("cidadao");
   const [rg, setRg] = useState("");
   const [discord, setDiscord] = useState("");
   const [telefone, setTelefone] = useState("");
@@ -312,7 +312,7 @@ function EditarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: (
     if (usuario) {
       setNome(usuario.nome);
       setEmail(usuario.email ?? "");
-      setCargo((usuario.cargo as "delegado_geral" | "corregedor" | "cidadao" | "mp") ?? "cidadao");
+      setCargo((usuario.cargo as typeof cargo) ?? "cidadao");
       setRg(usuario.rg ?? "");
       setDiscord(usuario.discord_id ?? "");
       setTelefone(usuario.telefone ?? "");
@@ -409,12 +409,14 @@ function EditarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: (
             </div>
             <div>
               <Label>Perfil</Label>
-              <Select value={cargo} onValueChange={(v) => setCargo(v as "delegado_geral" | "corregedor" | "cidadao" | "mp")}>
+              <Select value={cargo} onValueChange={(v) => setCargo(v as typeof cargo)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="cidadao">Cidadão</SelectItem>
                   <SelectItem value="mp">Ministério Público</SelectItem>
                   <SelectItem value="corregedor">Corregedor</SelectItem>
+                  <SelectItem value="coordenador">Coordenador</SelectItem>
+                  <SelectItem value="delegado_corregedor">Delegado Corregedor</SelectItem>
                   <SelectItem value="delegado_geral">Delegado Geral</SelectItem>
                 </SelectContent>
               </Select>
@@ -522,7 +524,7 @@ function ExcluirModal({ usuario, onClose }: { usuario: Usuario | null; onClose: 
 function AprovarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: () => void }) {
   const qc = useQueryClient();
   const aprovarFn = useServerFn(aprovarUsuario);
-  const [cargo, setCargo] = useState<"cidadao" | "corregedor" | "delegado_geral" | "mp">("cidadao");
+  const [cargo, setCargo] = useState<"cidadao" | "corregedor" | "coordenador" | "delegado_corregedor" | "delegado_geral" | "mp">("cidadao");
 
   const m = useMutation({
     mutationFn: () => aprovarFn({ data: { user_id: usuario!.id, cargo } }),
@@ -552,6 +554,8 @@ function AprovarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: 
                 <SelectItem value="cidadao">Cidadão</SelectItem>
                 <SelectItem value="mp">Ministério Público</SelectItem>
                 <SelectItem value="corregedor">Corregedor</SelectItem>
+                <SelectItem value="coordenador">Coordenador</SelectItem>
+                <SelectItem value="delegado_corregedor">Delegado Corregedor</SelectItem>
                 <SelectItem value="delegado_geral">Delegado Geral</SelectItem>
               </SelectContent>
             </Select>

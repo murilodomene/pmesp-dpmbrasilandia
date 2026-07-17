@@ -298,7 +298,7 @@ function EditarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: (
   const editarFn = useServerFn(editarUsuarioPublico);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  const [cargo, setCargo] = useState<"delegado_geral" | "corregedor" | "cidadao" | "mp">("cidadao");
+  const [cargo, setCargo] = useState<"delegado_geral" | "delegado_corregedor" | "coordenador" | "corregedor" | "cidadao" | "mp">("cidadao");
   const [rg, setRg] = useState("");
   const [discord, setDiscord] = useState("");
   const [telefone, setTelefone] = useState("");

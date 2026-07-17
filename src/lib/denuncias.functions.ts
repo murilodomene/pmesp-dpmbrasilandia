@@ -10,6 +10,7 @@ const STATUS_VALUES = [
   "recebida",
   "em_analise",
   "em_investigacao",
+  "concluso",
   "ag_decurso_prazo",
   "arquivada",
 ] as const;

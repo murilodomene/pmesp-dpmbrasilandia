@@ -842,6 +842,7 @@ export type Database = {
         | "ag_decurso_prazo"
         | "transito_julgado"
         | "em_recurso"
+        | "concluso"
       movimento_especie:
         | "despacho"
         | "decisao"
@@ -1011,6 +1012,7 @@ export const Constants = {
         "ag_decurso_prazo",
         "transito_julgado",
         "em_recurso",
+        "concluso",
       ],
       movimento_especie: [
         "despacho",

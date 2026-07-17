@@ -561,7 +561,8 @@ export const retificarDenunciado = createServerFn({ method: "POST" })
     const podeRetificar =
       p.prolator_cargo === "delegado_geral" ||
       p.prolator_cargo === "delegado_corregedor" ||
-      p.prolator_cargo === "corregedor";
+      p.prolator_cargo === "corregedor" ||
+      p.prolator_cargo === "coordenador";
     if (!podeRetificar) {
       throw new Error("Apenas Delegado Geral, Delegado Corregedor ou Corregedor podem retificar o denunciado.");
     }
@@ -595,9 +596,10 @@ export const retificarDenunciado = createServerFn({ method: "POST" })
     if (
       cargoMudou &&
       p.prolator_cargo !== "delegado_corregedor" &&
-      p.prolator_cargo !== "corregedor"
+      p.prolator_cargo !== "corregedor" &&
+      p.prolator_cargo !== "coordenador"
     ) {
-      throw new Error("Apenas Delegado Corregedor ou Corregedor podem alterar o cargo do denunciado.");
+      throw new Error("Apenas Delegado Corregedor, Coordenador ou Corregedor podem alterar o cargo do denunciado.");
     }
 
     const { error: updErr } = await context.supabase
@@ -706,9 +708,10 @@ export const instaurarOficio = createServerFn({ method: "POST" })
     if (
       p.prolator_cargo !== "delegado_geral" &&
       p.prolator_cargo !== "delegado_corregedor" &&
-      p.prolator_cargo !== "corregedor"
+      p.prolator_cargo !== "corregedor" &&
+      p.prolator_cargo !== "coordenador"
     ) {
-      throw new Error("Apenas Delegado Geral, Delegado Corregedor ou Corregedor podem instaurar de ofício.");
+      throw new Error("Apenas Delegado Geral, Delegado Corregedor, Coordenador ou Corregedor podem instaurar de ofício.");
     }
 
     const agora = new Date().toISOString();

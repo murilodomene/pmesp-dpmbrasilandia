@@ -1535,7 +1535,9 @@ function labelEspecie(e: string): string {
           ? "Retificação"
           : e === "portaria"
             ? "Portaria Inaugural"
-            : "Status";
+            : e === "mandado"
+              ? "Mandado"
+              : "Status";
 }
 
 // Reconhece referências a artigos do Manual — incluindo incisos, parágrafos e

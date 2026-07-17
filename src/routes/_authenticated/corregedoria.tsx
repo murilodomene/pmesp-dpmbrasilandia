@@ -1138,6 +1138,25 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 <Trash2 className="h-3.5 w-3.5" /> Excluir
               </button>
             );
+            const btnTextoDiscord = m.especie === "mandado" && !canceladoEm && (
+              <button
+                type="button"
+                onClick={() =>
+                  setDialog({
+                    kind: "textoDiscord",
+                    teor: String(m.teor ?? ""),
+                    numeroProtocolo: denuncia.numero_protocolo,
+                    prolatorNome: m.prolator_nome,
+                    prolatorCargo: cargoLabelFull(m.prolator_cargo as string),
+                  })
+                }
+                aria-label="Gerar texto formatado para Discord"
+                title="Gerar texto formatado para Discord"
+                className="inline-flex items-center gap-1 rounded-md border border-transparent px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              >
+                <MessageSquare className="h-3.5 w-3.5" /> Texto Discord
+              </button>
+            );
 
 
             if (isAto) {

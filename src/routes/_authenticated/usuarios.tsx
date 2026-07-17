@@ -54,7 +54,7 @@ export const Route = createFileRoute("/_authenticated/usuarios")({
       .select("role")
       .eq("user_id", uid)
       .maybeSingle();
-    if ((role as { role: string } | null)?.role !== "delegado_corregedor") {
+    if (((role as { role: string } | null)?.role !== "delegado_corregedor") && ((role as { role: string } | null)?.role !== "coordenador")) {
       throw redirect({ to: "/painel" });
     }
   },
@@ -65,12 +65,13 @@ export const Route = createFileRoute("/_authenticated/usuarios")({
 const CARGO_LABEL: Record<string, string> = {
   delegado_geral: "Delegado Geral",
   delegado_corregedor: "Delegado Corregedor",
+  coordenador: "Coordenador",
   corregedor: "Corregedor",
   cidadao: "Cidadão",
   mp: "Ministério Público",
 };
 
-const DELEGADO_CARGOS = new Set(["delegado_corregedor"]);
+const DELEGADO_CARGOS = new Set(["delegado_corregedor", "coordenador"]);
 const EDITAVEIS = new Set(["delegado_geral", "corregedor", "cidadao", "mp"]);
 
 interface Usuario {

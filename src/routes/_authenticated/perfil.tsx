@@ -35,7 +35,7 @@ function PerfilPage() {
     queryFn: () => sessionFn(),
   });
 
-  const isCorregedor = session?.cargo === "delegado_corregedor";
+  const isCorregedor = session?.cargo === "delegado_corregedor" || session?.cargo === "coordenador";
   const canEditAll = isCorregedor;
 
   const [nome, setNome] = useState("");

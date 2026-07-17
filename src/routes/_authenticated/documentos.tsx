@@ -7,7 +7,7 @@ import { Search, Save, Pencil, X, FileText, ChevronUp, ChevronDown, GitBranch } 
 import { HierarquiaQuadro } from "@/components/HierarquiaQuadro";
 import { FluxoPAD } from "@/components/FluxoPAD";
 
-const HIERARQUIA_ROLES = new Set(["delegado_geral", "delegado_corregedor", "corregedor"]);
+const HIERARQUIA_ROLES = new Set(["delegado_geral", "delegado_corregedor", "corregedor", "coordenador"]);
 const FLUXO_ROLES = HIERARQUIA_ROLES;
 
 export const Route = createFileRoute("/_authenticated/documentos")({
@@ -51,7 +51,7 @@ function DocumentosPage() {
   const [salvando, setSalvando] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const podeEditar = cargo === "delegado_geral" || cargo === "delegado_corregedor";
+  const podeEditar = cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "coordenador";
 
   useEffect(() => {
     if (!session) return;

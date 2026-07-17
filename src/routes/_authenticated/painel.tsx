@@ -61,7 +61,7 @@ function PainelInterno() {
 
   const cargo = session?.cargo ?? null;
   const podeInstaurar =
-    cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor";
+    cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor" || cargo === "coordenador";
 
   if (session && (session.profile?.status !== "ativo" || !session.cargo)) {
     return <RedirectPendente />;

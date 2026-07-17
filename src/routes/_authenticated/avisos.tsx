@@ -55,8 +55,8 @@ function AvisosPage() {
   }, [session]);
 
   const ativo = status === "ativo";
-  const podeVer = ativo && (cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor");
-  const podePublicar = ativo && (cargo === "delegado_geral" || cargo === "delegado_corregedor");
+  const podeVer = ativo && (cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor" || cargo === "coordenador");
+  const podePublicar = ativo && (cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "coordenador");
 
   const listFn = useServerFn(listAvisos);
   const { data: avisos = [], isLoading } = useQuery({

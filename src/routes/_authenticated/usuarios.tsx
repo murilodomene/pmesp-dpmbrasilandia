@@ -554,6 +554,8 @@ function AprovarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: 
                 <SelectItem value="cidadao">Cidadão</SelectItem>
                 <SelectItem value="mp">Ministério Público</SelectItem>
                 <SelectItem value="corregedor">Corregedor</SelectItem>
+                <SelectItem value="coordenador">Coordenador</SelectItem>
+                <SelectItem value="delegado_corregedor">Delegado Corregedor</SelectItem>
                 <SelectItem value="delegado_geral">Delegado Geral</SelectItem>
               </SelectContent>
             </Select>

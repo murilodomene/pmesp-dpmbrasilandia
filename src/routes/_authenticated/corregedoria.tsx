@@ -43,7 +43,7 @@ import { contarObservacoesPorPad, contarObservacoesPorPolicial } from "@/lib/obs
 
 
 import { getSessionInfo } from "@/lib/usuarios.functions";
-import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2, Download, ShieldCheck, Bell } from "lucide-react";
+import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2, Download, ShieldCheck, Bell, MessageSquare, Copy } from "lucide-react";
 import { DocumentTemplate, exportDocumentToPdf, useDocumentRef } from "@/components/DocumentTemplate";
 import { RichTextEditor, isHtmlAto, sanitizeAtoHtml } from "@/components/RichTextEditor";
 import { exportProcessoCompleto } from "@/lib/exportProcesso";
@@ -492,6 +492,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     | { kind: "cancelarMov"; movimento_id: string; resumo: string }
     | { kind: "excluirMov"; movimento_id: string; resumo: string }
     | { kind: "convocacao" }
+    | { kind: "textoDiscord"; teor: string; numeroProtocolo: string; prolatorNome: string; prolatorCargo: string }
 
     | { kind: "recurso" }
     | { kind: "resultadoRecurso" }
@@ -1137,6 +1138,25 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 <Trash2 className="h-3.5 w-3.5" /> Excluir
               </button>
             );
+            const btnTextoDiscord = m.especie === "mandado" && !canceladoEm && (
+              <button
+                type="button"
+                onClick={() =>
+                  setDialog({
+                    kind: "textoDiscord",
+                    teor: String(m.teor ?? ""),
+                    numeroProtocolo: denuncia.numero_protocolo,
+                    prolatorNome: m.prolator_nome,
+                    prolatorCargo: cargoLabelFull(m.prolator_cargo as string),
+                  })
+                }
+                aria-label="Gerar texto formatado para Discord"
+                title="Gerar texto formatado para Discord"
+                className="inline-flex items-center gap-1 rounded-md border border-transparent px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              >
+                <MessageSquare className="h-3.5 w-3.5" /> Texto Discord
+              </button>
+            );
 
 
             if (isAto) {
@@ -1166,6 +1186,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                       <span className="ml-auto text-muted-foreground tabular">
                         {new Date(m.criado_em).toLocaleString("pt-BR")}
                       </span>
+                      {btnTextoDiscord}
                       {btnCancelar}
                       {btnExcluirSilencioso}
                     </div>
@@ -1465,6 +1486,15 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
         <ConvocacaoDialog
           denunciaId={id}
           numeroProtocolo={denuncia.numero_protocolo}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {dialog?.kind === "textoDiscord" && (
+        <TextoDiscordDialog
+          teor={dialog.teor}
+          numeroProtocolo={dialog.numeroProtocolo}
+          prolatorNome={dialog.prolatorNome}
+          prolatorCargo={dialog.prolatorCargo}
           onClose={() => setDialog(null)}
         />
       )}
@@ -3375,6 +3405,124 @@ function ObservacoesPolicialBadge({ nome, matricula }: { nome: string; matricula
     </Link>
   );
 }
+
+
+function buildDiscordMandado(params: {
+  teor: string;
+  numeroProtocolo: string;
+  prolatorNome: string;
+  prolatorCargo: string;
+}): string {
+  const { teor, numeroProtocolo, prolatorNome, prolatorCargo } = params;
+
+  // Extrai texto plano do HTML preservando quebras entre parágrafos
+  const plain = teor
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  // Convocado(a): NOME, RG XXX, UNIDADE
+  const convMatch = plain.match(/Convocado\(a\):\s*([^\n]+)/i);
+  const convocadoLinha = convMatch ? convMatch[1].trim() : "@policial";
+
+  // DATA E HORA: X de MÊS de YYYY, às HHhMMmin
+  const dhMatch = plain.match(/DATA E HORA:\s*([^\n]+)/i);
+  const dataHora = dhMatch ? dhMatch[1].trim() : "[DATA] às [HORA]";
+
+  return [
+    `<:PCESP:1307085628730773534> **CORREGEDORIA GERAL DA POLÍCIA CIVIL DO ESTADO DE SÃO PAULO**`,
+    ``,
+    "```MANDADO DE CITAÇÃO```",
+    ``,
+    `> Autos nº ${numeroProtocolo}`,
+    `> Convocado(a): ${convocadoLinha}`,
+    ``,
+    `**DATA E HORA: ${dataHora}**`,
+    ``,
+    `A Corregedoria Geral da Polícia Civil, no uso de suas atribuições legais e regulamentares, **CONVOCA **o servidor público qualificado neste instrumento a comparecer à 1ª Delegacia da Polícia Civil, no dia e horário indicados, a fim de prestar esclarecimentos.`,
+    ``,
+    `O não comparecimento sem justificativa acarretará em sanções disciplinares administrativas. Caso não possa comparecer na data e local informados, deve-se entrar em contato via ticket, apresentando justificativa.`,
+    ``,
+    `Fica o servidor, ainda, **CIENTIFICADO **dos seguintes termos:`,
+    ``,
+    `**1)** Da faculdade de constituir advogado regularmente inscrito na OAB para acompanhar o ato;`,
+    `**2)** De que a ausência de defensor constituído não impedirá a realização do ato, resguardado o direito ao silêncio quanto a perguntas que possam implicar autoacusação;`,
+    `**3)** Do dever de manter seus dados cadastrais e de contato devidamente atualizados perante a administração policial.`,
+    ``,
+    `São Paulo/SP, na data da assinatura digital.`,
+    ``,
+    "```" + `${prolatorNome}\n${prolatorCargo}` + "```",
+  ].join("\n");
+}
+
+function TextoDiscordDialog({
+  teor,
+  numeroProtocolo,
+  prolatorNome,
+  prolatorCargo,
+  onClose,
+}: {
+  teor: string;
+  numeroProtocolo: string;
+  prolatorNome: string;
+  prolatorCargo: string;
+  onClose: () => void;
+}) {
+  const texto = buildDiscordMandado({ teor, numeroProtocolo, prolatorNome, prolatorCargo });
+  const [copiado, setCopiado] = useState(false);
+
+  async function copiar() {
+    try {
+      await navigator.clipboard.writeText(texto);
+      setCopiado(true);
+      toast.success("Texto copiado para a área de transferência.");
+      setTimeout(() => setCopiado(false), 2000);
+    } catch {
+      toast.error("Não foi possível copiar. Selecione e copie manualmente.");
+    }
+  }
+
+  return (
+    <Modal title="Texto formatado para Discord" onClose={onClose} size="3xl">
+      <p className="text-xs text-muted-foreground">
+        Texto já formatado com a sintaxe do Discord (negrito, blocos de código e citação). Basta
+        colar no canal desejado.
+      </p>
+      <textarea
+        readOnly
+        value={texto}
+        className="mt-3 h-[420px] w-full resize-none rounded-md border border-border bg-surface-2 p-3 font-mono text-xs leading-relaxed text-foreground"
+        onFocus={(e) => e.currentTarget.select()}
+      />
+      <div className="mt-4 flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-md border border-border px-4 py-2 text-sm"
+        >
+          Fechar
+        </button>
+        <button
+          type="button"
+          onClick={copiar}
+          className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+        >
+          <Copy className="h-4 w-4" />
+          {copiado ? "Copiado!" : "Copiar texto"}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
 
 
 

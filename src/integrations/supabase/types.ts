@@ -827,6 +827,7 @@ export type Database = {
       app_role:
         | "delegado_geral"
         | "delegado_corregedor"
+        | "coordenador"
         | "corregedor"
         | "cidadao"
         | "mp"
@@ -994,6 +995,7 @@ export const Constants = {
       app_role: [
         "delegado_geral",
         "delegado_corregedor",
+        "coordenador",
         "corregedor",
         "cidadao",
         "mp",

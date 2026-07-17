@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const ROLES = ["delegado_geral", "delegado_corregedor", "coordenador", "corregedor", "cidadao", "mp"] as const;
-const EDITABLE_ROLES = ["delegado_geral", "coordenador", "corregedor", "cidadao", "mp"] as const;
+const EDITABLE_ROLES = ["delegado_geral", "delegado_corregedor", "coordenador", "corregedor", "cidadao", "mp"] as const;
 const STATUS = ["pendente", "ativo", "inativo"] as const;
 const DELEGADO_ROLES = ["delegado_geral", "delegado_corregedor", "coordenador"] as const;
 

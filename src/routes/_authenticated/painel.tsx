@@ -37,7 +37,7 @@ const STATUS_LIST_MANUAL: DenunciaStatus[] = [
 
 type TabKey = "em_andamento" | "ag_decurso" | "transitado" | "arquivado";
 const TAB_STATUS: Record<TabKey, DenunciaStatus[]> = {
-  em_andamento: ["novo", "recebida", "aguardando_analise", "em_analise", "em_investigacao"],
+  em_andamento: ["novo", "recebida", "aguardando_analise", "em_analise", "em_investigacao", "concluso"],
   ag_decurso: ["ag_decurso_prazo"],
   transitado: ["transito_julgado", "concluida"],
   arquivado: ["arquivada"],

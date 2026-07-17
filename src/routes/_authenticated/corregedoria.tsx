@@ -2019,7 +2019,12 @@ function PortariaDialog({
       .split(/\n{2,}/)
       .map((par) => `<p>${par.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br/>")}</p>`)
       .join("");
-    setCorpo(html);
+    const nomeUp = session.profile.nome.toUpperCase();
+    const cargoUp = cargoLabelFull(session.cargo).toUpperCase();
+    const assinatura =
+      `<p style="text-align:center"><strong>${nomeUp}</strong></p>` +
+      `<p style="text-align:center"><strong>${cargoUp}</strong></p>`;
+    setCorpo(html + assinatura);
     setModeloAplicado(true);
   }
 

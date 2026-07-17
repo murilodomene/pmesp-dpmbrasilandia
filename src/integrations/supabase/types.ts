@@ -851,6 +851,7 @@ export type Database = {
         | "cancelamento"
         | "certidao"
         | "evento"
+        | "mandado"
       notificacao_tipo: "auto" | "intimacao" | "aviso"
       profile_status: "pendente" | "ativo" | "inativo"
       unidade_pc:
@@ -1019,6 +1020,7 @@ export const Constants = {
         "cancelamento",
         "certidao",
         "evento",
+        "mandado",
       ],
       notificacao_tipo: ["auto", "intimacao", "aviso"],
       profile_status: ["pendente", "ativo", "inativo"],

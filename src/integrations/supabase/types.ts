@@ -763,6 +763,10 @@ export type Database = {
         Args: { _denuncia_id: string; _resultado: string }
         Returns: undefined
       }
+      certificar_transito_administrativo: {
+        Args: { _denuncia_id: string }
+        Returns: undefined
+      }
       conceder_acesso_mp: {
         Args: { _denuncia_id: string; _mp_user_id: string }
         Returns: undefined

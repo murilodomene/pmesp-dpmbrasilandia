@@ -37,6 +37,7 @@ import {
 
   registrarRecurso,
   certificarResultadoRecurso,
+  certificarTransitoAdministrativo,
 } from "@/lib/denuncias.functions";
 import { contarObservacoesPorPad, contarObservacoesPorPolicial } from "@/lib/observacoes.functions";
 
@@ -498,6 +499,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
 
     | { kind: "recurso" }
     | { kind: "resultadoRecurso" }
+    | { kind: "transitoAdmin" }
     | { kind: "intimar" }
     | null
   >(null);
@@ -597,6 +599,16 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
   const podeCertificarResultado =
     status === "em_recurso" &&
     (cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor" || cargo === "coordenador" || cargo === "coordenador");
+  const temIpcLavrado = movimentos.some(
+    (m) => m.especie === "ipc" && !(m as { cancelado_em?: string | null }).cancelado_em,
+  );
+  const podeCertificarTransitoAdmin =
+    temIpcLavrado &&
+    !denuncia.certidao_gerada &&
+    status !== "transito_julgado" &&
+    status !== "arquivada" &&
+    status !== "em_recurso" &&
+    (cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor" || cargo === "coordenador");
   const isInternoCorregedoria =
     cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor" || cargo === "coordenador";
 
@@ -671,6 +683,15 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 className="inline-flex items-center gap-1 rounded-md border border-violet-500/40 bg-violet-500/10 px-3 py-1.5 text-xs text-violet-100 hover:bg-violet-500/20"
               >
                 Certificar resultado
+              </button>
+            )}
+            {podeCertificarTransitoAdmin && (
+              <button
+                onClick={() => setDialog({ kind: "transitoAdmin" })}
+                title="Certificar trânsito em julgado administrativo (IPC sem sanção)"
+                className="inline-flex items-center gap-1 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-xs text-emerald-100 hover:bg-emerald-500/20"
+              >
+                Certificar trânsito administrativo
               </button>
             )}
             {(cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "coordenador") && (
@@ -1507,6 +1528,9 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
       {dialog?.kind === "resultadoRecurso" && (
         <ResultadoRecursoDialog id={id} onClose={() => setDialog(null)} />
       )}
+      {dialog?.kind === "transitoAdmin" && (
+        <TransitoAdministrativoDialog id={id} onClose={() => setDialog(null)} />
+      )}
 
 
 
@@ -1821,6 +1845,45 @@ function RecursoDialog({ id, onClose }: { id: string; onClose: () => void }) {
           className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
           {m.isPending ? "Registrando..." : "Registrar recurso"}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+function TransitoAdministrativoDialog({ id, onClose }: { id: string; onClose: () => void }) {
+  const qc = useQueryClient();
+  const fn = useServerFn(certificarTransitoAdministrativo);
+  const m = useMutation({
+    mutationFn: () => fn({ data: { denuncia_id: id } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["denuncia", id] });
+      qc.invalidateQueries({ queryKey: ["denuncias"] });
+      onClose();
+    },
+  });
+  return (
+    <Modal title="Certificar trânsito em julgado administrativo" onClose={onClose}>
+      <p className="text-xs text-muted-foreground">
+        Utilize esta opção quando o IPC foi publicado sem aplicação de sanção
+        administrativa e, portanto, não é cabível recurso. Ao confirmar, uma
+        certidão de trânsito em julgado administrativo será juntada aos autos e
+        o procedimento será encerrado (Trânsito em Julgado), sem aguardar o
+        decurso do prazo recursal.
+      </p>
+      {m.error instanceof Error && (
+        <p className="mt-3 text-xs text-destructive">{m.error.message}</p>
+      )}
+      <div className="mt-4 flex justify-end gap-2">
+        <button onClick={onClose} className="rounded-md border border-border px-4 py-2 text-sm">
+          Cancelar
+        </button>
+        <button
+          onClick={() => m.mutate()}
+          disabled={m.isPending}
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+        >
+          {m.isPending ? "Certificando..." : "Certificar trânsito"}
         </button>
       </div>
     </Modal>

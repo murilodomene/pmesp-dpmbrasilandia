@@ -685,6 +685,15 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 Certificar resultado
               </button>
             )}
+            {podeCertificarTransitoAdmin && (
+              <button
+                onClick={() => setDialog({ kind: "transitoAdmin" })}
+                title="Certificar trânsito em julgado administrativo (IPC sem sanção)"
+                className="inline-flex items-center gap-1 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-xs text-emerald-100 hover:bg-emerald-500/20"
+              >
+                Certificar trânsito administrativo
+              </button>
+            )}
             {(cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "coordenador") && (
               <ExportarProcessoBtn
                 denuncia={denuncia}

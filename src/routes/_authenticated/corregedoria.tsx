@@ -37,6 +37,7 @@ import {
 
   registrarRecurso,
   certificarResultadoRecurso,
+  certificarTransitoAdministrativo,
 } from "@/lib/denuncias.functions";
 import { contarObservacoesPorPad, contarObservacoesPorPolicial } from "@/lib/observacoes.functions";
 

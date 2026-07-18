@@ -599,6 +599,16 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
   const podeCertificarResultado =
     status === "em_recurso" &&
     (cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor" || cargo === "coordenador" || cargo === "coordenador");
+  const temIpcLavrado = movimentos.some(
+    (m) => m.especie === "ipc" && !(m as { cancelado_em?: string | null }).cancelado_em,
+  );
+  const podeCertificarTransitoAdmin =
+    temIpcLavrado &&
+    !denuncia.certidao_gerada &&
+    status !== "transito_julgado" &&
+    status !== "arquivada" &&
+    status !== "em_recurso" &&
+    (cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor" || cargo === "coordenador");
   const isInternoCorregedoria =
     cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor" || cargo === "coordenador";
 

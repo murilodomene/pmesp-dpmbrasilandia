@@ -499,6 +499,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
 
     | { kind: "recurso" }
     | { kind: "resultadoRecurso" }
+    | { kind: "transitoAdmin" }
     | { kind: "intimar" }
     | null
   >(null);

@@ -305,6 +305,20 @@ export const certificarResultadoRecurso = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const certificarTransitoAdministrativo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({ denuncia_id: z.string().uuid() }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.rpc(
+      "certificar_transito_administrativo" as never,
+      { _denuncia_id: data.denuncia_id } as never,
+    );
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 export const receberDenuncia = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>

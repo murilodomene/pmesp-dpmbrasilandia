@@ -1851,6 +1851,45 @@ function RecursoDialog({ id, onClose }: { id: string; onClose: () => void }) {
   );
 }
 
+function TransitoAdministrativoDialog({ id, onClose }: { id: string; onClose: () => void }) {
+  const qc = useQueryClient();
+  const fn = useServerFn(certificarTransitoAdministrativo);
+  const m = useMutation({
+    mutationFn: () => fn({ data: { denuncia_id: id } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["denuncia", id] });
+      qc.invalidateQueries({ queryKey: ["denuncias"] });
+      onClose();
+    },
+  });
+  return (
+    <Modal title="Certificar trânsito em julgado administrativo" onClose={onClose}>
+      <p className="text-xs text-muted-foreground">
+        Utilize esta opção quando o IPC foi publicado sem aplicação de sanção
+        administrativa e, portanto, não é cabível recurso. Ao confirmar, uma
+        certidão de trânsito em julgado administrativo será juntada aos autos e
+        o procedimento será encerrado (Trânsito em Julgado), sem aguardar o
+        decurso do prazo recursal.
+      </p>
+      {m.error instanceof Error && (
+        <p className="mt-3 text-xs text-destructive">{m.error.message}</p>
+      )}
+      <div className="mt-4 flex justify-end gap-2">
+        <button onClick={onClose} className="rounded-md border border-border px-4 py-2 text-sm">
+          Cancelar
+        </button>
+        <button
+          onClick={() => m.mutate()}
+          disabled={m.isPending}
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+        >
+          {m.isPending ? "Certificando..." : "Certificar trânsito"}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
 type ResultadoRecurso = "provido" | "parcialmente_provido" | "indeferido" | "nao_conhecido";
 const RESULTADO_LABELS: Record<ResultadoRecurso, string> = {
   provido: "Provido",

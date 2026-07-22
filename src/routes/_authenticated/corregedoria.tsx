@@ -44,7 +44,7 @@ import { contarObservacoesPorPad, contarObservacoesPorPolicial } from "@/lib/obs
 
 
 import { getSessionInfo } from "@/lib/usuarios.functions";
-import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2, Download, ShieldCheck, Bell, MessageSquare, Copy } from "lucide-react";
+import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2, Download, ShieldCheck, Bell, MessageSquare, Copy, Mic } from "lucide-react";
 import { DocumentTemplate, exportDocumentToPdf, useDocumentRef } from "@/components/DocumentTemplate";
 import { RichTextEditor, isHtmlAto, sanitizeAtoHtml } from "@/components/RichTextEditor";
 import { exportProcessoCompleto } from "@/lib/exportProcesso";
@@ -97,6 +97,7 @@ const ESPECIES = [
   { v: "despacho", l: "Despacho", icon: FileText },
   { v: "decisao", l: "Decisão", icon: Scale },
   { v: "ipc", l: "IPC", icon: Gavel },
+  { v: "ata", l: "Ata", icon: Mic },
 ] as const;
 
 function Corregedoria() {
@@ -482,7 +483,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     | { kind: "portaria" }
     | {
         kind: "verAto";
-        especie: "despacho" | "decisao" | "portaria" | "mandado";
+        especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata";
         teor: string;
         quando: string;
         prolator: string;
@@ -506,7 +507,8 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
 
 
   const lancarFn = useServerFn(lancarMovimento);
-  const [especie, setEspecie] = useState<"despacho" | "decisao" | "ipc" | null>(null);
+  const [especie, setEspecie] = useState<"despacho" | "decisao" | "ipc" | "ata" | null>(null);
+  const [ataDepoente, setAtaDepoente] = useState("");
   const [teor, setTeor] = useState("");
   const [ipcUnidade, setIpcUnidade] = useState<string>("");
   const [ipcIdent, setIpcIdent] = useState<string>("");
@@ -535,6 +537,10 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
           identificacao: ipcIdent.trim(),
           relato: sanitizeAtoHtml(teor),
         });
+      } else if (especie === "ata") {
+        const depoente = ataDepoente.trim();
+        if (!depoente) throw new Error("Informe quem prestou o depoimento.");
+        teorFinal = montarTeorAta({ depoente, relato: sanitizeAtoHtml(teor) });
       } else {
         teorFinal = sanitizeAtoHtml(teor);
       }
@@ -547,6 +553,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     onSuccess: () => {
       setTeor("");
       setAnexos([]);
+      setAtaDepoente("");
       setEspecie(null);
       qc.invalidateQueries({ queryKey: ["denuncia", id] });
       qc.invalidateQueries({ queryKey: ["denuncias"] });
@@ -1031,6 +1038,33 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                   valor="Corregedoria Geral da Polícia Civil"
                 />
               </div>
+            ) : especie === "ata" ? (
+              <div className="mt-3 space-y-3">
+                <div>
+                  <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                    Depoente (quem prestou o depoimento)
+                  </span>
+                  <input
+                    value={ataDepoente}
+                    onChange={(ev) => setAtaDepoente(ev.target.value)}
+                    placeholder="Nome — qualificação (RG, cargo, unidade)"
+                    className="mt-1 w-full rounded-md border border-border bg-surface-2 px-2 py-1.5 text-sm"
+                  />
+                </div>
+                <div>
+                  <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                    Termo de depoimento
+                  </span>
+                  <div className="mt-1">
+                    <RichTextEditor
+                      value={teor}
+                      onChange={setTeor}
+                      placeholder="Transcreva a ata / termo de depoimento."
+                      minHeight={200}
+                    />
+                  </div>
+                </div>
+              </div>
             ) : (
               <div className="mt-3 space-y-3">
                 <RichTextEditor
@@ -1059,6 +1093,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                   setEspecie(null);
                   setTeor("");
                   setAnexos([]);
+                  setAtaDepoente("");
                 }}
                 className="rounded-md border border-border px-3 py-2 text-sm hover:bg-surface-2"
               >
@@ -1067,7 +1102,9 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
               <button
                 onClick={() => mLancar.mutate()}
                 disabled={
-                  teor.replace(/<[^>]+>/g, "").trim().length < 3 || mLancar.isPending
+                  teor.replace(/<[^>]+>/g, "").trim().length < 3 ||
+                  (especie === "ata" && ataDepoente.trim().length < 2) ||
+                  mLancar.isPending
                 }
                 className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
               >
@@ -1101,7 +1138,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
               motivo_cancelamento?: string | null;
             };
             const isAto =
-              m.especie === "despacho" || m.especie === "decisao" || m.especie === "portaria" || m.especie === "mandado";
+              m.especie === "despacho" || m.especie === "decisao" || m.especie === "portaria" || m.especie === "mandado" || m.especie === "ata";
             const isIpc = m.especie === "ipc";
             const isCertidao =
               m.especie === "certidao" ||
@@ -1215,7 +1252,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                     </div>
                     <div className={canceladoEm ? "line-through decoration-destructive/60" : ""}>
                       <TimelineAtoCard
-                        especie={m.especie as "despacho" | "decisao" | "portaria" | "mandado"}
+                        especie={m.especie as "despacho" | "decisao" | "portaria" | "mandado" | "ata"}
                         teor={m.teor}
                         quando={m.criado_em}
                         prolator={m.prolator_nome}
@@ -1580,6 +1617,18 @@ function montarTeorIpc(params: {
 }
 
 
+function montarTeorAta(params: { depoente: string; relato: string }): string {
+  const dep = params.depoente.trim().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const relato = params.relato.trim();
+  return `<p><strong>DEPOENTE:</strong> ${dep}</p>${relato}`;
+}
+
+function extrairDepoenteAta(teor: string): { depoente: string | null; corpo: string } {
+  const m = teor.match(/^\s*<p>\s*<strong>\s*DEPOENTE:\s*<\/strong>\s*([\s\S]*?)<\/p>([\s\S]*)$/i);
+  if (m) return { depoente: m[1].trim(), corpo: m[2].trim() };
+  return { depoente: null, corpo: teor };
+}
+
 function labelEspecie(e: string): string {
   return e === "despacho"
     ? "Despacho"
@@ -1587,7 +1636,9 @@ function labelEspecie(e: string): string {
       ? "Decisão"
       : e === "ipc"
         ? "IPC"
-        : e === "retificacao"
+        : e === "ata"
+          ? "Ata"
+          : e === "retificacao"
           ? "Retificação"
           : e === "portaria"
             ? "Portaria Inaugural"
@@ -1672,6 +1723,7 @@ function MovMarker({ especie }: { especie: string }) {
     despacho: "bg-status-analise text-status-analise-fg",
     decisao: "bg-destructive text-destructive-foreground",
     ipc: "bg-status-investigacao text-status-investigacao-fg",
+    ata: "bg-sky-600 text-white",
     status: "bg-status-aguardando text-status-aguardando-fg",
     retificacao: "bg-status-aguardando text-status-aguardando-fg",
     portaria: "bg-primary text-primary-foreground",
@@ -1684,15 +1736,17 @@ function MovMarker({ especie }: { especie: string }) {
       ? Scale
       : especie === "ipc"
         ? Gavel
-        : especie === "retificacao"
-          ? Pencil
-          : especie === "portaria"
-            ? Stamp
-            : especie === "certidao"
-              ? ShieldCheck
-              : especie === "evento"
-                ? Bell
-                : FileText;
+        : especie === "ata"
+          ? Mic
+          : especie === "retificacao"
+            ? Pencil
+            : especie === "portaria"
+              ? Stamp
+              : especie === "certidao"
+                ? ShieldCheck
+                : especie === "evento"
+                  ? Bell
+                  : FileText;
 
   return (
     <div className={`grid h-8 w-8 flex-shrink-0 place-items-center rounded-full ${style[especie] ?? "bg-surface-2 text-foreground"}`}>
@@ -2209,32 +2263,35 @@ function PortariaDialog({
 
 
 
-const ATO_ASSUNTO: Record<"despacho" | "decisao" | "portaria" | "mandado", string> = {
+const ATO_ASSUNTO: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata", string> = {
   despacho: "Despacho",
   decisao: "Decisão",
   portaria: "Portaria Inaugural",
   mandado: "Mandado de Citação",
+  ata: "Termo de Depoimento",
 };
 
-const ATO_TIPO: Record<"despacho" | "decisao" | "portaria" | "mandado", "DESPACHO" | "DECISÃO" | "PORTARIA" | "MANDADO"> = {
+const ATO_TIPO: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata", "DESPACHO" | "DECISÃO" | "PORTARIA" | "MANDADO" | "TERMO DE DEPOIMENTO"> = {
   despacho: "DESPACHO",
   decisao: "DECISÃO",
   portaria: "PORTARIA",
   mandado: "MANDADO",
+  ata: "TERMO DE DEPOIMENTO",
 };
 
-const ATO_MARKER: Record<"despacho" | "decisao" | "portaria" | "mandado", string> = {
+const ATO_MARKER: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata", string> = {
   despacho: "bg-status-analise",
   decisao: "bg-destructive",
   portaria: "bg-primary",
   mandado: "bg-primary",
+  ata: "bg-sky-600",
 };
 
 /**
  * Renderiza o corpo do ato: HTML sanitizado quando salvo como rich text,
  * ou texto plano (com links, se portaria) para registros legados.
  */
-function renderAtoBody(_especie: "despacho" | "decisao" | "portaria" | "mandado", teor: string, pdf = false): React.ReactNode {
+function renderAtoBody(_especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata", teor: string, pdf = false): React.ReactNode {
   if (isHtmlAto(teor)) {
     return (
       <div
@@ -2255,7 +2312,7 @@ function TimelineAtoCard({
   procedimento,
   denunciado,
 }: {
-  especie: "despacho" | "decisao" | "portaria" | "mandado";
+  especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata";
   teor: string;
   quando: string;
   prolator: string;
@@ -2541,7 +2598,7 @@ function VerAtoDialog({
   denunciado,
   onClose,
 }: {
-  especie: "despacho" | "decisao" | "portaria" | "mandado";
+  especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata";
   teor: string;
   quando: string;
   prolator: string;

@@ -96,6 +96,7 @@ const UNIDADES = ["DEIC", "CORREGEPOL", "DECAP", "DHPP", "CERCO", "GARRA", "DENA
 const ESPECIES = [
   { v: "despacho", l: "Despacho", icon: FileText },
   { v: "decisao", l: "Decisão", icon: Scale },
+  { v: "certidao", l: "Certidão", icon: ShieldCheck },
   { v: "ipc", l: "IPC", icon: Gavel },
   { v: "ata", l: "Ata", icon: Mic },
 ] as const;

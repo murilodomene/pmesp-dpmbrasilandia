@@ -483,7 +483,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     | { kind: "portaria" }
     | {
         kind: "verAto";
-        especie: "despacho" | "decisao" | "portaria" | "mandado";
+        especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata";
         teor: string;
         quando: string;
         prolator: string;
@@ -1252,7 +1252,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                     </div>
                     <div className={canceladoEm ? "line-through decoration-destructive/60" : ""}>
                       <TimelineAtoCard
-                        especie={m.especie as "despacho" | "decisao" | "portaria" | "mandado"}
+                        especie={m.especie as "despacho" | "decisao" | "portaria" | "mandado" | "ata"}
                         teor={m.teor}
                         quando={m.criado_em}
                         prolator={m.prolator_nome}
@@ -2263,21 +2263,21 @@ function PortariaDialog({
 
 
 
-const ATO_ASSUNTO: Record<"despacho" | "decisao" | "portaria" | "mandado", string> = {
+const ATO_ASSUNTO: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata", string> = {
   despacho: "Despacho",
   decisao: "Decisão",
   portaria: "Portaria Inaugural",
   mandado: "Mandado de Citação",
 };
 
-const ATO_TIPO: Record<"despacho" | "decisao" | "portaria" | "mandado", "DESPACHO" | "DECISÃO" | "PORTARIA" | "MANDADO"> = {
+const ATO_TIPO: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata", "DESPACHO" | "DECISÃO" | "PORTARIA" | "MANDADO" | "TERMO DE DEPOIMENTO"> = {
   despacho: "DESPACHO",
   decisao: "DECISÃO",
   portaria: "PORTARIA",
   mandado: "MANDADO",
 };
 
-const ATO_MARKER: Record<"despacho" | "decisao" | "portaria" | "mandado", string> = {
+const ATO_MARKER: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata", string> = {
   despacho: "bg-status-analise",
   decisao: "bg-destructive",
   portaria: "bg-primary",
@@ -2288,7 +2288,7 @@ const ATO_MARKER: Record<"despacho" | "decisao" | "portaria" | "mandado", string
  * Renderiza o corpo do ato: HTML sanitizado quando salvo como rich text,
  * ou texto plano (com links, se portaria) para registros legados.
  */
-function renderAtoBody(_especie: "despacho" | "decisao" | "portaria" | "mandado", teor: string, pdf = false): React.ReactNode {
+function renderAtoBody(_especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata", teor: string, pdf = false): React.ReactNode {
   if (isHtmlAto(teor)) {
     return (
       <div
@@ -2309,7 +2309,7 @@ function TimelineAtoCard({
   procedimento,
   denunciado,
 }: {
-  especie: "despacho" | "decisao" | "portaria" | "mandado";
+  especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata";
   teor: string;
   quando: string;
   prolator: string;
@@ -2595,7 +2595,7 @@ function VerAtoDialog({
   denunciado,
   onClose,
 }: {
-  especie: "despacho" | "decisao" | "portaria" | "mandado";
+  especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata";
   teor: string;
   quando: string;
   prolator: string;

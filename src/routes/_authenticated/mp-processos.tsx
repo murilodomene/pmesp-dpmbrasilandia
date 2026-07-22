@@ -8,10 +8,10 @@ import { RelogioPrescricao } from "@/components/RelogioPrescricao";
 import { type DenunciaStatus } from "@/lib/prescricao";
 import { listMeusProcessosMp, getDenuncia } from "@/lib/denuncias.functions";
 import { getSessionInfo } from "@/lib/usuarios.functions";
-import { FileText, Gavel, Scale, Stamp, ExternalLink, Download, ShieldAlert } from "lucide-react";
-import { isHtmlAto, sanitizeAtoHtml } from "@/components/RichTextEditor";
+import { ExternalLink, Download, ShieldAlert } from "lucide-react";
 import { exportProcessoCompleto } from "@/lib/exportProcesso";
 import { ProcessoLetterhead, ProcessoDetalheSkeleton } from "@/components/ProcessoLetterhead";
+import { TimelineMovimentos } from "@/components/TimelineMovimentos";
 
 
 export const Route = createFileRoute("/_authenticated/mp-processos")({
@@ -240,38 +240,12 @@ function DetalheProcesso({ id }: { id: string }) {
         )}
       </div>
 
-      <div className="surface p-5">
-        <h2 className="font-serif text-lg">Movimentação</h2>
-        {data.movimentos.length === 0 ? (
-          <div className="mt-2 text-xs text-muted-foreground">Sem movimentos.</div>
-        ) : (
-          <ul className="mt-3 space-y-3">
-            {data.movimentos.map((m) => (
-              <li key={m.id} className="rounded-md border border-border/60 p-3">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <IconEspecie especie={m.especie} />
-                  <span className="uppercase tracking-wider">{m.especie}</span>
-                  <span className="tabular">
-                    {new Date(m.criado_em).toLocaleString("pt-BR")}
-                  </span>
-                </div>
-                {isHtmlAto(m.teor) ? (
-                  <div
-                    className="ato-body mt-2 whitespace-pre-wrap text-sm"
-                    dangerouslySetInnerHTML={{ __html: sanitizeAtoHtml(m.teor) }}
-                  />
-                ) : (
-                  <pre className="mt-2 whitespace-pre-wrap font-sans text-sm">{m.teor}</pre>
-                )}
-
-                <div className="mt-1 text-[11px] text-muted-foreground">
-                  {m.prolator_nome} — {m.prolator_cargo}
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      <TimelineMovimentos
+        movimentos={data.movimentos as never}
+        procedimento={d.numero_protocolo}
+        unidade={d.unidade || "—"}
+        policiais={data.policiais as never}
+      />
 
       <div className="surface p-5">
         <h2 className="font-serif text-lg">Oitivas</h2>
@@ -319,12 +293,6 @@ function Info({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
-function IconEspecie({ especie }: { especie: string }) {
-  if (especie === "portaria") return <Stamp className="h-3.5 w-3.5" />;
-  if (especie === "ipc") return <Gavel className="h-3.5 w-3.5" />;
-  if (especie === "decisao") return <Scale className="h-3.5 w-3.5" />;
-  return <FileText className="h-3.5 w-3.5" />;
-}
 
 function ExportarProcessoMpBtn({ data }: { data: Awaited<ReturnType<typeof getDenuncia>> }) {
   const [gerando, setGerando] = useState(false);

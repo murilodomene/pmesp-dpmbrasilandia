@@ -59,13 +59,13 @@ export function TimelineMovimentos({
             m.especie === "decisao" ||
             m.especie === "portaria" ||
             m.especie === "mandado" ||
-            m.especie === "ata";
+            m.especie === "ata" ||
+            m.especie === "certidao";
           const isIpc = m.especie === "ipc";
           const isCertidao =
-            m.especie === "certidao" ||
-            (m.especie === "evento" &&
-              typeof m.teor === "string" &&
-              /^\s*Certifico e dou f[ée] que foi interposto recurso administrativo/i.test(m.teor));
+            m.especie === "evento" &&
+            typeof m.teor === "string" &&
+            /^\s*Certifico e dou f[ée] que foi interposto recurso administrativo/i.test(m.teor);
 
           const canceladoEm = m.cancelado_em ?? null;
           const canceladoBadge = canceladoEm && (
@@ -106,7 +106,7 @@ export function TimelineMovimentos({
                   </div>
                   <div className={canceladoEm ? "line-through decoration-destructive/60" : ""}>
                     <TimelineAtoCard
-                      especie={m.especie as "despacho" | "decisao" | "portaria" | "mandado" | "ata"}
+                      especie={m.especie as "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao"}
                       teor={m.teor}
                       quando={m.criado_em}
                       prolator={m.prolator_nome}
@@ -360,27 +360,29 @@ function MovMarker({ especie }: { especie: string }) {
   );
 }
 
-const ATO_ASSUNTO: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata", string> = {
+const ATO_ASSUNTO: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao", string> = {
   despacho: "Despacho",
   decisao: "Decisão",
   portaria: "Portaria Inaugural",
   mandado: "Mandado de Citação",
   ata: "Termo de Depoimento",
+  certidao: "Certidão",
 };
 const ATO_TIPO: Record<
-  "despacho" | "decisao" | "portaria" | "mandado" | "ata",
-  "DESPACHO" | "DECISÃO" | "PORTARIA" | "MANDADO" | "TERMO DE DEPOIMENTO"
-> = { despacho: "DESPACHO", decisao: "DECISÃO", portaria: "PORTARIA", mandado: "MANDADO", ata: "TERMO DE DEPOIMENTO" };
-const ATO_MARKER: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata", string> = {
+  "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao",
+  "DESPACHO" | "DECISÃO" | "PORTARIA" | "MANDADO" | "TERMO DE DEPOIMENTO" | "CERTIDÃO"
+> = { despacho: "DESPACHO", decisao: "DECISÃO", portaria: "PORTARIA", mandado: "MANDADO", ata: "TERMO DE DEPOIMENTO", certidao: "CERTIDÃO" };
+const ATO_MARKER: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao", string> = {
   despacho: "bg-status-analise",
   decisao: "bg-destructive",
   portaria: "bg-primary",
   mandado: "bg-primary",
   ata: "bg-sky-600",
+  certidao: "bg-emerald-600",
 };
 
 function renderAtoBody(
-  _especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata",
+  _especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao",
   teor: string,
   pdf = false,
 ): React.ReactNode {
@@ -404,7 +406,7 @@ function TimelineAtoCard({
   procedimento,
   denunciado,
 }: {
-  especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata";
+  especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao";
   teor: string;
   quando: string;
   prolator: string;

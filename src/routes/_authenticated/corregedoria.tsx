@@ -96,6 +96,7 @@ const UNIDADES = ["DEIC", "CORREGEPOL", "DECAP", "DHPP", "CERCO", "GARRA", "DENA
 const ESPECIES = [
   { v: "despacho", l: "Despacho", icon: FileText },
   { v: "decisao", l: "Decisão", icon: Scale },
+  { v: "certidao", l: "Certidão", icon: ShieldCheck },
   { v: "ipc", l: "IPC", icon: Gavel },
   { v: "ata", l: "Ata", icon: Mic },
 ] as const;
@@ -507,7 +508,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
 
 
   const lancarFn = useServerFn(lancarMovimento);
-  const [especie, setEspecie] = useState<"despacho" | "decisao" | "ipc" | "ata" | null>(null);
+  const [especie, setEspecie] = useState<"despacho" | "decisao" | "ipc" | "ata" | "certidao" | null>(null);
   const [ataDepoente, setAtaDepoente] = useState("");
   const [teor, setTeor] = useState("");
   const [ipcUnidade, setIpcUnidade] = useState<string>("");
@@ -545,7 +546,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
         teorFinal = sanitizeAtoHtml(teor);
       }
       const anexosPayload =
-        especie === "despacho" || especie === "decisao" ? anexos : [];
+        especie === "despacho" || especie === "decisao" || especie === "certidao" ? anexos : [];
       return lancarFn({
         data: { denuncia_id: id, especie, teor: teorFinal, anexos: anexosPayload },
       });
@@ -1138,10 +1139,9 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
               motivo_cancelamento?: string | null;
             };
             const isAto =
-              m.especie === "despacho" || m.especie === "decisao" || m.especie === "portaria" || m.especie === "mandado" || m.especie === "ata";
+              m.especie === "despacho" || m.especie === "decisao" || m.especie === "portaria" || m.especie === "mandado" || m.especie === "ata" || m.especie === "certidao";
             const isIpc = m.especie === "ipc";
             const isCertidao =
-              m.especie === "certidao" ||
               (m.especie === "evento" &&
                 typeof m.teor === "string" &&
                 /^\s*Certifico e dou f[ée] que foi interposto recurso administrativo/i.test(m.teor));
@@ -1252,7 +1252,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                     </div>
                     <div className={canceladoEm ? "line-through decoration-destructive/60" : ""}>
                       <TimelineAtoCard
-                        especie={m.especie as "despacho" | "decisao" | "portaria" | "mandado" | "ata"}
+                        especie={m.especie as "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao"}
                         teor={m.teor}
                         quando={m.criado_em}
                         prolator={m.prolator_nome}
@@ -2263,35 +2263,38 @@ function PortariaDialog({
 
 
 
-const ATO_ASSUNTO: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata", string> = {
+const ATO_ASSUNTO: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao", string> = {
   despacho: "Despacho",
   decisao: "Decisão",
   portaria: "Portaria Inaugural",
   mandado: "Mandado de Citação",
   ata: "Termo de Depoimento",
+  certidao: "Certidão",
 };
 
-const ATO_TIPO: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata", "DESPACHO" | "DECISÃO" | "PORTARIA" | "MANDADO" | "TERMO DE DEPOIMENTO"> = {
+const ATO_TIPO: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao", "DESPACHO" | "DECISÃO" | "PORTARIA" | "MANDADO" | "TERMO DE DEPOIMENTO" | "CERTIDÃO"> = {
   despacho: "DESPACHO",
   decisao: "DECISÃO",
   portaria: "PORTARIA",
   mandado: "MANDADO",
   ata: "TERMO DE DEPOIMENTO",
+  certidao: "CERTIDÃO",
 };
 
-const ATO_MARKER: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata", string> = {
+const ATO_MARKER: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao", string> = {
   despacho: "bg-status-analise",
   decisao: "bg-destructive",
   portaria: "bg-primary",
   mandado: "bg-primary",
   ata: "bg-sky-600",
+  certidao: "bg-emerald-600",
 };
 
 /**
  * Renderiza o corpo do ato: HTML sanitizado quando salvo como rich text,
  * ou texto plano (com links, se portaria) para registros legados.
  */
-function renderAtoBody(_especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata", teor: string, pdf = false): React.ReactNode {
+function renderAtoBody(_especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao", teor: string, pdf = false): React.ReactNode {
   if (isHtmlAto(teor)) {
     return (
       <div
@@ -2312,7 +2315,7 @@ function TimelineAtoCard({
   procedimento,
   denunciado,
 }: {
-  especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata";
+  especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao";
   teor: string;
   quando: string;
   prolator: string;

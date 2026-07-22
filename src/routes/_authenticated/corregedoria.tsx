@@ -1038,6 +1038,33 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                   valor="Corregedoria Geral da Polícia Civil"
                 />
               </div>
+            ) : especie === "ata" ? (
+              <div className="mt-3 space-y-3">
+                <div>
+                  <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                    Depoente (quem prestou o depoimento)
+                  </span>
+                  <input
+                    value={ataDepoente}
+                    onChange={(ev) => setAtaDepoente(ev.target.value)}
+                    placeholder="Nome — qualificação (RG, cargo, unidade)"
+                    className="mt-1 w-full rounded-md border border-border bg-surface-2 px-2 py-1.5 text-sm"
+                  />
+                </div>
+                <div>
+                  <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                    Termo de depoimento
+                  </span>
+                  <div className="mt-1">
+                    <RichTextEditor
+                      value={teor}
+                      onChange={setTeor}
+                      placeholder="Transcreva a ata / termo de depoimento."
+                      minHeight={200}
+                    />
+                  </div>
+                </div>
+              </div>
             ) : (
               <div className="mt-3 space-y-3">
                 <RichTextEditor
@@ -1066,6 +1093,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                   setEspecie(null);
                   setTeor("");
                   setAnexos([]);
+                  setAtaDepoente("");
                 }}
                 className="rounded-md border border-border px-3 py-2 text-sm hover:bg-surface-2"
               >
@@ -1074,7 +1102,9 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
               <button
                 onClick={() => mLancar.mutate()}
                 disabled={
-                  teor.replace(/<[^>]+>/g, "").trim().length < 3 || mLancar.isPending
+                  teor.replace(/<[^>]+>/g, "").trim().length < 3 ||
+                  (especie === "ata" && ataDepoente.trim().length < 2) ||
+                  mLancar.isPending
                 }
                 className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
               >

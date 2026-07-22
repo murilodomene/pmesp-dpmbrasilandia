@@ -359,6 +359,7 @@ const ATO_ASSUNTO: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata
   decisao: "Decisão",
   portaria: "Portaria Inaugural",
   mandado: "Mandado de Citação",
+  ata: "Termo de Depoimento",
 };
 const ATO_TIPO: Record<
   "despacho" | "decisao" | "portaria" | "mandado" | "ata",
@@ -369,6 +370,7 @@ const ATO_MARKER: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata"
   decisao: "bg-destructive",
   portaria: "bg-primary",
   mandado: "bg-primary",
+  ata: "bg-sky-600",
 };
 
 function renderAtoBody(

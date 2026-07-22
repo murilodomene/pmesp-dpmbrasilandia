@@ -2268,6 +2268,7 @@ const ATO_ASSUNTO: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata
   decisao: "Decisão",
   portaria: "Portaria Inaugural",
   mandado: "Mandado de Citação",
+  ata: "Termo de Depoimento",
 };
 
 const ATO_TIPO: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata", "DESPACHO" | "DECISÃO" | "PORTARIA" | "MANDADO" | "TERMO DE DEPOIMENTO"> = {
@@ -2275,6 +2276,7 @@ const ATO_TIPO: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata", 
   decisao: "DECISÃO",
   portaria: "PORTARIA",
   mandado: "MANDADO",
+  ata: "TERMO DE DEPOIMENTO",
 };
 
 const ATO_MARKER: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata", string> = {
@@ -2282,6 +2284,7 @@ const ATO_MARKER: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata"
   decisao: "bg-destructive",
   portaria: "bg-primary",
   mandado: "bg-primary",
+  ata: "bg-sky-600",
 };
 
 /**

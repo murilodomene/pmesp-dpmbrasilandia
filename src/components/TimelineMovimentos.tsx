@@ -382,7 +382,7 @@ const ATO_MARKER: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata"
 };
 
 function renderAtoBody(
-  _especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata",
+  _especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao",
   teor: string,
   pdf = false,
 ): React.ReactNode {
@@ -406,7 +406,7 @@ function TimelineAtoCard({
   procedimento,
   denunciado,
 }: {
-  especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata";
+  especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao";
   teor: string;
   quando: string;
   prolator: string;

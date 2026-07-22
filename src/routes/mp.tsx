@@ -31,9 +31,20 @@ function MpPage() {
   const [info, setInfo] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) navigate({ to: "/mp-processos" });
-    });
+    (async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) return;
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("status")
+        .eq("id", data.user.id)
+        .maybeSingle();
+      if (prof?.status === "ativo") {
+        navigate({ to: "/mp-processos" });
+      } else {
+        navigate({ to: "/pendente" });
+      }
+    })();
   }, [navigate]);
 
   async function submit(e: React.FormEvent) {
@@ -52,26 +63,33 @@ function MpPage() {
       } else if (mode === "login") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate({ to: "/mp-processos" });
+        const { data: userData } = await supabase.auth.getUser();
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("status")
+          .eq("id", userData.user!.id)
+          .maybeSingle();
+        if (prof?.status === "ativo") {
+          navigate({ to: "/mp-processos" });
+        } else {
+          navigate({ to: "/pendente" });
+        }
       } else {
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/mp-processos`,
+            emailRedirectTo: `${window.location.origin}/mp`,
             data: { tipo: "mp", nome, matricula },
           },
         });
         if (error) throw error;
-        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-        if (signInError) {
-          setInfo(
-            "Cadastro concluído. Faça login. O acesso a cada processo é liberado pela Corregedoria.",
-          );
-          setMode("login");
-        } else {
-          navigate({ to: "/mp-processos" });
-        }
+        // Não faz login automático — cadastro exige aprovação do Delegado Corregedor.
+        await supabase.auth.signOut();
+        setInfo(
+          "Cadastro enviado. Seu acesso será liberado somente após aprovação do Delegado Corregedor. Você poderá entrar assim que a aprovação for concedida.",
+        );
+        setMode("login");
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erro.";

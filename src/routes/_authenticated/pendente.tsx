@@ -16,6 +16,9 @@ function PendentePage() {
   const cargo = data?.cargo;
 
   if (status === "ativo" && cargo) {
+    const isMp = cargo === "mp";
+    const destino = isMp ? "/mp-processos" : "/corregedoria";
+    const destinoLabel = isMp ? "Ir para Meus processos" : "Ir para Corregedoria";
     return (
       <div className="min-h-screen">
         <Header />
@@ -23,13 +26,13 @@ function PendentePage() {
           <div className="eyebrow">Tudo pronto</div>
           <h1 className="mt-2 font-serif text-3xl">Você já está ativo.</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Seu cargo é {cargoLabel(cargo)}. Acesse a Corregedoria.
+            Seu cargo é {cargoLabel(cargo)}.
           </p>
           <Link
-            to="/corregedoria"
+            to={destino}
             className="mt-6 inline-flex rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground"
           >
-            Ir para Corregedoria
+            {destinoLabel}
           </Link>
         </div>
       </div>
@@ -62,5 +65,9 @@ function cargoLabel(c: string): string {
       ? "Delegado Corregedor"
       : c === "coordenador"
       ? "Coordenador"
+      : c === "mp"
+      ? "Ministério Público"
+      : c === "cidadao"
+      ? "Cidadão"
       : "Corregedor";
 }

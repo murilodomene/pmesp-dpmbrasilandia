@@ -105,7 +105,7 @@ export function TimelineMovimentos({
                   </div>
                   <div className={canceladoEm ? "line-through decoration-destructive/60" : ""}>
                     <TimelineAtoCard
-                      especie={m.especie as "despacho" | "decisao" | "portaria" | "mandado"}
+                      especie={m.especie as "despacho" | "decisao" | "portaria" | "mandado" | "ata"}
                       teor={m.teor}
                       quando={m.criado_em}
                       prolator={m.prolator_nome}
@@ -354,17 +354,17 @@ function MovMarker({ especie }: { especie: string }) {
   );
 }
 
-const ATO_ASSUNTO: Record<"despacho" | "decisao" | "portaria" | "mandado", string> = {
+const ATO_ASSUNTO: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata", string> = {
   despacho: "Despacho",
   decisao: "Decisão",
   portaria: "Portaria Inaugural",
   mandado: "Mandado de Citação",
 };
 const ATO_TIPO: Record<
-  "despacho" | "decisao" | "portaria" | "mandado",
-  "DESPACHO" | "DECISÃO" | "PORTARIA" | "MANDADO"
-> = { despacho: "DESPACHO", decisao: "DECISÃO", portaria: "PORTARIA", mandado: "MANDADO" };
-const ATO_MARKER: Record<"despacho" | "decisao" | "portaria" | "mandado", string> = {
+  "despacho" | "decisao" | "portaria" | "mandado" | "ata",
+  "DESPACHO" | "DECISÃO" | "PORTARIA" | "MANDADO" | "TERMO DE DEPOIMENTO"
+> = { despacho: "DESPACHO", decisao: "DECISÃO", portaria: "PORTARIA", mandado: "MANDADO", ata: "TERMO DE DEPOIMENTO" };
+const ATO_MARKER: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata", string> = {
   despacho: "bg-status-analise",
   decisao: "bg-destructive",
   portaria: "bg-primary",
@@ -372,7 +372,7 @@ const ATO_MARKER: Record<"despacho" | "decisao" | "portaria" | "mandado", string
 };
 
 function renderAtoBody(
-  _especie: "despacho" | "decisao" | "portaria" | "mandado",
+  _especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata",
   teor: string,
   pdf = false,
 ): React.ReactNode {
@@ -396,7 +396,7 @@ function TimelineAtoCard({
   procedimento,
   denunciado,
 }: {
-  especie: "despacho" | "decisao" | "portaria" | "mandado";
+  especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata";
   teor: string;
   quando: string;
   prolator: string;

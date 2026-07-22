@@ -546,7 +546,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
         teorFinal = sanitizeAtoHtml(teor);
       }
       const anexosPayload =
-        especie === "despacho" || especie === "decisao" ? anexos : [];
+        especie === "despacho" || especie === "decisao" || especie === "certidao" ? anexos : [];
       return lancarFn({
         data: { denuncia_id: id, especie, teor: teorFinal, anexos: anexosPayload },
       });

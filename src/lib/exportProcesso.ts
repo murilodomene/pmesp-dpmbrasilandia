@@ -405,10 +405,13 @@ export async function exportProcessoCompleto(data: ExportProcessoData): Promise<
       m.especie === "despacho" ||
       m.especie === "decisao" ||
       m.especie === "portaria" ||
+      m.especie === "mandado" ||
+      m.especie === "ata" ||
+      m.especie === "certidao" ||
       m.especie === "ipc";
     pages.push(isAto ? atoContentPage(m, data.denuncia, data.policiais) : genericContentPage(m));
-    // Anexos-prova (só despacho/decisão) — cada imagem em página própria.
-    if ((m.especie === "despacho" || m.especie === "decisao") && Array.isArray(m.anexos)) {
+    // Anexos-prova (só despacho/decisão/certidão) — cada imagem em página própria.
+    if ((m.especie === "despacho" || m.especie === "decisao" || m.especie === "certidao") && Array.isArray(m.anexos)) {
       for (const a of m.anexos) {
         const dataUrl = await fetchAnexoDataUrl(a.path);
         if (dataUrl) pages.push(await anexoImagePage(a.nome, dataUrl));

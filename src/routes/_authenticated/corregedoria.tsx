@@ -537,6 +537,10 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
           identificacao: ipcIdent.trim(),
           relato: sanitizeAtoHtml(teor),
         });
+      } else if (especie === "ata") {
+        const depoente = ataDepoente.trim();
+        if (!depoente) throw new Error("Informe quem prestou o depoimento.");
+        teorFinal = montarTeorAta({ depoente, relato: sanitizeAtoHtml(teor) });
       } else {
         teorFinal = sanitizeAtoHtml(teor);
       }

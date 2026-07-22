@@ -1623,7 +1623,7 @@ function montarTeorAta(params: { depoente: string; relato: string }): string {
   return `<p><strong>DEPOENTE:</strong> ${dep}</p>${relato}`;
 }
 
-export function extrairDepoenteAta(teor: string): { depoente: string | null; corpo: string } {
+function extrairDepoenteAta(teor: string): { depoente: string | null; corpo: string } {
   const m = teor.match(/^\s*<p>\s*<strong>\s*DEPOENTE:\s*<\/strong>\s*([\s\S]*?)<\/p>([\s\S]*)$/i);
   if (m) return { depoente: m[1].trim(), corpo: m[2].trim() };
   return { depoente: null, corpo: teor };

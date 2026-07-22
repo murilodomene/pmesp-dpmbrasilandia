@@ -2263,28 +2263,31 @@ function PortariaDialog({
 
 
 
-const ATO_ASSUNTO: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata", string> = {
+const ATO_ASSUNTO: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao", string> = {
   despacho: "Despacho",
   decisao: "Decisão",
   portaria: "Portaria Inaugural",
   mandado: "Mandado de Citação",
   ata: "Termo de Depoimento",
+  certidao: "Certidão",
 };
 
-const ATO_TIPO: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata", "DESPACHO" | "DECISÃO" | "PORTARIA" | "MANDADO" | "TERMO DE DEPOIMENTO"> = {
+const ATO_TIPO: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao", "DESPACHO" | "DECISÃO" | "PORTARIA" | "MANDADO" | "TERMO DE DEPOIMENTO" | "CERTIDÃO"> = {
   despacho: "DESPACHO",
   decisao: "DECISÃO",
   portaria: "PORTARIA",
   mandado: "MANDADO",
   ata: "TERMO DE DEPOIMENTO",
+  certidao: "CERTIDÃO",
 };
 
-const ATO_MARKER: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata", string> = {
+const ATO_MARKER: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao", string> = {
   despacho: "bg-status-analise",
   decisao: "bg-destructive",
   portaria: "bg-primary",
   mandado: "bg-primary",
   ata: "bg-sky-600",
+  certidao: "bg-emerald-600",
 };
 
 /**

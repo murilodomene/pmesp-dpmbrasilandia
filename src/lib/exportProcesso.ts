@@ -247,7 +247,13 @@ function atoTipoLabel(especie: string): string {
       ? "DECISÃO"
       : especie === "portaria"
         ? "PORTARIA"
-        : "IPC";
+        : especie === "mandado"
+          ? "MANDADO"
+          : especie === "ata"
+            ? "TERMO DE DEPOIMENTO"
+            : especie === "certidao"
+              ? "CERTIDÃO"
+              : "IPC";
 }
 
 function atoContentPage(

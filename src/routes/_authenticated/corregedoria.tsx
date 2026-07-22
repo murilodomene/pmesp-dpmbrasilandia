@@ -1139,10 +1139,9 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
               motivo_cancelamento?: string | null;
             };
             const isAto =
-              m.especie === "despacho" || m.especie === "decisao" || m.especie === "portaria" || m.especie === "mandado" || m.especie === "ata";
+              m.especie === "despacho" || m.especie === "decisao" || m.especie === "portaria" || m.especie === "mandado" || m.especie === "ata" || m.especie === "certidao";
             const isIpc = m.especie === "ipc";
             const isCertidao =
-              m.especie === "certidao" ||
               (m.especie === "evento" &&
                 typeof m.teor === "string" &&
                 /^\s*Certifico e dou f[ée] que foi interposto recurso administrativo/i.test(m.teor));

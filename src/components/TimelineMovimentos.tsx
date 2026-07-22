@@ -236,15 +236,17 @@ function labelEspecie(e: string): string {
       ? "Decisão"
       : e === "ipc"
         ? "IPC"
-        : e === "retificacao"
-          ? "Retificação"
-          : e === "portaria"
-            ? "Portaria Inaugural"
-            : e === "mandado"
-              ? "Mandado"
-              : e === "certidao"
-                ? "Certidão"
-                : "Status";
+        : e === "ata"
+          ? "Ata"
+          : e === "retificacao"
+            ? "Retificação"
+            : e === "portaria"
+              ? "Portaria Inaugural"
+              : e === "mandado"
+                ? "Mandado"
+                : e === "certidao"
+                  ? "Certidão"
+                  : "Status";
 }
 
 function cargoLabel(c: string | null | undefined): string {

@@ -97,6 +97,7 @@ const ESPECIES = [
   { v: "despacho", l: "Despacho", icon: FileText },
   { v: "decisao", l: "Decisão", icon: Scale },
   { v: "ipc", l: "IPC", icon: Gavel },
+  { v: "ata", l: "Ata", icon: Mic },
 ] as const;
 
 function Corregedoria() {

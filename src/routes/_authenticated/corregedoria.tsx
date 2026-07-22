@@ -1252,7 +1252,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                     </div>
                     <div className={canceladoEm ? "line-through decoration-destructive/60" : ""}>
                       <TimelineAtoCard
-                        especie={m.especie as "despacho" | "decisao" | "portaria" | "mandado" | "ata"}
+                        especie={m.especie as "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao"}
                         teor={m.teor}
                         quando={m.criado_em}
                         prolator={m.prolator_nome}

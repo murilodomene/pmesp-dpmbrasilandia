@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Gavel, FileText, Scale, Pencil, Stamp, ShieldCheck, Bell, Download } from "lucide-react";
+import { Gavel, FileText, Scale, Pencil, Stamp, ShieldCheck, Bell, Download, Mic } from "lucide-react";
 import { DocumentTemplate, exportDocumentToPdf, useDocumentRef } from "@/components/DocumentTemplate";
 import { isHtmlAto, sanitizeAtoHtml } from "@/components/RichTextEditor";
 import { AtoAnexosLinks } from "@/components/AtoAnexosLinks";

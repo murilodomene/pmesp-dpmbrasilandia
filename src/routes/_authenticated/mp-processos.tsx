@@ -293,12 +293,6 @@ function Info({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
-function IconEspecie({ especie }: { especie: string }) {
-  if (especie === "portaria") return <Stamp className="h-3.5 w-3.5" />;
-  if (especie === "ipc") return <Gavel className="h-3.5 w-3.5" />;
-  if (especie === "decisao") return <Scale className="h-3.5 w-3.5" />;
-  return <FileText className="h-3.5 w-3.5" />;
-}
 
 function ExportarProcessoMpBtn({ data }: { data: Awaited<ReturnType<typeof getDenuncia>> }) {
   const [gerando, setGerando] = useState(false);

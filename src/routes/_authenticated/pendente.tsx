@@ -65,5 +65,9 @@ function cargoLabel(c: string): string {
       ? "Delegado Corregedor"
       : c === "coordenador"
       ? "Coordenador"
+      : c === "mp"
+      ? "Ministério Público"
+      : c === "cidadao"
+      ? "Cidadão"
       : "Corregedor";
 }

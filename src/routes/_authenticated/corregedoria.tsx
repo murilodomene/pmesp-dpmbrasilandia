@@ -2294,7 +2294,7 @@ const ATO_MARKER: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata"
  * Renderiza o corpo do ato: HTML sanitizado quando salvo como rich text,
  * ou texto plano (com links, se portaria) para registros legados.
  */
-function renderAtoBody(_especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata", teor: string, pdf = false): React.ReactNode {
+function renderAtoBody(_especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao", teor: string, pdf = false): React.ReactNode {
   if (isHtmlAto(teor)) {
     return (
       <div
@@ -2315,7 +2315,7 @@ function TimelineAtoCard({
   procedimento,
   denunciado,
 }: {
-  especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata";
+  especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao";
   teor: string;
   quando: string;
   prolator: string;

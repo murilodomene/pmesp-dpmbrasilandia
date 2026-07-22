@@ -508,7 +508,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
 
 
   const lancarFn = useServerFn(lancarMovimento);
-  const [especie, setEspecie] = useState<"despacho" | "decisao" | "ipc" | "ata" | null>(null);
+  const [especie, setEspecie] = useState<"despacho" | "decisao" | "ipc" | "ata" | "certidao" | null>(null);
   const [ataDepoente, setAtaDepoente] = useState("");
   const [teor, setTeor] = useState("");
   const [ipcUnidade, setIpcUnidade] = useState<string>("");

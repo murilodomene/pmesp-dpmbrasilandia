@@ -1723,6 +1723,7 @@ function MovMarker({ especie }: { especie: string }) {
     despacho: "bg-status-analise text-status-analise-fg",
     decisao: "bg-destructive text-destructive-foreground",
     ipc: "bg-status-investigacao text-status-investigacao-fg",
+    ata: "bg-sky-600 text-white",
     status: "bg-status-aguardando text-status-aguardando-fg",
     retificacao: "bg-status-aguardando text-status-aguardando-fg",
     portaria: "bg-primary text-primary-foreground",
@@ -1735,15 +1736,17 @@ function MovMarker({ especie }: { especie: string }) {
       ? Scale
       : especie === "ipc"
         ? Gavel
-        : especie === "retificacao"
-          ? Pencil
-          : especie === "portaria"
-            ? Stamp
-            : especie === "certidao"
-              ? ShieldCheck
-              : especie === "evento"
-                ? Bell
-                : FileText;
+        : especie === "ata"
+          ? Mic
+          : especie === "retificacao"
+            ? Pencil
+            : especie === "portaria"
+              ? Stamp
+              : especie === "certidao"
+                ? ShieldCheck
+                : especie === "evento"
+                  ? Bell
+                  : FileText;
 
   return (
     <div className={`grid h-8 w-8 flex-shrink-0 place-items-center rounded-full ${style[especie] ?? "bg-surface-2 text-foreground"}`}>

@@ -553,6 +553,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     onSuccess: () => {
       setTeor("");
       setAnexos([]);
+      setAtaDepoente("");
       setEspecie(null);
       qc.invalidateQueries({ queryKey: ["denuncia", id] });
       qc.invalidateQueries({ queryKey: ["denuncias"] });

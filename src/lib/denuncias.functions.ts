@@ -1118,5 +1118,101 @@ export const removerTarja = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// ============ DENUNCIANTES ADICIONAIS ============
+
+const denuncianteInput = z.object({
+  nome: z.string().trim().max(200).optional().nullable(),
+  identificador: z.string().trim().max(200).optional().nullable(),
+  contato: z.string().trim().max(200).optional().nullable(),
+  anonimo: z.boolean().default(false),
+  observacoes: z.string().trim().max(2000).optional().nullable(),
+});
+
+function podeGerenciarDenunciantes(role: string | null | undefined) {
+  return (
+    role === "delegado_geral" ||
+    role === "delegado_corregedor" ||
+    role === "corregedor" ||
+    role === "coordenador"
+  );
+}
+
+export const adicionarDenunciante = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ denuncia_id: z.string().uuid() }).and(denuncianteInput).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const p = await getProlator(context);
+    if (!podeGerenciarDenunciantes(p.prolator_cargo)) {
+      throw new Error("Apenas Delegado Geral, Delegado Corregedor ou Coordenador podem adicionar denunciantes.");
+    }
+    const nome = (data.nome ?? "").trim() || null;
+    if (!data.anonimo && !nome) {
+      throw new Error("Informe o nome do denunciante ou marque como anônimo.");
+    }
+    const { data: row, error } = await context.supabase
+      .from("denuncia_denunciantes")
+      .insert({
+        denuncia_id: data.denuncia_id,
+        nome: data.anonimo ? null : nome,
+        identificador: data.anonimo ? null : (data.identificador?.trim() || null),
+        contato: data.anonimo ? null : (data.contato?.trim() || null),
+        anonimo: data.anonimo,
+        observacoes: data.observacoes?.trim() || null,
+        criado_por: p.prolator_id,
+        criado_por_nome: p.prolator_nome,
+      })
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    return { id: row.id };
+  });
+
+export const atualizarDenunciante = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ id: z.string().uuid() }).and(denuncianteInput).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const p = await getProlator(context);
+    if (!podeGerenciarDenunciantes(p.prolator_cargo)) {
+      throw new Error("Sem permissão para editar denunciantes.");
+    }
+    const nome = (data.nome ?? "").trim() || null;
+    if (!data.anonimo && !nome) {
+      throw new Error("Informe o nome do denunciante ou marque como anônimo.");
+    }
+    const { error } = await context.supabase
+      .from("denuncia_denunciantes")
+      .update({
+        nome: data.anonimo ? null : nome,
+        identificador: data.anonimo ? null : (data.identificador?.trim() || null),
+        contato: data.anonimo ? null : (data.contato?.trim() || null),
+        anonimo: data.anonimo,
+        observacoes: data.observacoes?.trim() || null,
+      })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const removerDenunciante = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const p = await getProlator(context);
+    if (!podeGerenciarDenunciantes(p.prolator_cargo)) {
+      throw new Error("Sem permissão para remover denunciantes.");
+    }
+    const { error } = await context.supabase
+      .from("denuncia_denunciantes")
+      .delete()
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+
 
 

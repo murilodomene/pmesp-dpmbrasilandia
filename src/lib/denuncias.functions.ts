@@ -136,7 +136,7 @@ export const getDenuncia = createServerFn({ method: "GET" })
     const { data: obsInt } = await context.supabase.rpc("get_obs_internas", {
       _denuncia_id: data.id,
     });
-    const [pols, movs, ois, tarj] = await Promise.all([
+    const [pols, movs, ois, tarj, denAdd] = await Promise.all([
       context.supabase.from("denuncia_policiais").select("*").eq("denuncia_id", data.id),
       context.supabase
         .from("movimentos")
@@ -149,6 +149,11 @@ export const getDenuncia = createServerFn({ method: "GET" })
         .select("id, cor, texto, created_at")
         .eq("denuncia_id", data.id)
         .order("created_at", { ascending: true }),
+      context.supabase
+        .from("denuncia_denunciantes")
+        .select("id, nome, identificador, contato, anonimo, observacoes, criado_por_nome, created_at")
+        .eq("denuncia_id", data.id)
+        .order("created_at", { ascending: true }),
     ]);
     return {
       denuncia: { ...den, obs_internas: (obsInt as string | null) ?? null },
@@ -156,6 +161,7 @@ export const getDenuncia = createServerFn({ method: "GET" })
       movimentos: movs.data ?? [],
       oitivas: ois.data ?? [],
       tarjas: tarj.data ?? [],
+      denunciantesAdicionais: denAdd.data ?? [],
     };
   });
 

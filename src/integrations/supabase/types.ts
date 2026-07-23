@@ -65,6 +65,56 @@ export type Database = {
         }
         Relationships: []
       }
+      denuncia_denunciantes: {
+        Row: {
+          anonimo: boolean
+          contato: string | null
+          created_at: string
+          criado_por: string | null
+          criado_por_nome: string | null
+          denuncia_id: string
+          id: string
+          identificador: string | null
+          nome: string | null
+          observacoes: string | null
+          updated_at: string
+        }
+        Insert: {
+          anonimo?: boolean
+          contato?: string | null
+          created_at?: string
+          criado_por?: string | null
+          criado_por_nome?: string | null
+          denuncia_id: string
+          id?: string
+          identificador?: string | null
+          nome?: string | null
+          observacoes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          anonimo?: boolean
+          contato?: string | null
+          created_at?: string
+          criado_por?: string | null
+          criado_por_nome?: string | null
+          denuncia_id?: string
+          id?: string
+          identificador?: string | null
+          nome?: string | null
+          observacoes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "denuncia_denunciantes_denuncia_id_fkey"
+            columns: ["denuncia_id"]
+            isOneToOne: false
+            referencedRelation: "denuncias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       denuncia_policiais: {
         Row: {
           cargo: string | null

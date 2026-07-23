@@ -38,13 +38,16 @@ import {
   registrarRecurso,
   certificarResultadoRecurso,
   certificarTransitoAdministrativo,
+  adicionarDenunciante,
+  atualizarDenunciante,
+  removerDenunciante,
 } from "@/lib/denuncias.functions";
 import { contarObservacoesPorPad, contarObservacoesPorPolicial } from "@/lib/observacoes.functions";
 
 
 
 import { getSessionInfo } from "@/lib/usuarios.functions";
-import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2, Download, ShieldCheck, Bell, MessageSquare, Copy, Mic } from "lucide-react";
+import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2, Download, ShieldCheck, Bell, MessageSquare, Copy, Mic, Plus } from "lucide-react";
 import { DocumentTemplate, exportDocumentToPdf, useDocumentRef } from "@/components/DocumentTemplate";
 import { RichTextEditor, isHtmlAto, sanitizeAtoHtml } from "@/components/RichTextEditor";
 import { exportProcessoCompleto } from "@/lib/exportProcesso";
@@ -728,9 +731,18 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
           <h3 className="font-serif text-lg">Ficha</h3>
           <div className="mt-3 grid gap-2 text-sm">
             <Row k="Denunciante">
-              {denuncia.denunciante_anonimo
-                ? "Anônimo"
-                : denuncia.denunciante_nome || "Não informado"}
+              <DenunciantesBlock
+                principal={{
+                  nome: denuncia.denunciante_nome ?? null,
+                  identificador: (denuncia as { denunciante_identificador?: string | null }).denunciante_identificador ?? null,
+                  contato: (denuncia as { denunciante_contato?: string | null }).denunciante_contato ?? null,
+                  anonimo: !!denuncia.denunciante_anonimo,
+                }}
+                adicionais={((data as { denunciantesAdicionais?: DenuncianteAdicional[] }).denunciantesAdicionais ?? [])}
+                denunciaId={denuncia.id}
+                podeGerenciar={cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "coordenador"}
+                onChanged={() => qc.invalidateQueries({ queryKey: ["denuncia", id] })}
+              />
             </Row>
             <Row k="Policiais">
               <div className="flex flex-col gap-1">
@@ -3656,6 +3668,246 @@ function TextoDiscordDialog({
     </Modal>
   );
 }
+
+
+type DenuncianteAdicional = {
+  id: string;
+  nome: string | null;
+  identificador: string | null;
+  contato: string | null;
+  anonimo: boolean;
+  observacoes: string | null;
+  criado_por_nome: string | null;
+  created_at: string;
+};
+
+function DenuncianteLinha({
+  d,
+}: {
+  d: { nome: string | null; identificador: string | null; contato: string | null; anonimo: boolean };
+}) {
+  if (d.anonimo) return <span>Anônimo</span>;
+  if (!d.nome) return <span className="text-muted-foreground">Não informado</span>;
+  return (
+    <span>
+      {d.nome}
+      {d.identificador && <span className="text-muted-foreground"> · {d.identificador}</span>}
+      {d.contato && <span className="text-muted-foreground"> · {d.contato}</span>}
+    </span>
+  );
+}
+
+function DenunciantesBlock({
+  principal,
+  adicionais,
+  denunciaId,
+  podeGerenciar,
+  onChanged,
+}: {
+  principal: { nome: string | null; identificador: string | null; contato: string | null; anonimo: boolean };
+  adicionais: DenuncianteAdicional[];
+  denunciaId: string;
+  podeGerenciar: boolean;
+  onChanged: () => void;
+}) {
+  const [editando, setEditando] = useState<DenuncianteAdicional | null>(null);
+  const [adicionando, setAdicionando] = useState(false);
+
+  const addFn = useServerFn(adicionarDenunciante);
+  const updFn = useServerFn(atualizarDenunciante);
+  const delFn = useServerFn(removerDenunciante);
+
+  const mDel = useMutation({
+    mutationFn: (id: string) => delFn({ data: { id } }),
+    onSuccess: onChanged,
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro ao remover."),
+  });
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <DenuncianteLinha d={principal} />
+      {adicionais.map((d) => (
+        <div key={d.id} className="flex items-center gap-2">
+          <DenuncianteLinha d={d} />
+          {d.observacoes && (
+            <span className="text-xs text-muted-foreground italic">— {d.observacoes}</span>
+          )}
+          {podeGerenciar && (
+            <>
+              <button
+                type="button"
+                onClick={() => setEditando(d)}
+                className="rounded-md border border-border p-1 text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+                title="Editar denunciante"
+                aria-label="Editar denunciante"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm("Remover este denunciante?")) mDel.mutate(d.id);
+                }}
+                className="rounded-md border border-border p-1 text-muted-foreground hover:bg-surface-2 hover:text-destructive"
+                title="Remover denunciante"
+                aria-label="Remover denunciante"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </>
+          )}
+        </div>
+      ))}
+      {podeGerenciar && (
+        <div className="mt-1">
+          <button
+            type="button"
+            onClick={() => setAdicionando(true)}
+            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+          >
+            <Plus className="h-3 w-3" /> Adicionar denunciante
+          </button>
+        </div>
+      )}
+
+      {adicionando && (
+        <DenuncianteFormDialog
+          titulo="Adicionar denunciante"
+          onClose={() => setAdicionando(false)}
+          onSubmit={async (v) => {
+            await addFn({ data: { denuncia_id: denunciaId, ...v } });
+            setAdicionando(false);
+            onChanged();
+          }}
+        />
+      )}
+      {editando && (
+        <DenuncianteFormDialog
+          titulo="Editar denunciante"
+          inicial={editando}
+          onClose={() => setEditando(null)}
+          onSubmit={async (v) => {
+            await updFn({ data: { id: editando.id, ...v } });
+            setEditando(null);
+            onChanged();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function DenuncianteFormDialog({
+  titulo,
+  inicial,
+  onClose,
+  onSubmit,
+}: {
+  titulo: string;
+  inicial?: DenuncianteAdicional;
+  onClose: () => void;
+  onSubmit: (v: {
+    nome: string | null;
+    identificador: string | null;
+    contato: string | null;
+    anonimo: boolean;
+    observacoes: string | null;
+  }) => Promise<void>;
+}) {
+  const [anonimo, setAnonimo] = useState(inicial?.anonimo ?? false);
+  const [nome, setNome] = useState(inicial?.nome ?? "");
+  const [identificador, setIdentificador] = useState(inicial?.identificador ?? "");
+  const [contato, setContato] = useState(inicial?.contato ?? "");
+  const [observacoes, setObservacoes] = useState(inicial?.observacoes ?? "");
+  const [saving, setSaving] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setErro(null);
+    setSaving(true);
+    try {
+      await onSubmit({
+        nome: nome.trim() || null,
+        identificador: identificador.trim() || null,
+        contato: contato.trim() || null,
+        anonimo,
+        observacoes: observacoes.trim() || null,
+      });
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : "Erro ao salvar.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Modal onClose={onClose} title={titulo}>
+      <form onSubmit={submit} className="grid gap-3">
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={anonimo} onChange={(e) => setAnonimo(e.target.checked)} />
+          Denunciante anônimo
+        </label>
+        {!anonimo && (
+          <>
+            <label className="grid gap-1 text-sm">
+              <span className="text-xs uppercase tracking-wider text-muted-foreground">Nome *</span>
+              <input
+                className="rounded-md border border-border bg-input px-3 py-2 text-sm"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                required={!anonimo}
+                maxLength={200}
+              />
+            </label>
+            <label className="grid gap-1 text-sm">
+              <span className="text-xs uppercase tracking-wider text-muted-foreground">Identificador (CPF, RG, ID)</span>
+              <input
+                className="rounded-md border border-border bg-input px-3 py-2 text-sm"
+                value={identificador}
+                onChange={(e) => setIdentificador(e.target.value)}
+                maxLength={200}
+              />
+            </label>
+            <label className="grid gap-1 text-sm">
+              <span className="text-xs uppercase tracking-wider text-muted-foreground">Contato</span>
+              <input
+                className="rounded-md border border-border bg-input px-3 py-2 text-sm"
+                value={contato}
+                onChange={(e) => setContato(e.target.value)}
+                maxLength={200}
+              />
+            </label>
+          </>
+        )}
+        <label className="grid gap-1 text-sm">
+          <span className="text-xs uppercase tracking-wider text-muted-foreground">Observações (interno)</span>
+          <textarea
+            rows={2}
+            className="rounded-md border border-border bg-input px-3 py-2 text-sm"
+            value={observacoes}
+            onChange={(e) => setObservacoes(e.target.value)}
+            maxLength={2000}
+          />
+        </label>
+        {erro && <div className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive-foreground">{erro}</div>}
+        <div className="mt-2 flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="rounded-md border border-border px-4 py-2 text-sm">
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={saving}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+          >
+            {saving ? "Salvando..." : "Salvar"}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
 
 
 

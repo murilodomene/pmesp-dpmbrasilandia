@@ -731,9 +731,18 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
           <h3 className="font-serif text-lg">Ficha</h3>
           <div className="mt-3 grid gap-2 text-sm">
             <Row k="Denunciante">
-              {denuncia.denunciante_anonimo
-                ? "Anônimo"
-                : denuncia.denunciante_nome || "Não informado"}
+              <DenunciantesBlock
+                principal={{
+                  nome: denuncia.denunciante_nome ?? null,
+                  identificador: (denuncia as { denunciante_identificador?: string | null }).denunciante_identificador ?? null,
+                  contato: (denuncia as { denunciante_contato?: string | null }).denunciante_contato ?? null,
+                  anonimo: !!denuncia.denunciante_anonimo,
+                }}
+                adicionais={((data as { denunciantesAdicionais?: DenuncianteAdicional[] }).denunciantesAdicionais ?? [])}
+                denunciaId={denuncia.id}
+                podeGerenciar={cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "coordenador"}
+                onChanged={() => qc.invalidateQueries({ queryKey: ["denuncia", id] })}
+              />
             </Row>
             <Row k="Policiais">
               <div className="flex flex-col gap-1">

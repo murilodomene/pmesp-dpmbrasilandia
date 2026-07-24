@@ -13,6 +13,7 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as MpRouteImport } from './routes/mp'
 import { Route as ManualRouteImport } from './routes/manual'
+import { Route as IpcRouteImport } from './routes/ipc'
 import { Route as DenunciarRouteImport } from './routes/denunciar'
 import { Route as ConsultarRouteImport } from './routes/consultar'
 import { Route as CidadaoRouteImport } from './routes/cidadao'
@@ -50,6 +51,11 @@ const MpRoute = MpRouteImport.update({
 const ManualRoute = ManualRouteImport.update({
   id: '/manual',
   path: '/manual',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IpcRoute = IpcRouteImport.update({
+  id: '/ipc',
+  path: '/ipc',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DenunciarRoute = DenunciarRouteImport.update({
@@ -152,6 +158,7 @@ export interface FileRoutesByFullPath {
   '/cidadao': typeof CidadaoRoute
   '/consultar': typeof ConsultarRoute
   '/denunciar': typeof DenunciarRoute
+  '/ipc': typeof IpcRoute
   '/manual': typeof ManualRoute
   '/mp': typeof MpRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -175,6 +182,7 @@ export interface FileRoutesByTo {
   '/cidadao': typeof CidadaoRoute
   '/consultar': typeof ConsultarRoute
   '/denunciar': typeof DenunciarRoute
+  '/ipc': typeof IpcRoute
   '/manual': typeof ManualRoute
   '/mp': typeof MpRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -200,6 +208,7 @@ export interface FileRoutesById {
   '/cidadao': typeof CidadaoRoute
   '/consultar': typeof ConsultarRoute
   '/denunciar': typeof DenunciarRoute
+  '/ipc': typeof IpcRoute
   '/manual': typeof ManualRoute
   '/mp': typeof MpRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -225,6 +234,7 @@ export interface FileRouteTypes {
     | '/cidadao'
     | '/consultar'
     | '/denunciar'
+    | '/ipc'
     | '/manual'
     | '/mp'
     | '/reset-password'
@@ -248,6 +258,7 @@ export interface FileRouteTypes {
     | '/cidadao'
     | '/consultar'
     | '/denunciar'
+    | '/ipc'
     | '/manual'
     | '/mp'
     | '/reset-password'
@@ -272,6 +283,7 @@ export interface FileRouteTypes {
     | '/cidadao'
     | '/consultar'
     | '/denunciar'
+    | '/ipc'
     | '/manual'
     | '/mp'
     | '/reset-password'
@@ -297,6 +309,7 @@ export interface RootRouteChildren {
   CidadaoRoute: typeof CidadaoRoute
   ConsultarRoute: typeof ConsultarRoute
   DenunciarRoute: typeof DenunciarRoute
+  IpcRoute: typeof IpcRoute
   ManualRoute: typeof ManualRoute
   MpRoute: typeof MpRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -331,6 +344,13 @@ declare module '@tanstack/react-router' {
       path: '/manual'
       fullPath: '/manual'
       preLoaderRoute: typeof ManualRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ipc': {
+      id: '/ipc'
+      path: '/ipc'
+      fullPath: '/ipc'
+      preLoaderRoute: typeof IpcRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/denunciar': {
@@ -502,6 +522,7 @@ const rootRouteChildren: RootRouteChildren = {
   CidadaoRoute: CidadaoRoute,
   ConsultarRoute: ConsultarRoute,
   DenunciarRoute: DenunciarRoute,
+  IpcRoute: IpcRoute,
   ManualRoute: ManualRoute,
   MpRoute: MpRoute,
   ResetPasswordRoute: ResetPasswordRoute,

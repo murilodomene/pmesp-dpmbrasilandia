@@ -842,6 +842,20 @@ export type Database = {
       }
       is_active_staff: { Args: { _user_id: string }; Returns: boolean }
       is_delegado: { Args: { _user_id: string }; Returns: boolean }
+      list_ipcs_publicos: {
+        Args: never
+        Returns: {
+          criado_em: string
+          denuncia_id: string
+          movimento_id: string
+          numero_protocolo: string
+          policiais: Json
+          prolator_cargo: Database["public"]["Enums"]["app_role"]
+          prolator_nome: string
+          teor: string
+          unidade: Database["public"]["Enums"]["unidade_pc"]
+        }[]
+      }
       manutencao_limpar_avisos: { Args: never; Returns: Json }
       manutencao_limpar_observacoes: { Args: never; Returns: Json }
       manutencao_limpar_pdos: { Args: never; Returns: Json }

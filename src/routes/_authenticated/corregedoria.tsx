@@ -1315,7 +1315,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                             : "bg-muted text-muted-foreground"
                         }`}
                       >
-                        {m.ipc_publicado ? "Publicado ao denunciante" : "Não publicado"}
+                        {m.ipc_publicado ? "Público" : "Privado"}
                       </span>
                       <span className="ml-auto text-muted-foreground tabular">
                         {new Date(m.criado_em).toLocaleString("pt-BR")}
@@ -1346,7 +1346,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                         disabled={mPublicar.isPending}
                         className="rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground hover:bg-surface-2 disabled:opacity-50"
                       >
-                        {m.ipc_publicado ? "Despublicar" : "Publicar para o denunciante"}
+                        {m.ipc_publicado ? "Tornar Privado" : "Tornar Público"}
                       </button>
                     </div>
                     {canceladoFooter}

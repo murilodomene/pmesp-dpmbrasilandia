@@ -1046,10 +1046,6 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                     />
                   </div>
                 </div>
-                <IpcCampoAuto
-                  label="4º Ciente dos fatos"
-                  valor="Corregedoria Geral da Polícia Civil"
-                />
               </div>
             ) : especie === "ata" ? (
               <div className="mt-3 space-y-3">

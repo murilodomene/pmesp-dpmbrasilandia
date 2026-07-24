@@ -637,7 +637,6 @@ function TimelineIpcCard({
         campos={[
           ...camposBase,
           { label: "Relato dos fatos", valor: relatoNode, block: true },
-          { label: "Ciente dos fatos", valor: "Corregedoria Geral da Polícia Civil" },
         ]}
       />
 
@@ -656,7 +655,6 @@ function TimelineIpcCard({
           campos={[
             ...camposBase,
             { label: "Relato dos fatos", valor: relatoNodePdf, block: true },
-            { label: "Ciente dos fatos", valor: "Corregedoria Geral da Polícia Civil" },
           ]}
         />
       </div>

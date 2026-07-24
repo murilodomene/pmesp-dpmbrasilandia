@@ -1046,10 +1046,6 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                     />
                   </div>
                 </div>
-                <IpcCampoAuto
-                  label="4º Ciente dos fatos"
-                  valor="Corregedoria Geral da Polícia Civil"
-                />
               </div>
             ) : especie === "ata" ? (
               <div className="mt-3 space-y-3">
@@ -2563,7 +2559,6 @@ function TimelineIpcCard({
         campos={[
           ...camposBase,
           { label: "Relato dos fatos", valor: relatoNode, block: true },
-          { label: "Ciente dos fatos", valor: "Corregedoria Geral da Polícia Civil" },
         ]}
       />
 
@@ -2582,7 +2577,6 @@ function TimelineIpcCard({
           campos={[
             ...camposBase,
             { label: "Relato dos fatos", valor: relatoNodePdf, block: true },
-            { label: "Ciente dos fatos", valor: "Corregedoria Geral da Polícia Civil" },
           ]}
         />
       </div>

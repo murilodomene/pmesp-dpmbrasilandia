@@ -429,6 +429,7 @@ const UNIDADES = [
   "DENARC",
   "GER",
   "SAT",
+  "GOE",
 ] as const;
 
 type Envolvido = { nome: string; rg_funcional: string; unidade: string };

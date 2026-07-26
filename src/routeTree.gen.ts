@@ -20,6 +20,7 @@ import { Route as CidadaoRouteImport } from './routes/cidadao'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as IpcIdRouteImport } from './routes/ipc.$id'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedPendenteRouteImport } from './routes/_authenticated/pendente'
@@ -86,6 +87,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const IpcIdRoute = IpcIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => IpcRoute,
 } as any)
 const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
   id: '/usuarios',
@@ -158,7 +164,7 @@ export interface FileRoutesByFullPath {
   '/cidadao': typeof CidadaoRoute
   '/consultar': typeof ConsultarRoute
   '/denunciar': typeof DenunciarRoute
-  '/ipc': typeof IpcRoute
+  '/ipc': typeof IpcRouteWithChildren
   '/manual': typeof ManualRoute
   '/mp': typeof MpRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -175,6 +181,7 @@ export interface FileRoutesByFullPath {
   '/pendente': typeof AuthenticatedPendenteRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
+  '/ipc/$id': typeof IpcIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -182,7 +189,7 @@ export interface FileRoutesByTo {
   '/cidadao': typeof CidadaoRoute
   '/consultar': typeof ConsultarRoute
   '/denunciar': typeof DenunciarRoute
-  '/ipc': typeof IpcRoute
+  '/ipc': typeof IpcRouteWithChildren
   '/manual': typeof ManualRoute
   '/mp': typeof MpRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -199,6 +206,7 @@ export interface FileRoutesByTo {
   '/pendente': typeof AuthenticatedPendenteRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
+  '/ipc/$id': typeof IpcIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -208,7 +216,7 @@ export interface FileRoutesById {
   '/cidadao': typeof CidadaoRoute
   '/consultar': typeof ConsultarRoute
   '/denunciar': typeof DenunciarRoute
-  '/ipc': typeof IpcRoute
+  '/ipc': typeof IpcRouteWithChildren
   '/manual': typeof ManualRoute
   '/mp': typeof MpRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -225,6 +233,7 @@ export interface FileRoutesById {
   '/_authenticated/pendente': typeof AuthenticatedPendenteRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
+  '/ipc/$id': typeof IpcIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -251,6 +260,7 @@ export interface FileRouteTypes {
     | '/pendente'
     | '/perfil'
     | '/usuarios'
+    | '/ipc/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -275,6 +285,7 @@ export interface FileRouteTypes {
     | '/pendente'
     | '/perfil'
     | '/usuarios'
+    | '/ipc/$id'
   id:
     | '__root__'
     | '/'
@@ -300,6 +311,7 @@ export interface FileRouteTypes {
     | '/_authenticated/pendente'
     | '/_authenticated/perfil'
     | '/_authenticated/usuarios'
+    | '/ipc/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -309,7 +321,7 @@ export interface RootRouteChildren {
   CidadaoRoute: typeof CidadaoRoute
   ConsultarRoute: typeof ConsultarRoute
   DenunciarRoute: typeof DenunciarRoute
-  IpcRoute: typeof IpcRoute
+  IpcRoute: typeof IpcRouteWithChildren
   ManualRoute: typeof ManualRoute
   MpRoute: typeof MpRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -394,6 +406,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/ipc/$id': {
+      id: '/ipc/$id'
+      path: '/$id'
+      fullPath: '/ipc/$id'
+      preLoaderRoute: typeof IpcIdRouteImport
+      parentRoute: typeof IpcRoute
     }
     '/_authenticated/usuarios': {
       id: '/_authenticated/usuarios'
@@ -515,6 +534,16 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface IpcRouteChildren {
+  IpcIdRoute: typeof IpcIdRoute
+}
+
+const IpcRouteChildren: IpcRouteChildren = {
+  IpcIdRoute: IpcIdRoute,
+}
+
+const IpcRouteWithChildren = IpcRoute._addFileChildren(IpcRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
@@ -522,7 +551,7 @@ const rootRouteChildren: RootRouteChildren = {
   CidadaoRoute: CidadaoRoute,
   ConsultarRoute: ConsultarRoute,
   DenunciarRoute: DenunciarRoute,
-  IpcRoute: IpcRoute,
+  IpcRoute: IpcRouteWithChildren,
   ManualRoute: ManualRoute,
   MpRoute: MpRoute,
   ResetPasswordRoute: ResetPasswordRoute,

@@ -1,8 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { Folder, FileText } from "lucide-react";
 import { Header } from "@/components/Header";
-import { ProcessoLetterhead } from "@/components/ProcessoLetterhead";
-import { TimelineMovimentos } from "@/components/TimelineMovimentos";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/ipc")({
@@ -12,7 +11,7 @@ export const Route = createFileRoute("/ipc")({
       {
         name: "description",
         content:
-          "Consulta pública dos Informes Preliminares Conclusivos (IPC) tornados públicos pela Corregedoria Geral da Polícia Civil.",
+          "Consulta pública dos Informes Preliminares Conclusivos (IPC) tornados públicos pela Corregedoria Geral da Polícia Civil, organizados por processo administrativo.",
       },
       { property: "og:title", content: "IPCs Públicos — Corregedoria" },
       {
@@ -24,7 +23,7 @@ export const Route = createFileRoute("/ipc")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: IpcPublicoPage,
+  component: IpcPublicoIndexPage,
 });
 
 type Policial = { id: string; nome: string; rg_funcional: string | null };
@@ -41,7 +40,15 @@ interface IpcRow {
   policiais: Policial[];
 }
 
-function IpcPublicoPage() {
+interface PadFolder {
+  denuncia_id: string;
+  numero_protocolo: string;
+  unidade: string | null;
+  total: number;
+  ultimo: string;
+}
+
+function IpcPublicoIndexPage() {
   const [rows, setRows] = useState<IpcRow[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -66,6 +73,27 @@ function IpcPublicoPage() {
     };
   }, []);
 
+  const folders = useMemo<PadFolder[]>(() => {
+    if (!rows) return [];
+    const map = new Map<string, PadFolder>();
+    for (const r of rows) {
+      const existing = map.get(r.denuncia_id);
+      if (existing) {
+        existing.total += 1;
+        if (r.criado_em > existing.ultimo) existing.ultimo = r.criado_em;
+      } else {
+        map.set(r.denuncia_id, {
+          denuncia_id: r.denuncia_id,
+          numero_protocolo: r.numero_protocolo,
+          unidade: r.unidade,
+          total: 1,
+          ultimo: r.criado_em,
+        });
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => (a.ultimo < b.ultimo ? 1 : -1));
+  }, [rows]);
+
   return (
     <div className="min-h-screen">
       <Header />
@@ -74,7 +102,8 @@ function IpcPublicoPage() {
         <h1 className="mt-2 font-serif text-3xl">IPCs Públicos</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
           Informes Preliminares Conclusivos (IPC) tornados públicos pela Corregedoria Geral da
-          Polícia Civil. Os demais atos do processo administrativo permanecem sob sigilo funcional.
+          Polícia Civil, organizados por processo administrativo. Clique em uma pasta para abrir os
+          IPCs cadastrados no respectivo procedimento.
         </p>
 
         {rows === null && (
@@ -87,39 +116,42 @@ function IpcPublicoPage() {
           </div>
         )}
 
-        {rows && rows.length === 0 && !erro && (
+        {rows && folders.length === 0 && !erro && (
           <div className="mt-10 rounded-md border border-border p-6 text-sm text-muted-foreground">
             Nenhum IPC foi tornado público até o momento.
           </div>
         )}
 
-        <div className="mt-8 space-y-10">
-          {(rows ?? []).map((r) => (
-            <article key={r.movimento_id} className="space-y-4">
-              <ProcessoLetterhead
-                numeroProtocolo={r.numero_protocolo}
-                unidade={r.unidade}
-                readOnly
-              />
-              <TimelineMovimentos
-                movimentos={[
-                  {
-                    id: r.movimento_id,
-                    especie: "ipc",
-                    teor: r.teor,
-                    criado_em: r.criado_em,
-                    prolator_nome: r.prolator_nome,
-                    prolator_cargo: r.prolator_cargo,
-                    ipc_publicado: true,
-                  },
-                ]}
-                procedimento={r.numero_protocolo}
-                unidade={r.unidade ?? "—"}
-                policiais={r.policiais}
-              />
-            </article>
-          ))}
-        </div>
+        {folders.length > 0 && (
+          <div className="mt-8 grid gap-3 sm:grid-cols-2">
+            {folders.map((f) => (
+              <Link
+                key={f.denuncia_id}
+                to="/ipc/$id"
+                params={{ id: f.denuncia_id }}
+                className="surface group flex items-start gap-3 p-4 transition-colors hover:bg-surface-2 focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <div className="mt-0.5 rounded-md bg-surface-2 p-2 text-amber-500 group-hover:bg-surface">
+                  <Folder className="h-5 w-5" aria-hidden />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="tabular font-serif text-base font-semibold text-foreground">
+                    {f.numero_protocolo}
+                  </div>
+                  {f.unidade && (
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      {f.unidade}
+                    </div>
+                  )}
+                  <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <FileText className="h-3.5 w-3.5" aria-hidden />
+                    {f.total} {f.total === 1 ? "IPC publicado" : "IPCs publicados"}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

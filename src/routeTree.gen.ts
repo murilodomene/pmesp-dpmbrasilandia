@@ -13,13 +13,13 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as MpRouteImport } from './routes/mp'
 import { Route as ManualRouteImport } from './routes/manual'
-import { Route as IpcRouteImport } from './routes/ipc'
 import { Route as DenunciarRouteImport } from './routes/denunciar'
 import { Route as ConsultarRouteImport } from './routes/consultar'
 import { Route as CidadaoRouteImport } from './routes/cidadao'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as IpcIndexRouteImport } from './routes/ipc.index'
 import { Route as IpcIdRouteImport } from './routes/ipc.$id'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
@@ -54,11 +54,6 @@ const ManualRoute = ManualRouteImport.update({
   path: '/manual',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IpcRoute = IpcRouteImport.update({
-  id: '/ipc',
-  path: '/ipc',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DenunciarRoute = DenunciarRouteImport.update({
   id: '/denunciar',
   path: '/denunciar',
@@ -88,10 +83,15 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const IpcIndexRoute = IpcIndexRouteImport.update({
+  id: '/ipc/',
+  path: '/ipc/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IpcIdRoute = IpcIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => IpcRoute,
+  id: '/ipc/$id',
+  path: '/ipc/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
   id: '/usuarios',
@@ -164,7 +164,6 @@ export interface FileRoutesByFullPath {
   '/cidadao': typeof CidadaoRoute
   '/consultar': typeof ConsultarRoute
   '/denunciar': typeof DenunciarRoute
-  '/ipc': typeof IpcRouteWithChildren
   '/manual': typeof ManualRoute
   '/mp': typeof MpRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -182,6 +181,7 @@ export interface FileRoutesByFullPath {
   '/perfil': typeof AuthenticatedPerfilRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/ipc/$id': typeof IpcIdRoute
+  '/ipc/': typeof IpcIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -189,7 +189,6 @@ export interface FileRoutesByTo {
   '/cidadao': typeof CidadaoRoute
   '/consultar': typeof ConsultarRoute
   '/denunciar': typeof DenunciarRoute
-  '/ipc': typeof IpcRouteWithChildren
   '/manual': typeof ManualRoute
   '/mp': typeof MpRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -207,6 +206,7 @@ export interface FileRoutesByTo {
   '/perfil': typeof AuthenticatedPerfilRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/ipc/$id': typeof IpcIdRoute
+  '/ipc': typeof IpcIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -216,7 +216,6 @@ export interface FileRoutesById {
   '/cidadao': typeof CidadaoRoute
   '/consultar': typeof ConsultarRoute
   '/denunciar': typeof DenunciarRoute
-  '/ipc': typeof IpcRouteWithChildren
   '/manual': typeof ManualRoute
   '/mp': typeof MpRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -234,6 +233,7 @@ export interface FileRoutesById {
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/ipc/$id': typeof IpcIdRoute
+  '/ipc/': typeof IpcIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -243,7 +243,6 @@ export interface FileRouteTypes {
     | '/cidadao'
     | '/consultar'
     | '/denunciar'
-    | '/ipc'
     | '/manual'
     | '/mp'
     | '/reset-password'
@@ -261,6 +260,7 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/usuarios'
     | '/ipc/$id'
+    | '/ipc/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -268,7 +268,6 @@ export interface FileRouteTypes {
     | '/cidadao'
     | '/consultar'
     | '/denunciar'
-    | '/ipc'
     | '/manual'
     | '/mp'
     | '/reset-password'
@@ -286,6 +285,7 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/usuarios'
     | '/ipc/$id'
+    | '/ipc'
   id:
     | '__root__'
     | '/'
@@ -294,7 +294,6 @@ export interface FileRouteTypes {
     | '/cidadao'
     | '/consultar'
     | '/denunciar'
-    | '/ipc'
     | '/manual'
     | '/mp'
     | '/reset-password'
@@ -312,6 +311,7 @@ export interface FileRouteTypes {
     | '/_authenticated/perfil'
     | '/_authenticated/usuarios'
     | '/ipc/$id'
+    | '/ipc/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -321,11 +321,12 @@ export interface RootRouteChildren {
   CidadaoRoute: typeof CidadaoRoute
   ConsultarRoute: typeof ConsultarRoute
   DenunciarRoute: typeof DenunciarRoute
-  IpcRoute: typeof IpcRouteWithChildren
   ManualRoute: typeof ManualRoute
   MpRoute: typeof MpRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  IpcIdRoute: typeof IpcIdRoute
+  IpcIndexRoute: typeof IpcIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -356,13 +357,6 @@ declare module '@tanstack/react-router' {
       path: '/manual'
       fullPath: '/manual'
       preLoaderRoute: typeof ManualRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/ipc': {
-      id: '/ipc'
-      path: '/ipc'
-      fullPath: '/ipc'
-      preLoaderRoute: typeof IpcRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/denunciar': {
@@ -407,12 +401,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ipc/': {
+      id: '/ipc/'
+      path: '/ipc'
+      fullPath: '/ipc/'
+      preLoaderRoute: typeof IpcIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ipc/$id': {
       id: '/ipc/$id'
-      path: '/$id'
+      path: '/ipc/$id'
       fullPath: '/ipc/$id'
       preLoaderRoute: typeof IpcIdRouteImport
-      parentRoute: typeof IpcRoute
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/usuarios': {
       id: '/_authenticated/usuarios'
@@ -534,16 +535,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
-interface IpcRouteChildren {
-  IpcIdRoute: typeof IpcIdRoute
-}
-
-const IpcRouteChildren: IpcRouteChildren = {
-  IpcIdRoute: IpcIdRoute,
-}
-
-const IpcRouteWithChildren = IpcRoute._addFileChildren(IpcRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
@@ -551,11 +542,12 @@ const rootRouteChildren: RootRouteChildren = {
   CidadaoRoute: CidadaoRoute,
   ConsultarRoute: ConsultarRoute,
   DenunciarRoute: DenunciarRoute,
-  IpcRoute: IpcRouteWithChildren,
   ManualRoute: ManualRoute,
   MpRoute: MpRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  IpcIdRoute: IpcIdRoute,
+  IpcIndexRoute: IpcIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

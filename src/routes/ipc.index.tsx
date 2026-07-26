@@ -4,7 +4,7 @@ import { Folder, FileText } from "lucide-react";
 import { Header } from "@/components/Header";
 import { supabase } from "@/integrations/supabase/client";
 
-export const Route = createFileRoute("/ipc")({
+export const Route = createFileRoute("/ipc/")({
   head: () => ({
     meta: [
       { title: "IPCs Públicos — Corregedoria da Polícia Civil" },

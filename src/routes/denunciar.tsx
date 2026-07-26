@@ -26,7 +26,7 @@ export const Route = createFileRoute("/denunciar")({
   component: DenunciarPage,
 });
 
-const UNIDADES = ["DEIC", "CORREGEPOL", "DECAP", "DHPP", "CERCO", "GARRA", "DENARC", "GER", "SAT"] as const;
+const UNIDADES = ["DEIC", "CORREGEPOL", "DECAP", "DHPP", "CERCO", "GARRA", "DENARC", "GER", "SAT", "GOE"] as const;
 
 interface Policial {
   nome: string;

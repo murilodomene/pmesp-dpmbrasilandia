@@ -123,34 +123,35 @@ function IpcPublicoIndexPage() {
         )}
 
         {folders.length > 0 && (
-          <div className="mt-8 grid gap-3 sm:grid-cols-2">
+          <ul className="mt-8 flex flex-col gap-2">
             {folders.map((f) => (
-              <Link
-                key={f.denuncia_id}
-                to="/ipc/$id"
-                params={{ id: f.denuncia_id }}
-                className="surface group flex items-start gap-3 p-4 transition-colors hover:bg-surface-2 focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                <div className="mt-0.5 rounded-md bg-surface-2 p-2 text-amber-500 group-hover:bg-surface">
-                  <Folder className="h-5 w-5" aria-hidden />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="tabular font-serif text-base font-semibold text-foreground">
-                    {f.numero_protocolo}
+              <li key={f.denuncia_id}>
+                <Link
+                  to="/ipc/$id"
+                  params={{ id: f.denuncia_id }}
+                  className="surface group flex items-center gap-4 p-4 transition-colors hover:bg-surface-2 focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <div className="rounded-md bg-surface-2 p-2.5 text-amber-500 group-hover:bg-surface">
+                    <Folder className="h-6 w-6" aria-hidden />
                   </div>
-                  {f.unidade && (
-                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                      {f.unidade}
+                  <div className="min-w-0 flex-1">
+                    <div className="tabular font-serif text-base font-semibold text-foreground">
+                      {f.numero_protocolo}
                     </div>
-                  )}
-                  <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <FileText className="h-3.5 w-3.5" aria-hidden />
-                    {f.total} {f.total === 1 ? "IPC publicado" : "IPCs publicados"}
+                    {f.unidade && (
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                        {f.unidade}
+                      </div>
+                    )}
                   </div>
-                </div>
-              </Link>
+                  <div className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+                    <FileText className="h-3.5 w-3.5" aria-hidden />
+                    {f.total} {f.total === 1 ? "IPC" : "IPCs"}
+                  </div>
+                </Link>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </div>
     </div>

@@ -47,7 +47,7 @@ const CARGOS_POLICIAIS = [
   "Delegado",
 ];
 
-const UNIDADES = ["DEIC", "CORREGEPOL", "DECAP", "DHPP", "CERCO", "GARRA", "DENARC", "GER", "SAT"];
+const UNIDADES = ["DEIC", "CORREGEPOL", "DECAP", "DHPP", "CERCO", "GARRA", "DENARC", "GER", "SAT", "GOE"];
 
 type Pad = { observacao_id: string; denuncia_id: string; numero_protocolo: string };
 type Observacao = {

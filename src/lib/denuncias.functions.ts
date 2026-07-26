@@ -27,6 +27,7 @@ const UNIDADES = [
   "DENARC",
   "GER",
   "SAT",
+  "GOE",
 ] as const;
 
 const ESPECIES = ["despacho", "decisao", "ipc", "mandado", "ata", "certidao"] as const;

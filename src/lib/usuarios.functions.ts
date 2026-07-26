@@ -204,7 +204,7 @@ export const atualizarPerfil = createServerFn({ method: "POST" })
         telefone: z.string().trim().max(30).optional().nullable(),
         foto_path: z.string().trim().max(500).optional().nullable(),
         unidade: z
-          .enum(["DEIC", "CORREGEPOL", "DECAP", "DHPP", "CERCO", "GARRA", "DENARC", "GER", "SAT"])
+          .enum(["DEIC", "CORREGEPOL", "DECAP", "DHPP", "CERCO", "GARRA", "DENARC", "GER", "SAT", "GOE"])
           .optional()
           .nullable(),
       })

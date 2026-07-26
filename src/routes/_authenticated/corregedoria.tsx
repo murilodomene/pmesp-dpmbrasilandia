@@ -1336,7 +1336,40 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                         }
                       />
                     </div>
-                    <div className="flex justify-end">
+                    <div className="flex flex-wrap justify-end gap-2">
+                      {(cargo === "delegado_geral" || cargo === "delegado_corregedor") && (
+                        <button
+                          onClick={async () => {
+                            const origin =
+                              typeof window !== "undefined" ? window.location.origin : "";
+                            const link = `${origin}/ipc/${denuncia.id}`;
+                            const denunciadosTxt = policiais.length
+                              ? policiais.map((p) => p.nome).join(", ")
+                              : "Não identificado";
+                            const autoridadeNome = (m.prolator_nome || "").toUpperCase();
+                            const autoridadeCargo = cargoLabelFull(m.prolator_cargo as string);
+                            const msg =
+                              `<:PCESP:1307085628730773534> **CORREGEDORIA GERAL DA POLÍCIA CIVIL DO ESTADO DE SÃO PAULO**\n\n` +
+                              "```RESULTADO DO INQUÉRITO```\n\n" +
+                              `> Autos nº ${denuncia.numero_protocolo}\n` +
+                              `> Denunciado: ${denunciadosTxt}\n\n\n` +
+                              `A Corregedoria Geral da Polícia Civil, no uso de suas atribuições legais e regulamentares torna público o resultado do processo administrativo supramencionado:\n\n` +
+                              `**LINK**: ${link}\n\n` +
+                              `São Paulo/SP, na data da assinatura digital.\n\n` +
+                              "```" + `${autoridadeNome}\n${autoridadeCargo}` + "```";
+                            try {
+                              await navigator.clipboard.writeText(msg);
+                              toast.success("Modelo do Discord copiado.");
+                            } catch {
+                              toast.error("Não foi possível copiar. Copie manualmente.");
+                            }
+                          }}
+                          className="rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground hover:bg-surface-2"
+                          title="Copiar modelo formatado para o Discord"
+                        >
+                          Copiar Discord
+                        </button>
+                      )}
                       <button
                         onClick={() => mPublicar.mutate({ id: m.id, publicado: !m.ipc_publicado })}
                         disabled={mPublicar.isPending}

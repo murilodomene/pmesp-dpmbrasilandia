@@ -63,7 +63,7 @@ function IpcPublicoPadPage() {
           policiais: (Array.isArray(r.policiais) ? r.policiais : []) as Policial[],
         }))
         .filter((r) => r.denuncia_id === id)
-        .sort((a, b) => (a.criado_em < b.criado_em ? -1 : 1));
+        .sort((a, b) => new Date(a.criado_em).getTime() - new Date(b.criado_em).getTime());
       setRows(parsed);
     })();
     return () => {

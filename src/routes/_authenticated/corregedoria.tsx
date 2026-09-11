@@ -95,7 +95,7 @@ const STATUS_LIST_MANUAL: DenunciaStatus[] = [
   "ag_decurso_prazo",
   "arquivada",
 ];
-const UNIDADES = ["DEIC", "CORREGEPOL", "DECAP", "DHPP", "CERCO", "GARRA", "DENARC", "GER", "SAT", "GOE"] as const;
+const UNIDADES = OPMS;
 const ESPECIES = [
   { v: "despacho", l: "Despacho", icon: FileText },
   { v: "decisao", l: "Decisão", icon: Scale },

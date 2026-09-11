@@ -419,18 +419,7 @@ function Row({ k, v }: { k: string; v: string | null | undefined }) {
   );
 }
 
-const UNIDADES = [
-  "DEIC",
-  "CORREGEPOL",
-  "DECAP",
-  "DHPP",
-  "CERCO",
-  "GARRA",
-  "DENARC",
-  "GER",
-  "SAT",
-  "GOE",
-] as const;
+const UNIDADES = OPMS;
 
 type Envolvido = { nome: string; rg_funcional: string; unidade: string };
 

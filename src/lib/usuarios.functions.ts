@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { OPMS } from "@/lib/personnel-options";
 
 const ROLES = ["delegado_geral", "delegado_corregedor", "coordenador", "corregedor", "cidadao", "mp"] as const;
 const EDITABLE_ROLES = ["delegado_geral", "delegado_corregedor", "coordenador", "corregedor", "cidadao", "mp"] as const;
@@ -203,10 +204,7 @@ export const atualizarPerfil = createServerFn({ method: "POST" })
         discord_id: z.string().trim().max(100).optional().nullable(),
         telefone: z.string().trim().max(30).optional().nullable(),
         foto_path: z.string().trim().max(500).optional().nullable(),
-        unidade: z
-          .enum(["DEIC", "CORREGEPOL", "DECAP", "DHPP", "CERCO", "GARRA", "DENARC", "GER", "SAT", "GOE"])
-          .optional()
-          .nullable(),
+        unidade: z.enum(OPMS).optional().nullable(),
       })
       .parse(data),
   )

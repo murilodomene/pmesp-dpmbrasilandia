@@ -35,20 +35,9 @@ export const Route = createFileRoute("/_authenticated/observacoes")({
   notFoundComponent: () => <div className="p-6 text-sm">Não encontrado.</div>,
 });
 
-const CARGOS_POLICIAIS = [
-  "ACADEPOL",
-  "Agente de 3º Classe",
-  "Agente de 2º Classe",
-  "Agente de 1º Classe",
-  "Agente de Classe Especial",
-  "Investigador",
-  "Investigador-Chefe",
-  "Perito",
-  "Escrivão",
-  "Delegado",
-];
+const CARGOS_POLICIAIS = POSTOS_GRADUACOES;
 
-const UNIDADES = ["DEIC", "CORREGEPOL", "DECAP", "DHPP", "CERCO", "GARRA", "DENARC", "GER", "SAT", "GOE"];
+const UNIDADES = OPMS;
 
 type Pad = { observacao_id: string; denuncia_id: string; numero_protocolo: string };
 type Observacao = {

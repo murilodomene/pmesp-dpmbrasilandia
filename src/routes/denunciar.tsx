@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { submitDenuncia, submitDenunciaCidadao } from "@/lib/denuncias.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Trash2, Plus } from "lucide-react";
+import { OPMS } from "@/lib/personnel-options";
 
 export const Route = createFileRoute("/denunciar")({
   head: () => ({
@@ -26,7 +27,7 @@ export const Route = createFileRoute("/denunciar")({
   component: DenunciarPage,
 });
 
-const UNIDADES = ["DEIC", "CORREGEPOL", "DECAP", "DHPP", "CERCO", "GARRA", "DENARC", "GER", "SAT", "GOE"] as const;
+const UNIDADES = OPMS;
 
 interface Policial {
   nome: string;

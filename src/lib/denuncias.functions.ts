@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { OPMS, POSTOS_GRADUACOES } from "@/lib/personnel-options";
 
 const STATUS_VALUES = [
   "novo",
@@ -17,18 +18,7 @@ const STATUS_VALUES = [
 // "transito_julgado" NÃO é selecionável manualmente — só via decurso automático.
 // "concluida" foi removido do fluxo — permanece no enum apenas para compatibilidade histórica.
 
-const UNIDADES = [
-  "DEIC",
-  "CORREGEPOL",
-  "DECAP",
-  "DHPP",
-  "CERCO",
-  "GARRA",
-  "DENARC",
-  "GER",
-  "SAT",
-  "GOE",
-] as const;
+const UNIDADES = OPMS;
 
 const ESPECIES = ["despacho", "decisao", "ipc", "mandado", "ata", "certidao"] as const;
 const ESPECIES_PORTARIA = "portaria" as const;
@@ -551,18 +541,7 @@ export const atualizarNatureza = createServerFn({ method: "POST" })
   });
 
 
-export const CARGOS_POLICIAIS = [
-  "ACADEPOL",
-  "Agente de 3º Classe",
-  "Agente de 2º Classe",
-  "Agente de 1º Classe",
-  "Agente de Classe Especial",
-  "Investigador",
-  "Investigador-Chefe",
-  "Perito",
-  "Escrivão",
-  "Delegado",
-] as const;
+export const CARGOS_POLICIAIS = POSTOS_GRADUACOES;
 
 export const retificarDenunciado = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

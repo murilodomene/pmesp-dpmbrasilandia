@@ -74,7 +74,6 @@ export const submitDenuncia = createServerFn({ method: "POST" })
     return { protocolo };
   });
 
-
 export const consultarPublica = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) => z.object({ protocolo: z.string().trim().min(3).max(40) }).parse(data))
   .handler(async ({ data }) => {
@@ -105,7 +104,6 @@ export const listDenuncias = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return data ?? [];
   });
-
 
 export const getDenuncia = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -155,7 +153,6 @@ export const getDenuncia = createServerFn({ method: "GET" })
       denunciantesAdicionais: denAdd.data ?? [],
     };
   });
-
 
 
 async function getProlator(context: { supabase: ReturnType<typeof publicClient>; userId: string }) {
@@ -403,7 +400,6 @@ export const prorrogar = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-
 export const juntarOitiva = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
@@ -513,8 +509,8 @@ export const atualizarNatureza = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const p = await getProlator(context);
-    if (p.prolator_cargo !== "delegado_geral" && p.prolator_cargo !== "delegado_corregedor" && p.prolator_cargo !== "coordenador") {
-      throw new Error("Apenas Delegado Geral ou Delegado Corregedor podem editar a natureza.");
+    if (p.prolator_cargo !== "ssp" && p.prolator_cargo !== "cmtg" && p.prolator_cargo !== "corregedor_geral" && p.prolator_cargo !== "subcorregedor_geral") {
+      throw new Error("Apenas SSP ou Corregedor-Geral podem editar a natureza.");
     }
     const { data: atual } = await context.supabase
       .from("denuncias")
@@ -540,7 +536,6 @@ export const atualizarNatureza = createServerFn({ method: "POST" })
     return { changed: true };
   });
 
-
 export const CARGOS_POLICIAIS = POSTOS_GRADUACOES;
 
 export const retificarDenunciado = createServerFn({ method: "POST" })
@@ -560,12 +555,12 @@ export const retificarDenunciado = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const p = await getProlator(context);
     const podeRetificar =
-      p.prolator_cargo === "delegado_geral" ||
-      p.prolator_cargo === "delegado_corregedor" ||
+      p.prolator_cargo === "ssp" || p.prolator_cargo=== "cmtg" ||
+      p.prolator_cargo === "corregedor_geral" ||
       p.prolator_cargo === "corregedor" ||
-      p.prolator_cargo === "coordenador";
+      p.prolator_cargo === "subcorregedor_geral";
     if (!podeRetificar) {
-      throw new Error("Apenas Delegado Geral, Delegado Corregedor ou Corregedor podem retificar o denunciado.");
+      throw new Error("Apenas SSP, Corregedor-Geral ou Corregedor podem retificar o denunciado.");
     }
 
     const { data: pol, error: polErr } = await context.supabase
@@ -596,11 +591,11 @@ export const retificarDenunciado = createServerFn({ method: "POST" })
 
     if (
       cargoMudou &&
-      p.prolator_cargo !== "delegado_corregedor" &&
+      p.prolator_cargo !== "corregedor_geral" &&
       p.prolator_cargo !== "corregedor" &&
-      p.prolator_cargo !== "coordenador"
+      p.prolator_cargo !== "subcorregedor_geral"
     ) {
-      throw new Error("Apenas Delegado Corregedor, Coordenador ou Corregedor podem alterar o cargo do denunciado.");
+      throw new Error("Apenas Corregedor-Geral, Subcorregedor-Geral ou Corregedor podem alterar o cargo do denunciado.");
     }
 
     const { error: updErr } = await context.supabase
@@ -629,10 +624,8 @@ export const retificarDenunciado = createServerFn({ method: "POST" })
       if (movErr) throw new Error(movErr.message);
     }
 
-
     return { changed: true };
   });
-
 
 export const lavrarPortaria = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -679,8 +672,8 @@ export const lavrarPortaria = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-// Instauração de ofício pela Corregedoria (Delegado Geral, Corregedor
-// ou Delegado Corregedor). Cria a denúncia já instaurada, com termo inicial
+// Instauração de ofício pela Corregedoria (SSP, Corregedor
+// ou Corregedor-Geral). Cria a denúncia já instaurada, com termo inicial
 // no momento da criação e status 'em_investigacao', e registra um despacho
 // inicial identificando a origem de ofício.
 const oficioSchema = z.object({
@@ -707,12 +700,12 @@ export const instaurarOficio = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const p = await getProlator(context);
     if (
-      p.prolator_cargo !== "delegado_geral" &&
-      p.prolator_cargo !== "delegado_corregedor" &&
+      p.prolator_cargo !== "ssp" && p.prolator_cargo!== "cmtg" &&
+      p.prolator_cargo !== "corregedor_geral" &&
       p.prolator_cargo !== "corregedor" &&
-      p.prolator_cargo !== "coordenador"
+      p.prolator_cargo !== "subcorregedor_geral"
     ) {
-      throw new Error("Apenas Delegado Geral, Delegado Corregedor, Coordenador ou Corregedor podem instaurar de ofício.");
+      throw new Error("Apenas SSP, Corregedor-Geral, Subcorregedor-Geral ou Corregedor podem instaurar de ofício.");
     }
 
     const agora = new Date().toISOString();
@@ -758,7 +751,6 @@ export const instaurarOficio = createServerFn({ method: "POST" })
 
     return { id: den.id, protocolo: den.numero_protocolo };
   });
-
 
 // Envio de denúncia por Cidadão autenticado — vincula owner_id.
 export const submitDenunciaCidadao = createServerFn({ method: "POST" })
@@ -954,7 +946,7 @@ export const listMeusProcessosMp = createServerFn({ method: "GET" })
     return data ?? [];
   });
 
-// Exclusão definitiva de denúncia (Delegado Geral / Delegado Corregedor).
+// Exclusão definitiva de denúncia (SSP / Corregedor-Geral).
 // A permissão real é aplicada pela RLS (policy "Delegados excluem denuncias").
 // FKs em movimentos, oitivas, denuncia_policiais e mp_acessos são ON DELETE CASCADE.
 export const excluirDenuncia = createServerFn({ method: "POST" })
@@ -1006,7 +998,7 @@ export const cancelarMovimento = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-// Exclusão silenciosa de movimentação — SOMENTE Delegado Corregedor.
+// Exclusão silenciosa de movimentação — SOMENTE Corregedor-Geral.
 // Não gera notificação nem registro de auditoria. Uso restrito e discricionário.
 export const excluirMovimentoSilencioso = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -1022,8 +1014,8 @@ export const excluirMovimentoSilencioso = createServerFn({ method: "POST" })
       .limit(1);
     if (eRole) throw new Error(eRole.message);
     const role = rows?.[0]?.role;
-    if (role !== "delegado_corregedor" && role !== "coordenador") {
-      throw new Error("Apenas o Delegado Corregedor pode executar esta ação.");
+    if (role !== "corregedor_geral" && role !== "subcorregedor_geral") {
+      throw new Error("Apenas o Corregedor-Geral pode executar esta ação.");
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
@@ -1033,7 +1025,6 @@ export const excluirMovimentoSilencioso = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
-
 
 
 // ============ TARJAS DE SINALIZAÇÃO ============
@@ -1110,10 +1101,10 @@ const denuncianteInput = z.object({
 
 function podeGerenciarDenunciantes(role: string | null | undefined) {
   return (
-    role === "delegado_geral" ||
-    role === "delegado_corregedor" ||
+    role === "ssp" || role=== "cmtg" ||
+    role === "corregedor_geral" ||
     role === "corregedor" ||
-    role === "coordenador"
+    role === "subcorregedor_geral"
   );
 }
 
@@ -1125,7 +1116,7 @@ export const adicionarDenunciante = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const p = await getProlator(context);
     if (!podeGerenciarDenunciantes(p.prolator_cargo)) {
-      throw new Error("Apenas Delegado Geral, Delegado Corregedor ou Coordenador podem adicionar denunciantes.");
+      throw new Error("Apenas SSP, Corregedor-Geral ou Subcorregedor-Geral podem adicionar denunciantes.");
     }
     const nome = (data.nome ?? "").trim() || null;
     if (!data.anonimo && !nome) {
@@ -1192,7 +1183,5 @@ export const removerDenunciante = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
-
-
 
 

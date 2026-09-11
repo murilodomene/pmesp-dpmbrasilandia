@@ -17,11 +17,10 @@ async function requireDelegadoCorregedor(context: { supabase: any; userId: strin
     .eq("user_id", context.userId)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!role || ((role as { role: string }).role !== "delegado_corregedor" && (role as { role: string }).role !== "coordenador")) {
-    throw new Error("Apenas o Delegado Corregedor pode acessar a Manutenção.");
+  if (!role || ((role as { role: string }).role !== "corregedor_geral" && (role as { role: string }).role !== "subcorregedor_geral")) {
+    throw new Error("Apenas o Corregedor-Geral pode acessar a Manutenção.");
   }
 }
-
 
 export const limparDados = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

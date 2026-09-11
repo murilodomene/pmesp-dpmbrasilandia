@@ -46,12 +46,11 @@ function PendentePage() {
         <div className="eyebrow">Cadastro em análise</div>
         <h1 className="mt-2 font-serif text-3xl">Aguardando aprovação</h1>
         <p className="mt-4 text-sm text-muted-foreground">
-          Seu cadastro foi recebido. Um Delegado precisa aprová-lo e atribuir seu cargo antes que
+          Seu cadastro foi recebido. Um administrador precisa aprová-lo e atribuir seu papel antes que
           você tenha acesso às denúncias e procedimentos.
         </p>
         <p className="mt-2 text-xs text-muted-foreground">
-          Se você é o primeiro usuário deste sistema, sua conta já foi ativada automaticamente como
-          Delegado Corregedor — recarregue a página.
+          A liberação é feita por um Corregedor-Geral ou Subcorregedor-Geral na Gestão de Usuários.
         </p>
       </div>
     </div>
@@ -59,12 +58,14 @@ function PendentePage() {
 }
 
 function cargoLabel(c: string): string {
-  return c === "delegado_geral"
-    ? "Delegado Geral"
-    : c === "delegado_corregedor"
-      ? "Delegado Corregedor"
-      : c === "coordenador"
-      ? "Coordenador"
+  return c === "ssp"
+    ? "SSP"
+    : c === "cmtg"
+      ? "CMTG"
+    : c === "corregedor_geral"
+      ? "Corregedor-Geral"
+      : c === "subcorregedor_geral"
+      ? "Subcorregedor-Geral"
       : c === "mp"
       ? "Ministério Público"
       : c === "cidadao"

@@ -39,9 +39,10 @@ const DESFECHOS = [
 ] as const;
 
 const CARGO_LABEL: Record<string, string> = {
-  delegado_geral: "Delegado Geral",
-  delegado_corregedor: "Delegado Corregedor",
-  coordenador: "Coordenador",
+  ssp: "SSP",
+  cmtg: "CMTG",
+  corregedor_geral: "Corregedor-Geral",
+  subcorregedor_geral: "Subcorregedor-Geral",
   corregedor: "Corregedor",
 };
 
@@ -58,9 +59,9 @@ function PdoPage() {
 
   const cargo = session?.cargo ?? null;
   const isStaff = cargo && cargo !== "cidadao" && cargo !== "mp";
-  const canDelete = cargo === "delegado_corregedor" || cargo === "coordenador";
+  const canDelete = cargo === "corregedor_geral" || cargo === "subcorregedor_geral";
   const canGenerate =
-    cargo === "delegado_corregedor" || cargo === "delegado_geral" || cargo === "corregedor" || cargo === "coordenador";
+    cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral";
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -199,7 +200,6 @@ function PdoPage() {
     </div>
   );
 }
-
 
 function DesfechoBadge({ d }: { d: string }) {
   const map: Record<string, { l: string; cls: string }> = {
@@ -640,7 +640,7 @@ function VerPdoDialog({
               </button>
             ) : (
               <p className="text-xs text-muted-foreground">
-                Somente Delegado Corregedor, Delegado Geral ou Corregedor podem gerar o procedimento.
+                Somente Corregedor-Geral, SSP ou Corregedor podem gerar o procedimento.
               </p>
             )}
           </div>

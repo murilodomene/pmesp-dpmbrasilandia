@@ -175,7 +175,7 @@ export function TimelineMovimentos({
                       teor={m.teor}
                       quando={m.criado_em}
                       prolator={m.prolator_nome}
-                      cargo={(m.prolator_cargo as string) ?? "delegado_corregedor"}
+                      cargo={(m.prolator_cargo as string) ?? "corregedor_geral"}
                       procedimento={procedimento}
                       denunciado={denunciadoStr}
                     />
@@ -251,12 +251,14 @@ function labelEspecie(e: string): string {
 
 function cargoLabel(c: string | null | undefined): string {
   if (!c) return "";
-  return c === "delegado_geral"
-    ? "Delegado Geral"
-    : c === "delegado_corregedor"
-      ? "Delegado Corregedor"
-      : c === "coordenador"
-        ? "Coordenador"
+  return c === "ssp"
+    ? "SSP"
+    : c === "cmtg"
+      ? "CMTG"
+    : c === "corregedor_geral"
+      ? "Corregedor-Geral"
+      : c === "subcorregedor_geral"
+        ? "Subcorregedor-Geral"
         : "Corregedor";
 }
 

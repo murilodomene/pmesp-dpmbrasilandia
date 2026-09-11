@@ -46,7 +46,6 @@ import { contarObservacoesPorPad, contarObservacoesPorPolicial } from "@/lib/obs
 import { OPMS } from "@/lib/personnel-options";
 
 
-
 import { getSessionInfo } from "@/lib/usuarios.functions";
 import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2, Download, ShieldCheck, Bell, MessageSquare, Copy, Mic, Plus } from "lucide-react";
 import { DocumentTemplate, exportDocumentToPdf, useDocumentRef } from "@/components/DocumentTemplate";
@@ -181,7 +180,7 @@ function Corregedoria() {
   }
 
   const isDelegado =
-    session?.cargo === "delegado_geral" || session?.cargo === "delegado_corregedor" || session?.cargo === "coordenador";
+    session?.cargo === "ssp" || session?.cargo=== "cmtg" || session?.cargo === "corregedor_geral" || session?.cargo === "subcorregedor_geral";
 
   const carregando = !denuncias;
 
@@ -339,7 +338,6 @@ interface ItemKanban {
 }
 
 
-
 function ListaProcessos({
   itens,
   carregando,
@@ -464,9 +462,6 @@ function LinhaProcesso({
 
 
 
-
-
-
 function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; onDeleted?: () => void }) {
   const qc = useQueryClient();
   const getFn = useServerFn(getDenuncia);
@@ -476,12 +471,11 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
   });
 
   const podeRetificar =
-    cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor" || cargo === "coordenador" || cargo === "coordenador";
-  const podeEditarCargo = cargo === "delegado_corregedor" || cargo === "corregedor" || cargo === "coordenador";
+    cargo === "ssp" || cargo=== "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral" || cargo === "subcorregedor_geral";
+  const podeEditarCargo = cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral";
 
-  const podeExcluir = cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "coordenador";
-  const podeExcluirMovSilencioso = cargo === "delegado_corregedor" || cargo === "coordenador";
-
+  const podeExcluir = cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "subcorregedor_geral";
+  const podeExcluirMovSilencioso = cargo === "corregedor_geral" || cargo === "subcorregedor_geral";
 
   const [dialog, setDialog] = useState<
     | { kind: "status" }
@@ -509,7 +503,6 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     | { kind: "intimar" }
     | null
   >(null);
-
 
   const lancarFn = useServerFn(lancarMovimento);
   const [especie, setEspecie] = useState<"despacho" | "decisao" | "ipc" | "ata" | "certidao" | null>(null);
@@ -607,10 +600,10 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
   const podeRegistrarRecurso =
     status === "ag_decurso_prazo" &&
     !denuncia.certidao_gerada &&
-    (cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor" || cargo === "coordenador" || cargo === "coordenador");
+    (cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral");
   const podeCertificarResultado =
     status === "em_recurso" &&
-    (cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor" || cargo === "coordenador" || cargo === "coordenador");
+    (cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral");
   const temIpcLavrado = movimentos.some(
     (m) => m.especie === "ipc" && !(m as { cancelado_em?: string | null }).cancelado_em,
   );
@@ -620,9 +613,9 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     status !== "transito_julgado" &&
     status !== "arquivada" &&
     status !== "em_recurso" &&
-    (cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor" || cargo === "coordenador");
+    (cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral");
   const isInternoCorregedoria =
-    cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor" || cargo === "coordenador";
+    cargo === "ssp" || cargo=== "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral";
 
   return (
     <div className="space-y-4">
@@ -636,7 +629,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
               <NaturezaInline
                 denunciaId={denuncia.id}
                 valor={denuncia.ocorrencia_tipo ?? null}
-                podeEditar={cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "coordenador"}
+                podeEditar={cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "subcorregedor_geral"}
               />
 
               {decurso && (
@@ -658,7 +651,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                   cor: t.cor as CorTarja,
                   texto: t.texto,
                 }))}
-                podeEditar={cargo === "delegado_corregedor" || cargo === "corregedor" || cargo === "coordenador"}
+                podeEditar={cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral"}
               />
             </div>
 
@@ -670,7 +663,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
             >
               Movimentar status
             </button>
-            {(cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor" || cargo === "coordenador" || cargo === "coordenador") && (
+            {(cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral") && (
               <button
                 onClick={() => setDialog({ kind: "intimar" })}
                 title="Intimar usuário interno"
@@ -706,7 +699,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 Certificar trânsito administrativo
               </button>
             )}
-            {(cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "coordenador") && (
+            {(cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "subcorregedor_geral") && (
               <ExportarProcessoBtn
                 denuncia={denuncia}
                 policiais={policiais}
@@ -741,7 +734,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 }}
                 adicionais={((data as { denunciantesAdicionais?: DenuncianteAdicional[] }).denunciantesAdicionais ?? [])}
                 denunciaId={denuncia.id}
-                podeGerenciar={cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "coordenador"}
+                podeGerenciar={cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "subcorregedor_geral"}
                 onChanged={() => qc.invalidateQueries({ queryKey: ["denuncia", id] })}
               />
             </Row>
@@ -786,7 +779,6 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 ))}
               </div>
             </Row>
-
 
             <Row k="Ocorrência">
               {denuncia.ocorrencia_data
@@ -1126,7 +1118,6 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
       </div>
 
 
-
       {/* Timeline */}
       <div className="surface p-5">
         <h3 className="font-serif text-lg">Linha do tempo</h3>
@@ -1188,7 +1179,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                   setDialog({ kind: "cancelarMov", movimento_id: m.id, resumo: resumoMov })
                 }
                 aria-label="Cancelar movimentação"
-                title="Cancelar movimentação (Delegado Corregedor)"
+                title="Cancelar movimentação (Corregedor-Geral)"
                 className="inline-flex items-center gap-1 rounded-md border border-transparent px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"
               >
                 <Trash2 className="h-3.5 w-3.5" /> Cancelar
@@ -1226,7 +1217,6 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 <MessageSquare className="h-3.5 w-3.5" /> Texto Discord
               </button>
             );
-
 
             if (isAto) {
               return (
@@ -1338,7 +1328,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                       />
                     </div>
                     <div className="flex flex-wrap justify-end gap-2">
-                      {(cargo === "delegado_geral" || cargo === "delegado_corregedor") && (
+                      {(cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral") && (
                         <button
                           onClick={async () => {
                             const origin =
@@ -1408,7 +1398,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                         teor={m.teor}
                         quando={m.criado_em}
                         prolator={m.prolator_nome}
-                        cargo={(m.prolator_cargo as string) ?? "delegado_corregedor"}
+                        cargo={(m.prolator_cargo as string) ?? "corregedor_geral"}
                         procedimento={denuncia.numero_protocolo}
                         denunciado={
                           policiais.length
@@ -1511,8 +1501,8 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
           </button>
       </div>
 
-      {/* Acesso do Ministério Público — apenas Delegado Geral / Delegado Corregedor */}
-      {(cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "coordenador") && (
+      {/* Acesso do Ministério Público — apenas SSP / Corregedor-Geral */}
+      {(cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "subcorregedor_geral") && (
         <AcessoMpSection denunciaId={id} />
       )}
 
@@ -1612,8 +1602,6 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
       )}
 
 
-
-
       <style>{`.input{background:var(--input);border:1px solid var(--border);border-radius:6px;padding:.55rem .7rem;font-size:.9rem;color:var(--foreground);width:100%}`}</style>
     </div>
   );
@@ -1657,7 +1645,6 @@ function montarTeorIpc(params: {
     `Corregedoria da Polícia Militar do Estado de São Paulo`,
   ].join("\n");
 }
-
 
 function montarTeorAta(params: { depoente: string; relato: string }): string {
   const dep = params.depoente.trim().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -1751,12 +1738,12 @@ function linkifyArticlesHtml(html: string): string {
 }
 
 function cargoLabel(c: string): string {
-  return c === "delegado_geral"
-    ? "Delegado Geral"
-    : c === "delegado_corregedor"
-      ? "Delegado Corregedor"
-      : c === "coordenador"
-      ? "Coordenador"
+  return c === "ssp"
+    ? "SSP"
+    : c === "corregedor_geral"
+      ? "Corregedor-Geral"
+      : c === "subcorregedor_geral"
+      ? "Subcorregedor-Geral"
       : "Corregedor";
 }
 
@@ -1837,7 +1824,6 @@ function Modal({
     </div>
   );
 }
-
 
 function StatusDialog({
   id,
@@ -2064,12 +2050,12 @@ function ResultadoRecursoDialog({ id, onClose }: { id: string; onClose: () => vo
 
 function cargoLabelFull(c: string | null | undefined): string {
   if (!c) return "";
-  return c === "delegado_geral"
-    ? "Delegado Geral"
-    : c === "delegado_corregedor"
-      ? "Delegado Corregedor"
-      : c === "coordenador"
-      ? "Coordenador"
+  return c === "ssp"
+    ? "SSP"
+    : c === "corregedor_geral"
+      ? "Corregedor-Geral"
+      : c === "subcorregedor_geral"
+      ? "Subcorregedor-Geral"
       : "Corregedor";
 }
 
@@ -2308,7 +2294,6 @@ function PortariaDialog({
 }
 
 
-
 const ATO_ASSUNTO: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao", string> = {
   despacho: "Despacho",
   decisao: "Decisão",
@@ -2506,7 +2491,6 @@ function TimelineCertidaoCard({
 }
 
 
-
 /**
  * Extrai a seção do RELATO DOS FATOS do teor estruturado do IPC
  * (produzido por montarTeorIpc). Preserva HTML se houver.
@@ -2563,7 +2547,6 @@ function TimelineIpcCard({
       ))}
     </div>
   );
-
 
   const camposBase = [
     { label: "Unidade", valor: unidade },
@@ -2631,8 +2614,6 @@ function TimelineIpcCard({
     </div>
   );
 }
-
-
 
 
 function VerAtoDialog({
@@ -2780,7 +2761,6 @@ function ProrrogarDialog({ id, onClose }: { id: string; onClose: () => void }) {
   );
 }
 
-
 function OitivaDialog({ id, onClose }: { id: string; onClose: () => void }) {
   const qc = useQueryClient();
   const fn = useServerFn(juntarOitiva);
@@ -2900,7 +2880,7 @@ function RetificarDialog({
       </label>
       <label className="mt-3 grid gap-1.5">
         <span className="text-xs uppercase tracking-wider text-muted-foreground">
-          Posto/Graduação{!podeEditarCargo && " (somente Delegado Corregedor ou Corregedor)"}
+          Posto/Graduação{!podeEditarCargo && " (somente Corregedor-Geral ou Corregedor)"}
         </span>
         <select
           className="input"
@@ -2948,7 +2928,6 @@ function RetificarDialog({
     </Modal>
   );
 }
-
 
 // ============ Acesso do Ministério Público ============
 function AcessoMpSection({ denunciaId }: { denunciaId: string }) {
@@ -3123,8 +3102,6 @@ function ExcluirDenunciaDialog({
 }
 
 
-
-
 function CancelarMovDialog({
   movimentoId,
   resumo,
@@ -3235,7 +3212,7 @@ function ExcluirMovSilenciosoDialog({
           <AlertDialogDescription>
             A movimentação <strong>{resumo}</strong> será removida do processo em definitivo,
             sem gerar notificação nem qualquer registro de auditoria. Esta ação é
-            exclusiva do Delegado Corregedor e é irreversível.
+            exclusiva do Corregedor-Geral e é irreversível.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -3584,7 +3561,6 @@ function ObservacoesPolicialBadge({ nome, matricula }: { nome: string; matricula
   );
 }
 
-
 function buildDiscordMandado(params: {
   teor: string;
   numeroProtocolo: string;
@@ -3700,7 +3676,6 @@ function TextoDiscordDialog({
     </Modal>
   );
 }
-
 
 type DenuncianteAdicional = {
   id: string;
@@ -3939,8 +3914,6 @@ function DenuncianteFormDialog({
     </Modal>
   );
 }
-
-
 
 
 

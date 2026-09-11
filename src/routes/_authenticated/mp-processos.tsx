@@ -13,7 +13,6 @@ import { exportProcessoCompleto } from "@/lib/exportProcesso";
 import { ProcessoLetterhead, ProcessoDetalheSkeleton } from "@/components/ProcessoLetterhead";
 import { TimelineMovimentos } from "@/components/TimelineMovimentos";
 
-
 export const Route = createFileRoute("/_authenticated/mp-processos")({
   component: MpProcessosPage,
 });
@@ -172,7 +171,6 @@ function DetalheProcesso({ id }: { id: string }) {
       </div>
 
 
-
       <div className="surface p-5">
         <h2 className="font-serif text-lg">Ficha</h2>
         <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
@@ -292,7 +290,6 @@ function Info({ label, children }: { label: string; children: React.ReactNode })
     </div>
   );
 }
-
 
 function ExportarProcessoMpBtn({ data }: { data: Awaited<ReturnType<typeof getDenuncia>> }) {
   const [gerando, setGerando] = useState(false);

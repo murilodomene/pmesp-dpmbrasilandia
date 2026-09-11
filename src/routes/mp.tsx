@@ -84,10 +84,10 @@ function MpPage() {
           },
         });
         if (error) throw error;
-        // Não faz login automático — cadastro exige aprovação do Delegado Corregedor.
+        // Não faz login automático — cadastro exige aprovação do Corregedor-Geral.
         await supabase.auth.signOut();
         setInfo(
-          "Cadastro enviado. Seu acesso será liberado somente após aprovação do Delegado Corregedor. Você poderá entrar assim que a aprovação for concedida.",
+          "Cadastro enviado. Seu acesso será liberado somente após aprovação do Corregedor-Geral. Você poderá entrar assim que a aprovação for concedida.",
         );
         setMode("login");
       }

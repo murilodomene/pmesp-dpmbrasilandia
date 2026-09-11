@@ -24,7 +24,6 @@ export function NotificacoesBell() {
   const marcarTodasFn = useServerFn(marcarTodasLidas);
   const qc = useQueryClient();
 
-
   const { data: count = 0 } = useQuery({
     queryKey: ["notif-count"],
     queryFn: () => countFn(),
@@ -53,7 +52,6 @@ export function NotificacoesBell() {
       qc.invalidateQueries({ queryKey: ["notif-list"] });
     },
   });
-
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

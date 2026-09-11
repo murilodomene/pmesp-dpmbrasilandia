@@ -893,12 +893,13 @@ export type Database = {
     }
     Enums: {
       app_role:
-        | "delegado_geral"
-        | "delegado_corregedor"
-        | "coordenador"
+        | "ssp"
+        | "corregedor_geral"
+        | "subcorregedor_geral"
         | "corregedor"
         | "cidadao"
         | "mp"
+        | "cmtg"
       denuncia_status:
         | "novo"
         | "recebida"
@@ -1069,12 +1070,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: [
-        "delegado_geral",
-        "delegado_corregedor",
-        "coordenador",
+        "ssp",
+        "corregedor_geral",
+        "subcorregedor_geral",
         "corregedor",
         "cidadao",
         "mp",
+        "cmtg",
       ],
       denuncia_status: [
         "novo",

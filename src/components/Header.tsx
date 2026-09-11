@@ -13,21 +13,13 @@ import {
 import { NotificacoesBell } from "@/components/NotificacoesBell";
 import { UserAvatar } from "@/components/UserAvatar";
 import { PMESP_CREST_URL } from "@/lib/branding";
+import { ROLE_LABELS, isAdminRole, isInternalRole } from "@/lib/access-roles";
 
 interface Profile {
   nome: string;
   status: "pendente" | "ativo" | "inativo";
   foto_path: string | null;
 }
-
-const CARGO_LABEL: Record<string, string> = {
-  delegado_geral: "Delegado Geral",
-  delegado_corregedor: "Delegado Corregedor",
-  coordenador: "Coordenador",
-  corregedor: "Corregedor",
-  cidadao: "Cidadão",
-  mp: "Ministério Público",
-};
 
 export function Header() {
   const { session, loading } = useSession();
@@ -64,10 +56,10 @@ export function Header() {
   const isCidadao = cargo === "cidadao";
   const isMp = cargo === "mp";
   const isStaff = ativo && cargo && !isCidadao && !isMp;
-  const isDelegadoCorregedor = ativo && (cargo === "delegado_corregedor" || cargo === "coordenador");
+  const isDelegadoCorregedor = ativo && isAdminRole(cargo);
 
   const isInternoCorregedoria =
-    ativo && (cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor" || cargo === "coordenador");
+    ativo && isInternalRole(cargo);
 
   const internalLinks: { to: string; label: string }[] = isStaff
     ? [
@@ -81,7 +73,6 @@ export function Header() {
         ...(isDelegadoCorregedor ? [{ to: "/manutencao", label: "Manutenção" }] : []),
       ]
     : [];
-
 
   return (
     <header className="border-b border-border bg-surface/60 backdrop-blur">
@@ -142,7 +133,7 @@ export function Header() {
                     </div>
                     {cargo && (
                       <div className="max-w-[180px] truncate text-[10px] uppercase tracking-wide text-muted-foreground">
-                        {CARGO_LABEL[cargo] ?? cargo}
+                        {ROLE_LABELS[cargo as keyof typeof ROLE_LABELS] ?? cargo}
                       </div>
                     )}
                   </div>

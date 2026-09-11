@@ -63,7 +63,7 @@ function PainelInterno() {
 
   const cargo = session?.cargo ?? null;
   const podeInstaurar =
-    cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor" || cargo === "coordenador";
+    cargo === "ssp" || cargo=== "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral";
 
   if (session && (session.profile?.status !== "ativo" || !session.cargo)) {
     return <RedirectPendente />;
@@ -151,7 +151,7 @@ function PainelInterno() {
             </button>
           ) : (
             <span
-              title="Apenas Delegado Geral, Delegado Corregedor ou Corregedor podem instaurar de ofício."
+              title="Apenas SSP, Corregedor-Geral ou Corregedor podem instaurar de ofício."
               className="inline-flex cursor-not-allowed items-center gap-2 rounded-md bg-muted px-4 py-2.5 text-sm font-semibold text-muted-foreground opacity-60"
               aria-disabled
             >
@@ -160,7 +160,6 @@ function PainelInterno() {
             </span>
           )}
         </div>
-
 
         <div className="surface mt-6 flex flex-wrap gap-2 p-3">
           <input

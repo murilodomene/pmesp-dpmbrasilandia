@@ -57,9 +57,9 @@ type Observacao = {
 };
 
 function cargoLabel(c: string) {
-  if (c === "delegado_geral") return "Delegado Geral";
-  if (c === "delegado_corregedor") return "Delegado Corregedor";
-  if (c === "coordenador") return "Coordenador";
+  if (c === "ssp") return "SSP";
+  if (c === "corregedor_geral") return "Corregedor-Geral";
+  if (c === "subcorregedor_geral") return "Subcorregedor-Geral";
   if (c === "corregedor") return "Corregedor";
   return c;
 }
@@ -85,7 +85,7 @@ function ObservacoesPage() {
   }, [session]);
 
   const ativo = status === "ativo";
-  const podeVer = ativo && (cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor" || cargo === "coordenador");
+  const podeVer = ativo && (cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral");
 
   const listFn = useServerFn(listObservacoes);
   const { data: obs = [], isLoading } = useQuery({
@@ -139,7 +139,7 @@ function ObservacoesPage() {
     return (
       <div className="mx-auto max-w-4xl p-6">
         <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm">
-          Acesso restrito à Corregedoria (Delegado Geral, Delegado Corregedor ou Corregedor).
+          Acesso restrito à Corregedoria (SSP, Corregedor-Geral ou Corregedor).
         </div>
       </div>
     );

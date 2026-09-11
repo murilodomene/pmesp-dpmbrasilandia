@@ -96,7 +96,7 @@ export function Header() {
           <NavLink to="/denunciar">Fazer Denúncia</NavLink>
           <NavLink to="/consultar">Consultar</NavLink>
           <NavLink to="/ipc">IPM</NavLink>
-          <NavLink to="/manual">Manual</NavLink>
+          <NavLink to="/manual">RDPM</NavLink>
           {isCidadao && <NavLink to="/minhas-denuncias">Minhas denúncias</NavLink>}
           {isMp && <NavLink to="/mp-processos">Meus processos</NavLink>}
 

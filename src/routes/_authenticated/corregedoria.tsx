@@ -3256,7 +3256,7 @@ function ConvocacaoDialog({
       `<p><strong>MANDADO DE CITAÇÃO</strong></p>` +
       `<p>Autos nº ${numeroProtocolo}<br/>Convocado(a): ${nomeFmt}, RG ${rgFmt}, ${uniFmt}</p>` +
       `<p>${dataHoraLinha.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</p>` +
-      `<p>A Corregedoria da Polícia Militar do Estado de São Paulo, no uso de suas atribuições legais e regulamentares, <strong>CONVOCA</strong> o servidor público qualificado neste instrumento a comparecer à 1ª Delegacia da Polícia Civil, no dia e horário indicados, a fim de prestar esclarecimentos.</p>` +
+      `<p>A Corregedoria da Polícia Militar do Estado de São Paulo, no uso de suas atribuições legais e regulamentares, <strong>CONVOCA</strong> o servidor público qualificado neste instrumento a comparecer à sede da Corregedoria da Polícia Militar do Estado de São Paulo, no dia e horário indicados, a fim de prestar esclarecimentos.</p>` +
       `<p>O não comparecimento sem justificativa acarretará em sanções disciplinares administrativas. Caso não possa comparecer na data e local informados, deve-se entrar em contato via ticket, apresentando justificativa.</p>` +
       `<p>Fica o servidor, ainda, <strong>CIENTIFICADO</strong> dos seguintes termos:</p>` +
       `<p><strong>1)</strong> Da faculdade de constituir advogado regularmente inscrito na OAB para acompanhar o ato;</p>` +
@@ -3579,7 +3579,7 @@ function buildDiscordMandado(params: {
     ``,
     `**DATA E HORA: ${dataHora}**`,
     ``,
-    `A Corregedoria da Polícia Militar do Estado de São Paulo, no uso de suas atribuições legais e regulamentares, **CONVOCA **o servidor público qualificado neste instrumento a comparecer à 1ª Delegacia da Polícia Civil, no dia e horário indicados, a fim de prestar esclarecimentos.`,
+    `A Corregedoria da Polícia Militar do Estado de São Paulo, no uso de suas atribuições legais e regulamentares, **CONVOCA **o servidor público qualificado neste instrumento a comparecer à sede da Corregedoria da Polícia Militar do Estado de São Paulo, no dia e horário indicados, a fim de prestar esclarecimentos.`,
     ``,
     `O não comparecimento sem justificativa acarretará em sanções disciplinares administrativas. Caso não possa comparecer na data e local informados, deve-se entrar em contato via ticket, apresentando justificativa.`,
     ``,

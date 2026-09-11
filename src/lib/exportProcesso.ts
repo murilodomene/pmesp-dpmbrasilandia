@@ -302,7 +302,7 @@ function atoContentPage(
     m.especie === "ipc"
       ? `
         ${bodyHtml(extrairRelatoIpc(m.teor))}
-        <div style="margin-top:18px"><strong>CIENTE DOS FATOS:</strong> Corregedoria Geral da Polícia Civil</div>
+        <div style="margin-top:18px"><strong>CIENTE DOS FATOS:</strong> Corregedoria da Polícia Militar do Estado de São Paulo</div>
       `
       : bodyHtml(m.teor);
 

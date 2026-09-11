@@ -23,17 +23,17 @@ interface IpcRow {
 export const Route = createFileRoute("/ipc/$id")({
   head: ({ params }) => ({
     meta: [
-      { title: `IPCs do procedimento — Corregedoria da PMESP` },
+      { title: `IPMs do procedimento — Corregedoria da PMESP` },
       {
         name: "description",
         content:
-          "Informes Preliminares Conclusivos (IPC) tornados públicos para este processo administrativo pela Corregedoria da Polícia Militar do Estado de São Paulo.",
+          "Inquéritos Policiais Militares (IPM) tornados públicos para este processo administrativo pela Corregedoria da Polícia Militar do Estado de São Paulo.",
       },
-      { property: "og:title", content: `IPCs do procedimento ${params.id}` },
+      { property: "og:title", content: `IPMs do procedimento ${params.id}` },
       {
         property: "og:description",
         content:
-          "Consulta pública dos IPCs de um processo administrativo específico.",
+          "Consulta pública dos IPMs de um processo administrativo específico.",
       },
       { property: "og:type", content: "article" },
       { name: "twitter:card", content: "summary" },
@@ -87,27 +87,27 @@ function IpcPublicoPadPage() {
 
         <div className="mt-4 eyebrow">Transparência</div>
         <h1 className="mt-2 font-serif text-3xl">
-          {cabecalho ? `IPCs do procedimento ${cabecalho.numero_protocolo}` : "IPCs do procedimento"}
+          {cabecalho ? `IPMs do procedimento ${cabecalho.numero_protocolo}` : "IPMs do procedimento"}
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Todos os Informes Preliminares Conclusivos (IPC) deste processo administrativo tornados
+          Todos os Inquéritos Policiais Militares (IPM) deste processo administrativo tornados
           públicos pela Corregedoria da Polícia Militar do Estado de São Paulo. Os demais atos permanecem sob sigilo
           funcional.
         </p>
 
         {rows === null && (
-          <div className="mt-10 text-sm text-muted-foreground">Carregando IPCs…</div>
+          <div className="mt-10 text-sm text-muted-foreground">Carregando IPMs…</div>
         )}
 
         {erro && (
           <div className="mt-6 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive-foreground">
-            Não foi possível carregar os IPCs públicos: {erro}
+            Não foi possível carregar os IPMs públicos: {erro}
           </div>
         )}
 
         {rows && rows.length === 0 && !erro && (
           <div className="mt-10 rounded-md border border-border p-6 text-sm text-muted-foreground">
-            Nenhum IPC público encontrado para este procedimento.
+            Nenhum IPM público encontrado para este procedimento.
           </div>
         )}
 

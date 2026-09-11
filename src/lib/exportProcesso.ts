@@ -101,7 +101,7 @@ function labelEspecie(e: string): string {
     : e === "decisao"
       ? "Decisão"
       : e === "ipc"
-        ? "IPC"
+        ? "IPM"
         : e === "portaria"
           ? "Portaria Inaugural"
           : e === "retificacao"
@@ -256,7 +256,7 @@ function atoTipoLabel(especie: string): string {
             ? "TERMO DE DEPOIMENTO"
             : especie === "certidao"
               ? "CERTIDÃO"
-              : "IPC";
+              : "IPM";
 }
 
 function atoContentPage(

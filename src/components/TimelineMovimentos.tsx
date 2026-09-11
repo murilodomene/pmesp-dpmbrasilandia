@@ -238,7 +238,7 @@ function labelEspecie(e: string): string {
     : e === "decisao"
       ? "Decisão"
       : e === "ipc"
-        ? "IPC"
+        ? "IPM"
         : e === "ata"
           ? "Ata"
           : e === "retificacao"
@@ -635,7 +635,7 @@ function TimelineIpcCard({
     if (!pdfRef.current) return;
     setGerando(true);
     try {
-      const fname = `IPC_${procedimento.replace(/[^\w-]/g, "_")}.pdf`;
+      const fname = `IPM_${procedimento.replace(/[^\w-]/g, "_")}.pdf`;
       await exportDocumentToPdf(pdfRef.current, fname);
     } finally {
       setGerando(false);
@@ -648,7 +648,7 @@ function TimelineIpcCard({
         variant="screen"
         procedimento={procedimento}
         denunciado={identificacao}
-        tipo="IPC"
+        tipo="IPM"
         subtitulo="Resolução final do inquérito"
         prolatorNome={prolator}
         prolatorCargo={cargoLabelFull(cargo)}
@@ -666,7 +666,7 @@ function TimelineIpcCard({
           variant="pdf"
           procedimento={procedimento}
           denunciado={identificacao}
-          tipo="IPC"
+          tipo="IPM"
           subtitulo="Resolução final do inquérito"
           prolatorNome={prolator}
           prolatorCargo={cargoLabelFull(cargo)}

@@ -101,7 +101,7 @@ const ESPECIES = [
   { v: "despacho", l: "Despacho", icon: FileText },
   { v: "decisao", l: "Decisão", icon: Scale },
   { v: "certidao", l: "Certidão", icon: ShieldCheck },
-  { v: "ipc", l: "IPC", icon: Gavel },
+  { v: "ipc", l: "IPM", icon: Gavel },
   { v: "ata", l: "Ata", icon: Mic },
 ] as const;
 
@@ -695,7 +695,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
             {podeCertificarTransitoAdmin && (
               <button
                 onClick={() => setDialog({ kind: "transitoAdmin" })}
-                title="Certificar trânsito em julgado administrativo (IPC sem sanção)"
+                title="Certificar trânsito em julgado administrativo (IPM sem sanção)"
                 className="inline-flex items-center gap-1 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-xs text-emerald-100 hover:bg-emerald-500/20"
               >
                 Certificar trânsito administrativo
@@ -1670,7 +1670,7 @@ function labelEspecie(e: string): string {
     : e === "decisao"
       ? "Decisão"
       : e === "ipc"
-        ? "IPC"
+        ? "IPM"
         : e === "ata"
           ? "Ata"
           : e === "retificacao"
@@ -1953,7 +1953,7 @@ function TransitoAdministrativoDialog({ id, onClose }: { id: string; onClose: ()
   return (
     <Modal title="Certificar trânsito em julgado administrativo" onClose={onClose}>
       <p className="text-xs text-muted-foreground">
-        Utilize esta opção quando o IPC foi publicado sem aplicação de sanção
+        Utilize esta opção quando o IPM foi publicado sem aplicação de sanção
         administrativa e, portanto, não é cabível recurso. Ao confirmar, uma
         certidão de trânsito em julgado administrativo será juntada aos autos e
         o procedimento será encerrado (Trânsito em Julgado), sem aguardar o
@@ -2457,7 +2457,7 @@ function TimelineCertidaoCard({
 
 
 /**
- * Extrai a seção do RELATO DOS FATOS do teor estruturado do IPC
+ * Extrai a seção do RELATO DOS FATOS do teor estruturado do IPM
  * (produzido por montarTeorIpc). Preserva HTML se houver.
  */
 function extrairRelatoIpc(teor: string): string {
@@ -2523,7 +2523,7 @@ function TimelineIpcCard({
     if (!pdfRef.current) return;
     setGerando(true);
     try {
-      const fname = `IPC_${procedimento.replace(/[^\w-]/g, "_")}.pdf`;
+      const fname = `IPM_${procedimento.replace(/[^\w-]/g, "_")}.pdf`;
       await exportDocumentToPdf(pdfRef.current, fname);
     } finally {
       setGerando(false);
@@ -2536,7 +2536,7 @@ function TimelineIpcCard({
         variant="screen"
         procedimento={procedimento}
         denunciado={identificacao}
-        tipo="IPC"
+        tipo="IPM"
         subtitulo="Resolução final do inquérito"
         prolatorNome={prolator}
         prolatorCargo={cargoLabelFull(cargo)}
@@ -2554,7 +2554,7 @@ function TimelineIpcCard({
           variant="pdf"
           procedimento={procedimento}
           denunciado={identificacao}
-          tipo="IPC"
+          tipo="IPM"
           subtitulo="Resolução final do inquérito"
           prolatorNome={prolator}
           prolatorCargo={cargoLabelFull(cargo)}

@@ -810,7 +810,7 @@ export const submitDenunciaCidadao = createServerFn({ method: "POST" })
     return { protocolo: den.numero_protocolo };
   });
 
-// Publica/despublica um IPC para o denunciante.
+// Publica/despublica um IPM para o denunciante.
 export const alternarPublicacaoIpc = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
@@ -823,7 +823,7 @@ export const alternarPublicacaoIpc = createServerFn({ method: "POST" })
       .eq("id", data.movimento_id)
       .single();
     if (!mov) throw new Error("Movimento não encontrado.");
-    if (mov.especie !== "ipc") throw new Error("Apenas movimentos IPC podem ser publicados.");
+    if (mov.especie !== "ipc") throw new Error("Apenas movimentos IPM podem ser publicados.");
     const { error } = await context.supabase
       .from("movimentos")
       .update({ ipc_publicado: data.publicado })

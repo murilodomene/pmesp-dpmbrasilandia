@@ -18,12 +18,12 @@ const ETAPAS: Etapa[] = [
       "A oitiva realizada detém caráter pessoal e nela são oportunizados o contraditório, a ampla defesa, a presença de advogado e o direito do policial civil de permanecer em silêncio.",
   },
   { n: 5, titulo: "Deliberação da Cúpula da Corregedoria" },
-  { n: 6, titulo: "IPC", nota: "O IPC é a decisão final da Corregedoria sobre o caso." },
+  { n: 6, titulo: "IPM", nota: "O IPM é a decisão final da Corregedoria sobre o caso." },
   {
     n: 7,
     titulo: "Recurso (7 dias)",
     nota:
-      "Após a publicação do IPC, há o prazo de 7 dias para que o(s) denunciado(s) interponha(m) recurso, com ou sem advogado.",
+      "Após a publicação do IPM, há o prazo de 7 dias para que o(s) denunciado(s) interponha(m) recurso, com ou sem advogado.",
   },
   { n: 8, titulo: "Trânsito em Julgado Administrativo" },
 ];

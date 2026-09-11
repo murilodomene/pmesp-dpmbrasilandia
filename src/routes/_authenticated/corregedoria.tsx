@@ -2329,7 +2329,12 @@ function TimelineAtoCard({
 
   return (
     <div className="space-y-2">
-      {portariaEstruturada ? <PortariaTemplate ref={pdfRef} dados={portariaEstruturada} /> : <>
+      {portariaEstruturada ? <>
+        <PortariaTemplate dados={portariaEstruturada} variant="screen" />
+        <div className="pointer-events-none fixed left-[-10000px] top-0" aria-hidden>
+          <PortariaTemplate ref={pdfRef} dados={portariaEstruturada} variant="pdf" />
+        </div>
+      </> : <>
       {/* Exibição integrada ao sistema (tema escuro) */}
       <DocumentTemplate
         variant="screen"
@@ -2643,7 +2648,7 @@ function VerAtoDialog({
         </div>
 
         <div className={portariaEstruturada ? "" : "surface p-5"}>
-          {portariaEstruturada ? <PortariaTemplate ref={pdfRef} dados={portariaEstruturada} /> : <>
+          {portariaEstruturada ? <PortariaTemplate dados={portariaEstruturada} variant="screen" /> : <>
           <DocumentTemplate
             variant="screen"
             procedimento={procedimento}
@@ -2660,8 +2665,11 @@ function VerAtoDialog({
         </div>
 
         {/* PDF invisível */}
-        {!portariaEstruturada && <div className="pointer-events-none fixed left-[-10000px] top-0" aria-hidden>
-          <DocumentTemplate
+        <div className="pointer-events-none fixed left-[-10000px] top-0" aria-hidden>
+          {portariaEstruturada ? (
+            <PortariaTemplate ref={pdfRef} dados={portariaEstruturada} variant="pdf" />
+          ) : (
+            <DocumentTemplate
             ref={pdfRef}
             variant="pdf"
             procedimento={procedimento}
@@ -2672,8 +2680,9 @@ function VerAtoDialog({
             data={quando}
           >
             {renderAtoBody(especie, teor, true)}
-          </DocumentTemplate>
-        </div>}
+            </DocumentTemplate>
+          )}
+        </div>
       </div>
     </div>
   );

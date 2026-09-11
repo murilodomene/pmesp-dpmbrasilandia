@@ -126,7 +126,7 @@ export const gerarProcedimentoDoPdo = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const me = await requireStaff(context as any);
-    if (!["delegado_corregedor", "delegado_geral", "corregedor", "coordenador"].includes(me.cargo)) {
+    if (!["corregedor_geral", "ssp", "corregedor", "subcorregedor_geral"].includes(me.cargo)) {
       throw new Error("Sem permissão para gerar procedimento.");
     }
     const sb = context.supabase as any;
@@ -175,8 +175,8 @@ export const excluirPdo = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const me = await requireStaff(context as any);
-    if (me.cargo !== "delegado_corregedor" && me.cargo !== "coordenador") {
-      throw new Error("Apenas o Delegado Corregedor pode excluir PDOs.");
+    if (me.cargo !== "corregedor_geral" && me.cargo !== "subcorregedor_geral") {
+      throw new Error("Apenas o Corregedor-Geral pode excluir PDOs.");
     }
     const { error } = await (context.supabase as any).from("pdos").delete().eq("id", data.id);
     if (error) throw new Error(error.message);

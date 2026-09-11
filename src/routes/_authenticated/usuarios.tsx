@@ -54,7 +54,7 @@ export const Route = createFileRoute("/_authenticated/usuarios")({
       .select("role")
       .eq("user_id", uid)
       .maybeSingle();
-    if (((role as { role: string } | null)?.role !== "delegado_corregedor") && ((role as { role: string } | null)?.role !== "coordenador")) {
+    if (((role as { role: string } | null)?.role !== "corregedor_geral") && ((role as { role: string } | null)?.role !== "subcorregedor_geral")) {
       throw redirect({ to: "/painel" });
     }
   },
@@ -63,16 +63,16 @@ export const Route = createFileRoute("/_authenticated/usuarios")({
 
 
 const CARGO_LABEL: Record<string, string> = {
-  delegado_geral: "Delegado Geral",
-  delegado_corregedor: "Delegado Corregedor",
-  coordenador: "Coordenador",
+  ssp: "SSP",
+  corregedor_geral: "Corregedor-Geral",
+  subcorregedor_geral: "Subcorregedor-Geral",
   corregedor: "Corregedor",
   cidadao: "Cidadão",
   mp: "Ministério Público",
 };
 
-const DELEGADO_CARGOS = new Set(["delegado_corregedor", "coordenador"]);
-const EDITAVEIS = new Set(["delegado_geral", "delegado_corregedor", "coordenador", "corregedor", "cidadao", "mp"]);
+const DELEGADO_CARGOS = new Set(["corregedor_geral", "subcorregedor_geral"]);
+const EDITAVEIS = new Set(["ssp", "corregedor_geral", "subcorregedor_geral", "corregedor", "cidadao", "mp"]);
 
 interface Usuario {
   id: string;
@@ -137,7 +137,7 @@ function UsuariosPage() {
           <ShieldAlert className="h-12 w-12 text-destructive" />
           <h1 className="mt-4 font-serif text-2xl">403 — Acesso Negado</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Apenas o Delegado Corregedor pode acessar esta área.
+            Apenas o Corregedor-Geral pode acessar esta área.
           </p>
         </div>
       </div>
@@ -298,7 +298,7 @@ function EditarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: (
   const editarFn = useServerFn(editarUsuarioPublico);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  const [cargo, setCargo] = useState<"delegado_geral" | "delegado_corregedor" | "coordenador" | "corregedor" | "cidadao" | "mp">("cidadao");
+  const [cargo, setCargo] = useState<"ssp" | "corregedor_geral" | "subcorregedor_geral" | "corregedor" | "cidadao" | "mp">("cidadao");
   const [rg, setRg] = useState("");
   const [discord, setDiscord] = useState("");
   const [telefone, setTelefone] = useState("");
@@ -415,9 +415,9 @@ function EditarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: (
                   <SelectItem value="cidadao">Cidadão</SelectItem>
                   <SelectItem value="mp">Ministério Público</SelectItem>
                   <SelectItem value="corregedor">Corregedor</SelectItem>
-                  <SelectItem value="coordenador">Coordenador</SelectItem>
-                  <SelectItem value="delegado_corregedor">Delegado Corregedor</SelectItem>
-                  <SelectItem value="delegado_geral">Delegado Geral</SelectItem>
+                  <SelectItem value="subcorregedor_geral">Subcorregedor-Geral</SelectItem>
+                  <SelectItem value="corregedor_geral">Corregedor-Geral</SelectItem>
+                  <SelectItem value="ssp">SSP</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -524,7 +524,7 @@ function ExcluirModal({ usuario, onClose }: { usuario: Usuario | null; onClose: 
 function AprovarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: () => void }) {
   const qc = useQueryClient();
   const aprovarFn = useServerFn(aprovarUsuario);
-  const [cargo, setCargo] = useState<"cidadao" | "corregedor" | "coordenador" | "delegado_corregedor" | "delegado_geral" | "mp">("cidadao");
+  const [cargo, setCargo] = useState<"cidadao" | "corregedor" | "subcorregedor_geral" | "corregedor_geral" | "ssp" | "mp">("cidadao");
 
   const m = useMutation({
     mutationFn: () => aprovarFn({ data: { user_id: usuario!.id, cargo } }),
@@ -554,9 +554,9 @@ function AprovarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: 
                 <SelectItem value="cidadao">Cidadão</SelectItem>
                 <SelectItem value="mp">Ministério Público</SelectItem>
                 <SelectItem value="corregedor">Corregedor</SelectItem>
-                <SelectItem value="coordenador">Coordenador</SelectItem>
-                <SelectItem value="delegado_corregedor">Delegado Corregedor</SelectItem>
-                <SelectItem value="delegado_geral">Delegado Geral</SelectItem>
+                <SelectItem value="subcorregedor_geral">Subcorregedor-Geral</SelectItem>
+                <SelectItem value="corregedor_geral">Corregedor-Geral</SelectItem>
+                <SelectItem value="ssp">SSP</SelectItem>
               </SelectContent>
             </Select>
           </div>

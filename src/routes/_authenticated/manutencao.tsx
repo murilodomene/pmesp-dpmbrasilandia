@@ -34,7 +34,7 @@ export const Route = createFileRoute("/_authenticated/manutencao")({
       .select("role")
       .eq("user_id", uid)
       .maybeSingle();
-    if (((role as { role: string } | null)?.role !== "delegado_corregedor") && ((role as { role: string } | null)?.role !== "coordenador")) {
+    if (((role as { role: string } | null)?.role !== "corregedor_geral") && ((role as { role: string } | null)?.role !== "subcorregedor_geral")) {
       throw redirect({ to: "/painel" });
     }
   },
@@ -101,7 +101,7 @@ function ManutencaoPage() {
         <div className="mb-6">
           <h1 className="font-serif text-3xl">Manutenção</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Zona restrita ao Delegado Corregedor. As ações abaixo removem apenas registros de dados
+            Zona restrita ao Corregedor-Geral. As ações abaixo removem apenas registros de dados
 
             — nunca alteram a estrutura do banco, usuários, documentos internos ou configurações.
           </p>

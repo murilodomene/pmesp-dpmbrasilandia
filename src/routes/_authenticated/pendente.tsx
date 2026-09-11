@@ -51,7 +51,7 @@ function PendentePage() {
         </p>
         <p className="mt-2 text-xs text-muted-foreground">
           Se você é o primeiro usuário deste sistema, sua conta já foi ativada automaticamente como
-          Delegado Corregedor — recarregue a página.
+          Corregedor-Geral — recarregue a página.
         </p>
       </div>
     </div>
@@ -59,12 +59,12 @@ function PendentePage() {
 }
 
 function cargoLabel(c: string): string {
-  return c === "delegado_geral"
-    ? "Delegado Geral"
-    : c === "delegado_corregedor"
-      ? "Delegado Corregedor"
-      : c === "coordenador"
-      ? "Coordenador"
+  return c === "ssp"
+    ? "SSP"
+    : c === "corregedor_geral"
+      ? "Corregedor-Geral"
+      : c === "subcorregedor_geral"
+      ? "Subcorregedor-Geral"
       : c === "mp"
       ? "Ministério Público"
       : c === "cidadao"

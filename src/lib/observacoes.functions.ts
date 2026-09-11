@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const CARGOS_INTERNOS = ["delegado_geral", "delegado_corregedor", "corregedor", "coordenador"] as const;
+const CARGOS_INTERNOS = ["ssp", "corregedor_geral", "corregedor", "subcorregedor_geral"] as const;
 
 const AnexoSchema = z.object({
   nome: z.string().trim().min(1).max(200),
@@ -90,7 +90,7 @@ export const criarObservacao = createServerFn({ method: "POST" })
       .insert({
         autor_id: context.userId,
         autor_nome: nome,
-        autor_cargo: cargo as "delegado_geral" | "delegado_corregedor" | "corregedor" | "coordenador",
+        autor_cargo: cargo as "ssp" | "corregedor_geral" | "corregedor" | "subcorregedor_geral",
         policial_nome: data.policial_nome?.trim() || null,
         policial_matricula: data.policial_matricula || null,
         policial_cargo: data.policial_cargo || null,

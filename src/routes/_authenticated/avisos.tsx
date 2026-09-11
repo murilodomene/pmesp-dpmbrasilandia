@@ -56,8 +56,8 @@ function AvisosPage() {
   }, [session]);
 
   const ativo = status === "ativo";
-  const podeVer = ativo && (cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "corregedor" || cargo === "coordenador");
-  const podePublicar = ativo && (cargo === "delegado_geral" || cargo === "delegado_corregedor" || cargo === "coordenador");
+  const podeVer = ativo && (cargo === "ssp" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral");
+  const podePublicar = ativo && (cargo === "ssp" || cargo === "corregedor_geral" || cargo === "subcorregedor_geral");
 
   const listFn = useServerFn(listAvisos);
   const { data: avisos = [], isLoading } = useQuery({
@@ -170,12 +170,12 @@ function AvisoViewer({
     day: "2-digit", month: "long", year: "numeric",
   });
   const cargoLabel =
-    aviso.autor_cargo === "delegado_geral"
-      ? "Delegado Geral"
-      : aviso.autor_cargo === "delegado_corregedor"
-        ? "Delegado Corregedor"
-        : aviso.autor_cargo === "coordenador"
-        ? "Coordenador"
+    aviso.autor_cargo === "ssp"
+      ? "SSP"
+      : aviso.autor_cargo === "corregedor_geral"
+        ? "Corregedor-Geral"
+        : aviso.autor_cargo === "subcorregedor_geral"
+        ? "Subcorregedor-Geral"
         : "Corregedor";
 
   return (

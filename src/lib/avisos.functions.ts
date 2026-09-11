@@ -53,8 +53,8 @@ export const criarAviso = createServerFn({ method: "POST" })
       .maybeSingle();
     if (rErr) throw new Error(rErr.message);
     const cargo = ur?.role;
-    if (cargo !== "delegado_geral" && cargo !== "delegado_corregedor" && cargo !== "coordenador") {
-      throw new Error("Apenas Delegado Geral ou Delegado Corregedor podem publicar avisos.");
+    if (cargo !== "ssp" && cargo !== "corregedor_geral" && cargo !== "subcorregedor_geral") {
+      throw new Error("Apenas SSP ou Corregedor-Geral podem publicar avisos.");
     }
 
     const { data: numero, error: nErr } = await context.supabase.rpc("gerar_numero_aviso");

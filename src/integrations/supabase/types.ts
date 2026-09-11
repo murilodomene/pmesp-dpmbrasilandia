@@ -926,16 +926,21 @@ export type Database = {
       notificacao_tipo: "auto" | "intimacao" | "aviso"
       profile_status: "pendente" | "ativo" | "inativo"
       unidade_pc:
-        | "DEIC"
-        | "CORREGEPOL"
-        | "DECAP"
-        | "DHPP"
-        | "CERCO"
-        | "GARRA"
-        | "DENARC"
-        | "GER"
-        | "SAT"
-        | "GOE"
+        | "CPC"
+        | "CPA/M-3"
+        | "18º BPM"
+        | "Força Tática"
+        | "4º BAEP"
+        | "CAEP"
+        | "4º BPRV"
+        | "1º BTran"
+        | "CavPM"
+        | "CPCHq"
+        | "1º BPchq - ROTA"
+        | "2º BPchq - Anchieta"
+        | "3º BPchq - Humaitá"
+        | "4º BPchq - COE/GATE"
+        | "4ºGB - Bombeiros"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1100,16 +1105,21 @@ export const Constants = {
       notificacao_tipo: ["auto", "intimacao", "aviso"],
       profile_status: ["pendente", "ativo", "inativo"],
       unidade_pc: [
-        "DEIC",
-        "CORREGEPOL",
-        "DECAP",
-        "DHPP",
-        "CERCO",
-        "GARRA",
-        "DENARC",
-        "GER",
-        "SAT",
-        "GOE",
+        "CPC",
+        "CPA/M-3",
+        "18º BPM",
+        "Força Tática",
+        "4º BAEP",
+        "CAEP",
+        "4º BPRV",
+        "1º BTran",
+        "CavPM",
+        "CPCHq",
+        "1º BPchq - ROTA",
+        "2º BPchq - Anchieta",
+        "3º BPchq - Humaitá",
+        "4º BPchq - COE/GATE",
+        "4ºGB - Bombeiros",
       ],
     },
   },

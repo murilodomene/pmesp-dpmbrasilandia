@@ -30,7 +30,7 @@ const CARDS = [
   {
     icon: Scale,
     title: "Canal oficial",
-    text: "Este é o meio institucional para reportar conduta indevida de policial civil. Acompanhe o andamento pelo protocolo.",
+    text: "Este é o meio institucional para reportar conduta indevida de policial militar. Acompanhe o andamento pelo protocolo.",
   },
 ];
 

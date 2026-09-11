@@ -85,7 +85,7 @@ export function Header() {
 
   return (
     <header className="border-b border-border bg-surface/60 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl flex-nowrap items-center justify-between gap-3 px-4 py-3">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 md:flex-nowrap">
         <Link to="/" className="flex shrink-0 items-center gap-2">
           <img
             src={PMESP_CREST_URL}
@@ -164,7 +164,7 @@ export function Header() {
               </DropdownMenu>
             </div>
           ) : (
-            <div className="flex flex-nowrap items-center gap-1.5">
+            <div className="flex flex-wrap items-center justify-end gap-1.5">
               <Link
                 to="/cidadao"
                 className="whitespace-nowrap rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"

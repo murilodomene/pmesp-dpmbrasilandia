@@ -2,18 +2,18 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { OPMS } from "@/lib/personnel-options";
+import { ADMIN_ROLES, APP_ROLES, isAdminRole } from "@/lib/access-roles";
 
-const ROLES = ["ssp", "corregedor_geral", "subcorregedor_geral", "corregedor", "cidadao", "mp"] as const;
-const EDITABLE_ROLES = ["ssp", "corregedor_geral", "subcorregedor_geral", "corregedor", "cidadao", "mp"] as const;
+const ROLES = APP_ROLES;
+const EDITABLE_ROLES = APP_ROLES;
 const STATUS = ["pendente", "ativo", "inativo"] as const;
-const DELEGADO_ROLES = ["ssp", "corregedor_geral", "subcorregedor_geral"] as const;
 
 async function assertCorregedor(context: { supabase: any; userId: string }) {
   const { data } = await context.supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", context.userId)
-    .in("role", ["corregedor_geral", "subcorregedor_geral"])
+    .in("role", [...ADMIN_ROLES])
     .maybeSingle();
   if (!data) {
     throw new Error("403: Acesso Negado. Apenas Corregedor-Geral ou Subcorregedor-Geral.");
@@ -36,7 +36,7 @@ export const excluirUsuario = createServerFn({ method: "POST" })
       .select("role")
       .eq("user_id", data.user_id)
       .maybeSingle();
-    if (alvo && (alvo.role === "corregedor_geral" || alvo.role === "subcorregedor_geral")) {
+    if (alvo && isAdminRole(alvo.role)) {
       throw new Error("O Corregedor-Geral/Subcorregedor-Geral não pode ser excluído por esta ação.");
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -99,6 +99,9 @@ export const aprovarUsuario = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertDelegado(context as never);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error: confirmError } = await supabaseAdmin.auth.admin.updateUserById(data.user_id, { email_confirm: true });
+    if (confirmError) throw new Error(confirmError.message);
     const { error: e1 } = await context.supabase
       .from("profiles")
       .update({ status: "ativo" })
@@ -125,7 +128,7 @@ export const alterarStatusUsuario = createServerFn({ method: "POST" })
       .select("role")
       .eq("user_id", data.user_id)
       .maybeSingle();
-    if (alvo && (alvo.role === "corregedor_geral" || alvo.role === "subcorregedor_geral")) {
+    if (alvo && isAdminRole(alvo.role)) {
       throw new Error("O Corregedor-Geral/Subcorregedor-Geral não pode ter seu status alterado por esta ação.");
     }
     const { error } = await context.supabase
@@ -214,7 +217,7 @@ export const atualizarPerfil = createServerFn({ method: "POST" })
       .select("role")
       .eq("user_id", context.userId)
       .maybeSingle();
-    const isCorregedor = roleRow?.role === "corregedor_geral" || roleRow?.role === "subcorregedor_geral";
+    const isCorregedor = isAdminRole(roleRow?.role);
 
     const updates: Record<string, any> = {};
     if (data.telefone !== undefined) updates.telefone = data.telefone;

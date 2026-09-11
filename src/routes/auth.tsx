@@ -51,9 +51,7 @@ function AuthPage() {
           },
         });
         if (error) throw error;
-        setInfo(
-          "Cadastro enviado. Se este for o primeiro usuário do sistema, você será ativado como Corregedor-Geral. Caso contrário, aguarde aprovação.",
-        );
+        setInfo("Cadastro enviado. Aguarde a aprovação de um administrador para acessar o sistema.");
         setMode("login");
       }
     } catch (err) {
@@ -111,7 +109,7 @@ function AuthPage() {
               <p className="mt-2 text-sm text-muted-foreground">
                 {mode === "login"
                   ? "Use suas credenciais institucionais."
-                  : "Cadastro sujeito à aprovação de um Delegado. O primeiro usuário é ativado automaticamente como Corregedor-Geral."}
+                  : "Todo cadastro interno depende da aprovação de um Corregedor-Geral ou Subcorregedor-Geral."}
               </p>
             </div>
 

@@ -43,6 +43,7 @@ const CARGO_LABEL: Record<string, string> = {
   cmtg: "CMTG",
   corregedor_geral: "Corregedor-Geral",
   subcorregedor_geral: "Subcorregedor-Geral",
+  corregedor_supervisor: "Corregedor Supervisor",
   corregedor: "Corregedor",
 };
 
@@ -59,9 +60,9 @@ function PdoPage() {
 
   const cargo = session?.cargo ?? null;
   const isStaff = cargo && cargo !== "cidadao" && cargo !== "mp";
-  const canDelete = cargo === "corregedor_geral" || cargo === "subcorregedor_geral";
+  const canDelete = cargo === "corregedor_geral" || (cargo === "subcorregedor_geral" || cargo === "corregedor_supervisor");
   const canGenerate =
-    cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral";
+    cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || (cargo === "subcorregedor_geral" || cargo === "corregedor_supervisor");
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();

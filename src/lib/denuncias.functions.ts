@@ -524,7 +524,7 @@ export const atualizarNatureza = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const p = await getProlator(context);
-    if (p.prolator_cargo !== "ssp" && p.prolator_cargo !== "cmtg" && p.prolator_cargo !== "corregedor_geral" && p.prolator_cargo !== "subcorregedor_geral") {
+    if (p.prolator_cargo !== "ssp" && p.prolator_cargo !== "cmtg" && p.prolator_cargo !== "corregedor_geral" && (p.prolator_cargo !== "subcorregedor_geral" && p.prolator_cargo !== "corregedor_supervisor")) {
       throw new Error("Apenas SSP ou Corregedor-Geral podem editar a natureza.");
     }
     const { data: atual } = await context.supabase
@@ -573,7 +573,7 @@ export const retificarDenunciado = createServerFn({ method: "POST" })
       p.prolator_cargo === "ssp" || p.prolator_cargo=== "cmtg" ||
       p.prolator_cargo === "corregedor_geral" ||
       p.prolator_cargo === "corregedor" ||
-      p.prolator_cargo === "subcorregedor_geral";
+      (p.prolator_cargo === "subcorregedor_geral" || p.prolator_cargo === "corregedor_supervisor");
     if (!podeRetificar) {
       throw new Error("Apenas SSP, Corregedor-Geral ou Corregedor podem retificar o denunciado.");
     }
@@ -608,7 +608,7 @@ export const retificarDenunciado = createServerFn({ method: "POST" })
       cargoMudou &&
       p.prolator_cargo !== "corregedor_geral" &&
       p.prolator_cargo !== "corregedor" &&
-      p.prolator_cargo !== "subcorregedor_geral"
+      (p.prolator_cargo !== "subcorregedor_geral" && p.prolator_cargo !== "corregedor_supervisor")
     ) {
       throw new Error("Apenas Corregedor-Geral, Subcorregedor-Geral ou Corregedor podem alterar o cargo do denunciado.");
     }
@@ -721,7 +721,7 @@ export const instaurarOficio = createServerFn({ method: "POST" })
       p.prolator_cargo !== "ssp" && p.prolator_cargo!== "cmtg" &&
       p.prolator_cargo !== "corregedor_geral" &&
       p.prolator_cargo !== "corregedor" &&
-      p.prolator_cargo !== "subcorregedor_geral"
+      (p.prolator_cargo !== "subcorregedor_geral" && p.prolator_cargo !== "corregedor_supervisor")
     ) {
       throw new Error("Apenas SSP, Corregedor-Geral, Subcorregedor-Geral ou Corregedor podem instaurar de ofício.");
     }
@@ -1032,7 +1032,7 @@ export const excluirMovimentoSilencioso = createServerFn({ method: "POST" })
       .limit(1);
     if (eRole) throw new Error(eRole.message);
     const role = rows?.[0]?.role;
-    if (role !== "corregedor_geral" && role !== "subcorregedor_geral") {
+    if (role !== "corregedor_geral" && (role !== "subcorregedor_geral" && role !== "corregedor_supervisor")) {
       throw new Error("Apenas o Corregedor-Geral pode executar esta ação.");
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -1122,7 +1122,7 @@ function podeGerenciarDenunciantes(role: string | null | undefined) {
     role === "ssp" || role=== "cmtg" ||
     role === "corregedor_geral" ||
     role === "corregedor" ||
-    role === "subcorregedor_geral"
+    (role === "subcorregedor_geral" || role === "corregedor_supervisor")
   );
 }
 

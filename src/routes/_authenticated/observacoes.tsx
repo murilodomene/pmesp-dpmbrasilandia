@@ -59,7 +59,8 @@ type Observacao = {
 function cargoLabel(c: string) {
   if (c === "ssp") return "SSP";
   if (c === "corregedor_geral") return "Corregedor-Geral";
-  if (c === "subcorregedor_geral") return "Subcorregedor-Geral";
+  if (c === "corregedor_supervisor") return "Corregedor Supervisor";
+  if ((c === "subcorregedor_geral" || c === "corregedor_supervisor")) return "Subcorregedor-Geral";
   if (c === "corregedor") return "Corregedor";
   return c;
 }
@@ -85,7 +86,7 @@ function ObservacoesPage() {
   }, [session]);
 
   const ativo = status === "ativo";
-  const podeVer = ativo && (cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral");
+  const podeVer = ativo && (cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || (cargo === "subcorregedor_geral" || cargo === "corregedor_supervisor"));
 
   const listFn = useServerFn(listObservacoes);
   const { data: obs = [], isLoading } = useQuery({

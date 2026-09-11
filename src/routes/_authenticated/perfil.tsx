@@ -21,6 +21,7 @@ const CARGO_LABEL: Record<string, string> = {
   cmtg: "CMTG",
   corregedor_geral: "Corregedor-Geral",
   subcorregedor_geral: "Subcorregedor-Geral",
+  corregedor_supervisor: "Corregedor Supervisor",
   corregedor: "Corregedor",
   cidadao: "Cidadão",
   mp: "Ministério Público",
@@ -36,7 +37,7 @@ function PerfilPage() {
     queryFn: () => sessionFn(),
   });
 
-  const isCorregedor = session?.cargo === "corregedor_geral" || session?.cargo === "subcorregedor_geral";
+  const isCorregedor = session?.cargo === "corregedor_geral" || (session?.cargo === "subcorregedor_geral" || session?.cargo === "corregedor_supervisor");
   const canEditAll = isCorregedor;
 
   const [nome, setNome] = useState("");

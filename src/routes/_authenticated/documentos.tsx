@@ -8,7 +8,7 @@ import { HierarquiaQuadro } from "@/components/HierarquiaQuadro";
 import { FluxoPAD } from "@/components/FluxoPAD";
 import { PMESP_CREST_URL } from "@/lib/branding";
 
-const HIERARQUIA_ROLES = new Set(["ssp", "cmtg", "corregedor_geral", "corregedor", "subcorregedor_geral"]);
+const HIERARQUIA_ROLES = new Set(["ssp", "cmtg", "corregedor_geral", "corregedor", "subcorregedor_geral", "corregedor_supervisor"]);
 const FLUXO_ROLES = HIERARQUIA_ROLES;
 
 export const Route = createFileRoute("/_authenticated/documentos")({
@@ -52,7 +52,7 @@ function DocumentosPage() {
   const [salvando, setSalvando] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const podeEditar = cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "subcorregedor_geral";
+  const podeEditar = cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || (cargo === "subcorregedor_geral" || cargo === "corregedor_supervisor");
 
   useEffect(() => {
     if (!session) return;

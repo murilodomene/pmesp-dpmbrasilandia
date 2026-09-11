@@ -859,6 +859,14 @@ export type Database = {
           unidade: Database["public"]["Enums"]["unidade_pc"]
         }[]
       }
+      manutencao_definir_proximo_protocolo: {
+        Args: { _ano: number; _proximo: number }
+        Returns: Json
+      }
+      manutencao_ler_contador_protocolo: {
+        Args: { _ano: number }
+        Returns: Json
+      }
       manutencao_limpar_avisos: { Args: never; Returns: Json }
       manutencao_limpar_observacoes: { Args: never; Returns: Json }
       manutencao_limpar_pdos: { Args: never; Returns: Json }

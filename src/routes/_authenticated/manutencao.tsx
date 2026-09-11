@@ -1,9 +1,13 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { limparDados } from "@/lib/manutencao.functions";
+import {
+  definirProximoProtocolo,
+  lerContadorProtocolo,
+  limparDados,
+} from "@/lib/manutencao.functions";
 import {
   Dialog,
   DialogContent,
@@ -53,7 +57,7 @@ const CARDS: Array<{
     tipo: "processos",
     titulo: "Limpar processos administrativos",
     descricao:
-      "Remove TODAS as denúncias/PADs e o que está atrelado (movimentações, atos, oitivas, certidões, intimações, acessos do MP, provas anexadas). Reinicia a numeração para 1-001.",
+      "Remove TODAS as denúncias/PADs e o que está atrelado (movimentações, atos, oitivas, certidões, intimações, acessos do MP, provas anexadas). Reinicia a numeração para 001.",
     palavra: "PROCESSOS",
   },
   {
@@ -76,6 +80,78 @@ const CARDS: Array<{
     palavra: "OBSERVACOES",
   },
 ];
+
+function NumeracaoCard() {
+  const anoAtual = new Date().getFullYear();
+  const lerFn = useServerFn(lerContadorProtocolo);
+  const definirFn = useServerFn(definirProximoProtocolo);
+  const [valor, setValor] = useState("");
+
+  const atual = useQuery({
+    queryKey: ["contador-protocolo", anoAtual],
+    queryFn: () => lerFn({ data: { ano: anoAtual } }),
+  });
+
+  const salvar = useMutation({
+    mutationFn: (proximo: number) => definirFn({ data: { ano: anoAtual, proximo } }),
+    onSuccess: (res) => {
+      toast.success(`Próximo procedimento será ${res.proximo}.`);
+      setValor("");
+      atual.refetch();
+    },
+    onError: (e: any) => toast.error(e.message ?? "Falha ao ajustar a numeração."),
+  });
+
+  const proximoAtual = atual.data?.proximo_numero;
+
+  return (
+    <div className="mb-6 rounded-lg border border-border bg-surface p-5">
+      <h2 className="font-serif text-lg">Numeração dos procedimentos</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Formato <strong>NNN/{anoAtual}</strong> (três dígitos e o ano corrente). Defina abaixo qual
+        será o número do próximo procedimento criado em {anoAtual}.
+      </p>
+      <p className="mt-2 text-sm">
+        Próximo número atual:{" "}
+        <span className="tabular font-medium">
+          {atual.isPending
+            ? "carregando..."
+            : proximoAtual
+              ? `${String(proximoAtual).padStart(3, "0")}/${anoAtual}`
+              : "—"}
+        </span>
+      </p>
+      <div className="mt-4 flex flex-wrap items-end gap-3">
+        <div>
+          <label className="block text-xs uppercase tracking-wider text-muted-foreground">
+            Próximo número (1 a 999)
+          </label>
+          <Input
+            className="mt-1 w-40"
+            type="number"
+            min={1}
+            max={999}
+            value={valor}
+            onChange={(e) => setValor(e.target.value)}
+            placeholder="175"
+          />
+        </div>
+        <Button
+          disabled={
+            salvar.isPending ||
+            !valor ||
+            Number(valor) < 1 ||
+            Number(valor) > 999 ||
+            !Number.isInteger(Number(valor))
+          }
+          onClick={() => salvar.mutate(Number(valor))}
+        >
+          {salvar.isPending ? "Salvando..." : "Definir numeração"}
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 function ManutencaoPage() {
   const [open, setOpen] = useState<Tipo | null>(null);
@@ -117,6 +193,8 @@ function ManutencaoPage() {
             </p>
           </div>
         </div>
+
+        <NumeracaoCard />
 
         <div className="grid gap-4">
           {CARDS.map((c) => (

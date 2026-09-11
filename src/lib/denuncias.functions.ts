@@ -23,6 +23,21 @@ const UNIDADES = OPMS;
 const ESPECIES = ["despacho", "decisao", "ipc", "mandado", "ata", "certidao"] as const;
 const ESPECIES_PORTARIA = "portaria" as const;
 
+const portariaDadosSchema = z.object({
+  ipmNumero: z.string().trim().min(3).max(80),
+  dataInstauracao: z.string().trim().min(3).max(100),
+  dataFato: z.string().trim().min(3).max(100),
+  encarregado: z.string().trim().min(3).max(250),
+  municipioInstauracao: z.string().trim().min(2).max(150),
+  naturezas: z.array(z.string().trim().min(1).max(250)).min(1).max(30),
+  indiciados: z.array(z.string().trim().min(1).max(300)).min(1).max(30),
+  localFatos: z.string().trim().min(2).max(500),
+  corpo: z.string().trim().min(50).max(30000),
+  localData: z.string().trim().min(3).max(150),
+  signatarioNome: z.string().trim().min(2).max(200),
+  signatarioPosto: z.string().trim().min(2).max(100),
+});
+
 function publicClient() {
   return createClient<Database>(
     process.env.SUPABASE_URL!,
@@ -633,13 +648,15 @@ export const lavrarPortaria = createServerFn({ method: "POST" })
     z
       .object({
         denuncia_id: z.string().uuid(),
-        corpo: z.string().trim().min(50).max(30000),
+        dados: portariaDadosSchema,
       })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
     const p = await getProlator(context);
     const agora = new Date().toISOString();
+    const compacta = crypto.randomUUID().replaceAll("-", "").slice(0, 16);
+    const chave = `${compacta.slice(0, 3)}-${compacta.slice(3)}`;
 
     const { data: atual } = await context.supabase
       .from("denuncias")
@@ -663,7 +680,8 @@ export const lavrarPortaria = createServerFn({ method: "POST" })
     const { error: movErr } = await context.supabase.from("movimentos").insert({
       denuncia_id: data.denuncia_id,
       especie: ESPECIES_PORTARIA,
-      teor: data.corpo,
+      teor: data.dados.corpo,
+      portaria_dados: { ...data.dados, chave },
       interrompe: true,
       ...p,
     });

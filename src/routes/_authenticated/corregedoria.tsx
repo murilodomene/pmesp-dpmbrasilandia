@@ -55,6 +55,7 @@ import { AtoAnexosUploader, type AtoAnexo } from "@/components/AtoAnexosUploader
 import { AtoAnexosLinks } from "@/components/AtoAnexosLinks";
 import { IntimarDialog } from "@/components/IntimarDialog";
 import { TarjasManager, TarjasStrip, type CorTarja } from "@/components/Tarja";
+import { PortariaTemplate, exportPortariaToPdf, isPortariaDados, type PortariaDados } from "@/components/PortariaTemplate";
 
 import {
   AlertDialog,
@@ -487,6 +488,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
         quando: string;
         prolator: string;
         cargo: string;
+        portariaDados?: unknown;
       }
     | { kind: "prorrogar" }
     | { kind: "oitiva" }
@@ -858,6 +860,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                           quando: portariaMov.criado_em,
                           prolator: portariaMov.prolator_nome,
                           cargo: portariaMov.prolator_cargo as string,
+                           portariaDados: portariaMov.portaria_dados,
                         })
                       }
                       className="flex items-center justify-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
@@ -1264,6 +1267,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                                 .join("; ")
                             : "Não identificado"
                         }
+                         portariaDados={m.portaria_dados}
                       />
                     </div>
                     {(() => {
@@ -1514,6 +1518,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
       {dialog?.kind === "portaria" && (
         <PortariaDialog
           id={id}
+           denuncia={denuncia}
           policiais={policiais}
           onClose={() => setDialog(null)}
         />
@@ -1525,6 +1530,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
           quando={dialog.quando}
           prolator={dialog.prolator}
           cargo={dialog.cargo}
+          portariaDados={dialog.portariaDados}
           procedimento={denuncia.numero_protocolo}
           denunciado={
             policiais.length
@@ -2116,13 +2122,28 @@ Pelo exposto, para que os denunciados venham se defender das imputações acima 
 ${providencias}${fecho}`;
 }
 
+function Field({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return <label className="grid gap-1 text-xs"><span className="text-muted-foreground">{label}</span><input className="input" value={value} onChange={(event) => onChange(event.target.value)} /></label>;
+}
+
+function RepeatableFields({ label, values, onChange }: { label: string; values: string[]; onChange: (values: string[]) => void }) {
+  return <div className="grid gap-2 text-xs md:col-span-2"><span className="text-muted-foreground">{label}</span>{values.map((value, index) => <div key={index} className="flex gap-2"><input className="input" value={value} onChange={(event) => onChange(values.map((item, itemIndex) => itemIndex === index ? event.target.value : item))} />{values.length > 1 && <button type="button" onClick={() => onChange(values.filter((_, itemIndex) => itemIndex !== index))} className="rounded-md border border-border px-2" aria-label={`Remover item de ${label}`}><X className="h-4 w-4" /></button>}</div>)}<button type="button" onClick={() => onChange([...values, ""])} className="inline-flex w-fit items-center gap-1 rounded-md border border-border px-3 py-1.5"><Plus className="h-3.5 w-3.5" /> Adicionar item</button></div>;
+}
+
 function PortariaDialog({
   id,
+  denuncia,
   policiais,
   onClose,
 }: {
   id: string;
-  policiais: Array<{ id: string; nome: string; rg_funcional: string | null; unidade: string | null }>;
+  denuncia: {
+    numero_protocolo: string;
+    ocorrencia_tipo: string | null;
+    ocorrencia_data: string | null;
+    ocorrencia_local: string | null;
+  };
+  policiais: Array<{ id: string; nome: string; rg_funcional: string | null; unidade: string | null; cargo?: string | null }>;
   onClose: () => void;
 }) {
   const qc = useQueryClient();
@@ -2130,53 +2151,41 @@ function PortariaDialog({
   const sessionFn = useServerFn(getSessionInfo);
   const { data: session } = useQuery({ queryKey: ["session-info"], queryFn: () => sessionFn() });
 
-  const [denunciados, setDenunciados] = useState<DenunciadoPortaria[]>(
-    policiais.length > 0
-      ? policiais.map((p) => ({
-          nome: p.nome,
-          matricula: p.rg_funcional ?? "",
-          cargo: "",
-          artigos: "",
-        }))
-      : [{ nome: "", matricula: "", cargo: "", artigos: "" }],
+  const formatarData = (valor?: string | null) => valor
+    ? new Date(`${valor.slice(0, 10)}T12:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
+    : "";
+  const [ipmNumero, setIpmNumero] = useState(denuncia.numero_protocolo);
+  const [dataInstauracao, setDataInstauracao] = useState(formatarData(new Date().toISOString()));
+  const [dataFato, setDataFato] = useState(formatarData(denuncia.ocorrencia_data));
+  const [encarregado, setEncarregado] = useState("");
+  const [municipio, setMunicipio] = useState("São Paulo/SP");
+  const [naturezas, setNaturezas] = useState<string[]>([denuncia.ocorrencia_tipo ?? ""]);
+  const [indiciados, setIndiciados] = useState<string[]>(
+    policiais.length ? policiais.map((p) => [p.cargo, p.rg_funcional, p.nome].filter(Boolean).join(" ")) : [""],
   );
-  const [providencias, setProvidencias] = useState(PROVIDENCIAS_PADRAO);
+  const [localFatos, setLocalFatos] = useState(denuncia.ocorrencia_local ?? "");
   const [corpo, setCorpo] = useState("");
-  const [modeloAplicado, setModeloAplicado] = useState(false);
+  const [signatarioNome, setSignatarioNome] = useState("");
+  const [signatarioPosto, setSignatarioPosto] = useState("");
 
-  function updateDen(idx: number, patch: Partial<DenunciadoPortaria>) {
-    setDenunciados((prev) => prev.map((d, i) => (i === idx ? { ...d, ...patch } : d)));
-  }
+  useEffect(() => {
+    if (!session?.profile) return;
+    const profile = session.profile as { nome?: string; matricula?: string | null; patente?: string | null };
+    setSignatarioNome((atual) => atual || profile.nome || "");
+    setSignatarioPosto((atual) => atual || profile.patente || cargoLabelFull(session.cargo));
+    setEncarregado((atual) => atual || [profile.patente, profile.matricula, profile.nome].filter(Boolean).join(" "));
+  }, [session]);
 
-  function aplicarModelo() {
-    if (!session?.profile || !session.cargo) return;
-    const texto = montarModeloPortaria({
-      cargoProlator: cargoLabelFull(session.cargo),
-      nomeProlator: session.profile.nome,
-      matriculaProlator: session.profile.matricula || "matrícula não informada",
-      denunciados: denunciados.map((d) => ({
-        nome: d.nome || "[NOME_DENUNCIADO]",
-        matricula: d.matricula,
-        cargo: d.cargo,
-        artigos: d.artigos,
-      })),
-      providencias,
-    });
-    const html = texto
-      .split(/\n{2,}/)
-      .map((par) => `<p>${par.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br/>")}</p>`)
-      .join("");
-    const nomeUp = session.profile.nome.toUpperCase();
-    const cargoUp = cargoLabelFull(session.cargo).toUpperCase();
-    const assinatura =
-      `<p style="text-align:center"><strong>${nomeUp}</strong></p>` +
-      `<p style="text-align:center"><strong>${cargoUp}</strong></p>`;
-    setCorpo(html + assinatura);
-    setModeloAplicado(true);
-  }
+  const localData = `São Paulo/SP, ${new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}.`;
+  const dados = {
+    ipmNumero, dataInstauracao, dataFato, encarregado, municipioInstauracao: municipio,
+    naturezas: naturezas.map((v) => v.trim()).filter(Boolean),
+    indiciados: indiciados.map((v) => v.trim()).filter(Boolean),
+    localFatos, corpo: sanitizeAtoHtml(corpo), localData, signatarioNome, signatarioPosto,
+  };
 
   const m = useMutation({
-    mutationFn: () => fn({ data: { denuncia_id: id, corpo: sanitizeAtoHtml(corpo) } }),
+    mutationFn: () => fn({ data: { denuncia_id: id, dados } }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["denuncia", id] });
       qc.invalidateQueries({ queryKey: ["denuncias"] });
@@ -2191,68 +2200,17 @@ function PortariaDialog({
         preenchida e a <strong>prescrição é interrompida</strong> (relógio reinicia em 15 dias).
       </div>
 
-      <div className="grid gap-3 rounded-md border border-border/60 p-3">
-        <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-          Denunciados ({denunciados.length}) — artigos enquadrados por policial
-        </div>
-        <div className="grid gap-3">
-          {denunciados.map((d, idx) => (
-            <div key={idx} className="grid gap-2 rounded-md border border-border/50 bg-surface-2/40 p-2 md:grid-cols-2">
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-primary md:col-span-2">
-                Denunciado {idx + 1}
-              </div>
-              <label className="grid gap-1 text-xs">
-                <span className="text-muted-foreground">Nome</span>
-                <input className="input" value={d.nome} onChange={(e) => updateDen(idx, { nome: e.target.value })} />
-              </label>
-              <label className="grid gap-1 text-xs">
-                <span className="text-muted-foreground">Matrícula</span>
-                <input className="input" value={d.matricula} onChange={(e) => updateDen(idx, { matricula: e.target.value })} />
-              </label>
-              <label className="grid gap-1 text-xs md:col-span-2">
-                <span className="text-muted-foreground">Posto/Graduação (opcional)</span>
-                <select
-                  className="input"
-                  value={d.cargo}
-                  onChange={(e) => updateDen(idx, { cargo: e.target.value })}
-                >
-                  <option value="">Selecionar...</option>
-                  {CARGOS_POLICIAIS.map((posto) => (
-                    <option key={posto} value={posto}>{posto}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="grid gap-1 text-xs md:col-span-2">
-                <span className="text-muted-foreground">
-                  Artigos enquadrados deste policial (ex.: art. 12, inciso III)
-                </span>
-                <input
-                  className="input"
-                  value={d.artigos}
-                  onChange={(e) => updateDen(idx, { artigos: e.target.value })}
-                  placeholder="art. 12, inciso III"
-                />
-              </label>
-            </div>
-          ))}
-        </div>
-        <label className="grid gap-1 text-xs">
-          <span className="text-muted-foreground">Providências (comuns a todos os denunciados)</span>
-          <textarea
-            rows={4}
-            className="input"
-            value={providencias}
-            onChange={(e) => setProvidencias(e.target.value)}
-          />
-        </label>
-        <button
-          type="button"
-          onClick={aplicarModelo}
-          disabled={!session?.profile || !session.cargo}
-          className="rounded-md border border-primary/60 bg-primary/10 px-3 py-2 text-xs font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
-        >
-          Usar modelo pré-formatado
-        </button>
+      <div className="grid gap-3 rounded-md border border-border/60 p-3 md:grid-cols-2">
+        <Field label="IPM Nº" value={ipmNumero} onChange={setIpmNumero} />
+        <Field label="Data de instauração" value={dataInstauracao} onChange={setDataInstauracao} />
+        <Field label="Data do fato" value={dataFato} onChange={setDataFato} />
+        <Field label="Encarregado" value={encarregado} onChange={setEncarregado} />
+        <Field label="Município de instauração" value={municipio} onChange={setMunicipio} />
+        <Field label="Local dos fatos" value={localFatos} onChange={setLocalFatos} />
+        <RepeatableFields label="Naturezas" values={naturezas} onChange={setNaturezas} />
+        <RepeatableFields label="Policiais militares indiciados" values={indiciados} onChange={setIndiciados} />
+        <Field label="Nome do signatário" value={signatarioNome} onChange={setSignatarioNome} />
+        <Field label="Posto do signatário" value={signatarioPosto} onChange={setSignatarioPosto} />
       </div>
 
       <div className="mt-3 grid gap-1">
@@ -2262,11 +2220,7 @@ function PortariaDialog({
         <RichTextEditor
           value={corpo}
           onChange={setCorpo}
-          placeholder={
-            modeloAplicado
-              ? ""
-              : "Clique em «Usar modelo pré-formatado» ou digite a portaria livremente."
-          }
+          placeholder="Digite os parágrafos numerados da Portaria."
           minHeight={200}
         />
       </div>
@@ -2283,7 +2237,7 @@ function PortariaDialog({
         </button>
         <button
           onClick={() => m.mutate()}
-          disabled={corpo.replace(/<[^>]+>/g, "").trim().length < 50 || m.isPending}
+          disabled={corpo.replace(/<[^>]+>/g, "").trim().length < 50 || dados.naturezas.length === 0 || dados.indiciados.length === 0 || m.isPending}
           className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
           {m.isPending ? "Lavrando..." : "Confirmar e lavrar portaria"}
@@ -2345,6 +2299,7 @@ function TimelineAtoCard({
   cargo,
   procedimento,
   denunciado,
+  portariaDados,
 }: {
   especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao";
   teor: string;
@@ -2353,17 +2308,20 @@ function TimelineAtoCard({
   cargo: string;
   procedimento: string;
   denunciado: string;
+  portariaDados?: unknown;
 }) {
   const pdfRef = useDocumentRef();
   const [gerando, setGerando] = useState(false);
   const assunto = ATO_ASSUNTO[especie];
+  const portariaEstruturada = especie === "portaria" && isPortariaDados(portariaDados) ? portariaDados : null;
 
   async function exportarPdf() {
     if (!pdfRef.current) return;
     setGerando(true);
     try {
       const fname = `${assunto.replace(/\s+/g, "_")}_${procedimento.replace(/[^\w-]/g, "_")}.pdf`;
-      await exportDocumentToPdf(pdfRef.current, fname);
+      if (portariaEstruturada) await exportPortariaToPdf(pdfRef.current, fname);
+      else await exportDocumentToPdf(pdfRef.current, fname);
     } finally {
       setGerando(false);
     }
@@ -2371,6 +2329,7 @@ function TimelineAtoCard({
 
   return (
     <div className="space-y-2">
+      {portariaEstruturada ? <PortariaTemplate ref={pdfRef} dados={portariaEstruturada} /> : <>
       {/* Exibição integrada ao sistema (tema escuro) */}
       <DocumentTemplate
         variant="screen"
@@ -2401,6 +2360,7 @@ function TimelineAtoCard({
           {renderAtoBody(especie, teor, true)}
         </DocumentTemplate>
       </div>
+      </>}
 
       <div className="flex justify-end">
         <button
@@ -2624,6 +2584,7 @@ function VerAtoDialog({
   cargo,
   procedimento,
   denunciado,
+  portariaDados,
   onClose,
 }: {
   especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata";
@@ -2633,6 +2594,7 @@ function VerAtoDialog({
   cargo: string;
   procedimento: string;
   denunciado: string;
+  portariaDados?: unknown;
   onClose: () => void;
 }) {
   const pdfRef = useDocumentRef();
@@ -2641,13 +2603,15 @@ function VerAtoDialog({
   const assunto =
     especie === "portaria" ? "Portaria Inaugural" : especie === "decisao" ? "Decisão" : "Despacho";
   const titulo = assunto;
+  const portariaEstruturada = especie === "portaria" && isPortariaDados(portariaDados) ? portariaDados : null;
 
   async function baixarPdf() {
     if (!pdfRef.current) return;
     setGerando(true);
     try {
       const fname = `${assunto.replace(/\s+/g, "_")}_${procedimento.replace(/[^\w-]/g, "_")}.pdf`;
-      await exportDocumentToPdf(pdfRef.current, fname);
+      if (portariaEstruturada) await exportPortariaToPdf(pdfRef.current, fname);
+      else await exportDocumentToPdf(pdfRef.current, fname);
     } finally {
       setGerando(false);
     }
@@ -2678,7 +2642,8 @@ function VerAtoDialog({
           </div>
         </div>
 
-        <div className="surface p-5">
+        <div className={portariaEstruturada ? "" : "surface p-5"}>
+          {portariaEstruturada ? <PortariaTemplate ref={pdfRef} dados={portariaEstruturada} /> : <>
           <DocumentTemplate
             variant="screen"
             procedimento={procedimento}
@@ -2691,10 +2656,11 @@ function VerAtoDialog({
           >
             {renderAtoBody(especie, teor)}
           </DocumentTemplate>
+          </>}
         </div>
 
         {/* PDF invisível */}
-        <div className="pointer-events-none fixed left-[-10000px] top-0" aria-hidden>
+        {!portariaEstruturada && <div className="pointer-events-none fixed left-[-10000px] top-0" aria-hidden>
           <DocumentTemplate
             ref={pdfRef}
             variant="pdf"
@@ -2707,7 +2673,7 @@ function VerAtoDialog({
           >
             {renderAtoBody(especie, teor, true)}
           </DocumentTemplate>
-        </div>
+        </div>}
       </div>
     </div>
   );
@@ -3421,6 +3387,7 @@ function ExportarProcessoBtn({
     cancelado_por_nome?: string | null;
     motivo_cancelamento?: string | null;
     anexos?: Array<{ nome: string; path: string }> | null;
+    portaria_dados?: unknown;
   }>;
 }) {
   const [gerando, setGerando] = useState(false);

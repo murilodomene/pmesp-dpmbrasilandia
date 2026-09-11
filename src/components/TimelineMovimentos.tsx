@@ -3,6 +3,7 @@ import { Gavel, FileText, Scale, Pencil, Stamp, ShieldCheck, Bell, Download, Mic
 import { DocumentTemplate, exportDocumentToPdf, useDocumentRef } from "@/components/DocumentTemplate";
 import { isHtmlAto, sanitizeAtoHtml } from "@/components/RichTextEditor";
 import { AtoAnexosLinks } from "@/components/AtoAnexosLinks";
+import { PortariaTemplate, exportPortariaToPdf, isPortariaDados } from "@/components/PortariaTemplate";
 
 /**
  * Componente compartilhado de renderização da linha do tempo dos processos —
@@ -25,6 +26,7 @@ type Movimento = {
   cancelado_por_cargo?: string | null;
   motivo_cancelamento?: string | null;
   anexos?: unknown;
+  portaria_dados?: unknown;
 };
 
 type Policial = { id: string; nome: string; rg_funcional?: string | null };
@@ -113,6 +115,7 @@ export function TimelineMovimentos({
                       cargo={m.prolator_cargo as string}
                       procedimento={procedimento}
                       denunciado={denunciadoStr}
+                      portariaDados={m.portaria_dados}
                     />
                   </div>
                   {anexos.length > 0 && <AtoAnexosLinks anexos={anexos} />}
@@ -407,6 +410,7 @@ function TimelineAtoCard({
   cargo,
   procedimento,
   denunciado,
+  portariaDados,
 }: {
   especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao";
   teor: string;
@@ -415,17 +419,20 @@ function TimelineAtoCard({
   cargo: string;
   procedimento: string;
   denunciado: string;
+  portariaDados?: unknown;
 }) {
   const pdfRef = useDocumentRef();
   const [gerando, setGerando] = useState(false);
   const assunto = ATO_ASSUNTO[especie];
+  const portariaEstruturada = especie === "portaria" && isPortariaDados(portariaDados) ? portariaDados : null;
 
   async function exportarPdf() {
     if (!pdfRef.current) return;
     setGerando(true);
     try {
       const fname = `${assunto.replace(/\s+/g, "_")}_${procedimento.replace(/[^\w-]/g, "_")}.pdf`;
-      await exportDocumentToPdf(pdfRef.current, fname);
+      if (portariaEstruturada) await exportPortariaToPdf(pdfRef.current, fname);
+      else await exportDocumentToPdf(pdfRef.current, fname);
     } finally {
       setGerando(false);
     }
@@ -433,6 +440,10 @@ function TimelineAtoCard({
 
   return (
     <div className="space-y-2">
+      {portariaEstruturada ? (
+        <PortariaTemplate ref={pdfRef} dados={portariaEstruturada} />
+      ) : (
+        <>
       <DocumentTemplate
         variant="screen"
         procedimento={procedimento}
@@ -461,6 +472,8 @@ function TimelineAtoCard({
           {renderAtoBody(especie, teor, true)}
         </DocumentTemplate>
       </div>
+        </>
+      )}
 
       <div className="flex justify-end">
         <button

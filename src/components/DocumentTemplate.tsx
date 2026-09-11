@@ -3,7 +3,7 @@ import { ShieldCheck } from "lucide-react";
 import { isHtmlAto, sanitizeAtoHtml } from "./RichTextEditor";
 import { PMESP_CREST_URL } from "@/lib/branding";
 
-export type AtoTipo = "DESPACHO" | "DECISÃO" | "PORTARIA" | "IPC" | "CERTIDÃO" | "MANDADO" | "TERMO DE DEPOIMENTO";
+export type AtoTipo = "DESPACHO" | "DECISÃO" | "PORTARIA" | "IPM" | "CERTIDÃO" | "MANDADO" | "TERMO DE DEPOIMENTO";
 
 export interface DocumentTemplateCampo {
   label: string;
@@ -15,7 +15,7 @@ export interface DocumentTemplateCampo {
 export interface DocumentTemplateProps {
   procedimento: string;
   denunciado: string;
-  /** Rótulo central em destaque (DESPACHO/DECISÃO/PORTARIA/IPC). */
+  /** Rótulo central em destaque (DESPACHO/DECISÃO/PORTARIA/IPM). */
   tipo?: AtoTipo;
   /** Subtítulo discreto abaixo do tipo (ex.: "Resolução final do inquérito"). */
   subtitulo?: string;
@@ -40,7 +40,7 @@ export interface DocumentTemplateProps {
  * Envelopa Despacho, Decisão e Portaria. Duas apresentações:
  * - variant="screen" (default): tema escuro, integrado à linha do tempo.
  * - variant="pdf": papel branco A4 formal com brasão — usado só na exportação.
- * NÃO usar para IPC. Somente leitura.
+ * NÃO usar para IPM. Somente leitura.
  */
 export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps>(
   function DocumentTemplate(

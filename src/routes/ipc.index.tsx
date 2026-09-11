@@ -7,17 +7,17 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/ipc/")({
   head: () => ({
     meta: [
-      { title: "IPCs Públicos — Corregedoria da PMESP" },
+      { title: "IPMs Públicos — Corregedoria da PMESP" },
       {
         name: "description",
         content:
-          "Consulta pública dos Informes Preliminares Conclusivos (IPC) tornados públicos pela Corregedoria da Polícia Militar do Estado de São Paulo, organizados por processo administrativo.",
+          "Consulta pública dos Inquéritos Policiais Militares (IPM) tornados públicos pela Corregedoria da Polícia Militar do Estado de São Paulo, organizados por processo administrativo.",
       },
-      { property: "og:title", content: "IPCs Públicos — Corregedoria" },
+      { property: "og:title", content: "IPMs Públicos — Corregedoria" },
       {
         property: "og:description",
         content:
-          "Informes Preliminares Conclusivos disponibilizados publicamente pela Corregedoria da Polícia Militar do Estado de São Paulo.",
+          "Inquéritos Policiais Militares disponibilizados publicamente pela Corregedoria da Polícia Militar do Estado de São Paulo.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -99,26 +99,26 @@ function IpcPublicoIndexPage() {
       <Header />
       <div className="mx-auto max-w-4xl px-4 py-12">
         <div className="eyebrow">Transparência</div>
-        <h1 className="mt-2 font-serif text-3xl">IPCs Públicos</h1>
+        <h1 className="mt-2 font-serif text-3xl">IPMs Públicos</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Informes Preliminares Conclusivos (IPC) tornados públicos pela Corregedoria Geral da
+          Inquéritos Policiais Militares (IPM) tornados públicos pela Corregedoria Geral da
           Polícia Militar do Estado de São Paulo, organizados por processo administrativo. Clique em uma pasta para abrir os
-          IPCs cadastrados no respectivo procedimento.
+          IPMs cadastrados no respectivo procedimento.
         </p>
 
         {rows === null && (
-          <div className="mt-10 text-sm text-muted-foreground">Carregando IPCs…</div>
+          <div className="mt-10 text-sm text-muted-foreground">Carregando IPMs…</div>
         )}
 
         {erro && (
           <div className="mt-6 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive-foreground">
-            Não foi possível carregar os IPCs públicos: {erro}
+            Não foi possível carregar os IPMs públicos: {erro}
           </div>
         )}
 
         {rows && folders.length === 0 && !erro && (
           <div className="mt-10 rounded-md border border-border p-6 text-sm text-muted-foreground">
-            Nenhum IPC foi tornado público até o momento.
+            Nenhum IPM foi tornado público até o momento.
           </div>
         )}
 
@@ -146,7 +146,7 @@ function IpcPublicoIndexPage() {
                   </div>
                   <div className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
                     <FileText className="h-3.5 w-3.5" aria-hidden />
-                    {f.total} {f.total === 1 ? "IPC" : "IPCs"}
+                    {f.total} {f.total === 1 ? "IPM" : "IPMs"}
                   </div>
                 </Link>
               </li>

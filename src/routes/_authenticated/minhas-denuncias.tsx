@@ -111,7 +111,7 @@ function MinhasDenunciasPage() {
                           <StatusBadge status={d.status as DenunciaStatus} />
                           {qtIpc > 0 && (
                             <span className="text-[10px] uppercase tracking-wider text-primary">
-                              {qtIpc} IPC
+                              {qtIpc} IPM
                             </span>
                           )}
                         </div>
@@ -155,10 +155,10 @@ function MinhasDenunciasPage() {
                   </div>
 
                   <div className="surface p-5">
-                    <h2 className="font-serif text-lg">IPCs publicados</h2>
+                    <h2 className="font-serif text-lg">IPMs publicados</h2>
                     {ipcs.length === 0 ? (
                       <div className="mt-3 text-xs text-muted-foreground">
-                        Nenhum IPC publicado até o momento.
+                        Nenhum IPM publicado até o momento.
                       </div>
                     ) : (
                       <ul className="mt-3 space-y-3">

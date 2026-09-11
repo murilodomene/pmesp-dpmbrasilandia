@@ -214,3 +214,15 @@
 .ato-body-pdf em, .ato-body-pdf i { font-style: italic; }
 .ato-body-pdf u { text-decoration: underline; }
 .ato-body-pdf a { color: #1e40af; text-decoration: underline; }
+
+/* Portaria: o mesmo papel é usado na tela e na exportação. */
+.portaria-body p { margin: 0 0 10px 0; text-align: justify; }
+.portaria-body p:last-child { margin-bottom: 0; }
+.portaria-body strong, .portaria-body b { font-weight: 700; }
+.portaria-body em, .portaria-body i { font-style: italic; }
+.portaria-body u { text-decoration: underline; }
+.portaria-body a { color: inherit; text-decoration: underline; }
+
+@media print {
+  .portaria-document { box-shadow: none; max-width: none; }
+}

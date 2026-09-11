@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Search, X, ChevronUp, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
+import { PMESP_CREST_URL } from "@/lib/branding";
 import {
   anchorize,
   highlight,
@@ -15,17 +16,17 @@ export const Route = createFileRoute("/manual")({
   component: ManualPublicoPage,
   head: () => ({
     meta: [
-      { title: "Manual de Procedimentos — Corregedoria Geral da Polícia Civil" },
+      { title: "Manual de Procedimentos — Corregedoria da PMESP" },
       {
         name: "description",
         content:
-          "Manual de Procedimentos da Corregedoria Geral da Polícia Civil do Estado de São Paulo — diretrizes, condutas e regras gerais, em consulta pública.",
+          "Manual de Procedimentos da Corregedoria da Polícia Militar do Estado de São Paulo — diretrizes, condutas e regras gerais, em consulta pública.",
       },
       { property: "og:title", content: "Manual de Procedimentos — Corregedoria Geral" },
       {
         property: "og:description",
         content:
-          "Consulta pública ao Manual de Procedimentos da Corregedoria Geral da Polícia Civil.",
+          "Consulta pública ao Manual de Procedimentos da Corregedoria da Polícia Militar do Estado de São Paulo.",
       },
       { property: "og:type", content: "article" },
       { name: "twitter:card", content: "summary" },
@@ -97,20 +98,20 @@ function ManualPublicoPage() {
           <div className="border-b border-border/60 bg-surface-2/40 px-6 py-6">
             <div className="flex items-start gap-4">
               <img
-                src="/brasao-pcsp.png"
+                src={PMESP_CREST_URL}
                 alt=""
                 aria-hidden
                 className="h-14 w-auto shrink-0 opacity-90 sm:h-16"
               />
               <div className="min-w-0 flex-1">
                 <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground sm:text-[11px]">
-                  Polícia Civil do Estado de São Paulo — Corregedoria Geral
+                  Polícia Militar do Estado de São Paulo — Corregedoria
                 </div>
                 <h1 className="mt-1 font-serif text-2xl leading-tight text-foreground sm:text-3xl">
                   {doc?.titulo ?? "Manual de Procedimentos"}
                 </h1>
                 <p className="mt-1 text-xs italic text-muted-foreground sm:text-sm">
-                  Diretrizes, condutas e regras gerais da Polícia Civil — consulta pública.
+                  Diretrizes, condutas e regras gerais da Polícia Militar do Estado de São Paulo — consulta pública.
                 </p>
               </div>
             </div>

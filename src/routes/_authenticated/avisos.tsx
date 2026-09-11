@@ -12,6 +12,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { RichTextEditor, sanitizeAtoHtml, isHtmlAto } from "@/components/RichTextEditor";
+import { PMESP_CREST_URL } from "@/lib/branding";
 
 export const Route = createFileRoute("/_authenticated/avisos")({
   head: () => ({
@@ -203,11 +204,11 @@ function AvisoViewer({
         <div className="min-h-0 flex-1 overflow-y-auto pr-1">
           <div className="relative rounded-md">
             <header className="flex items-start gap-3 pb-3">
-              <img src="/brasao-pcsp.png" alt="" aria-hidden className="h-12 w-auto flex-shrink-0 opacity-90 sm:h-14" />
+              <img src={PMESP_CREST_URL} alt="" aria-hidden className="h-12 w-auto flex-shrink-0 opacity-90 sm:h-14" />
               <div className="text-[10px] font-semibold uppercase leading-snug tracking-wide text-muted-foreground sm:text-[11px]">
                 <div>Secretaria da Segurança Pública</div>
-                <div>Polícia Civil do Estado de São Paulo</div>
-                <div>Corregedoria Geral da Polícia Civil</div>
+                <div>Polícia Militar do Estado de São Paulo</div>
+                <div>Corregedoria da Polícia Militar do Estado de São Paulo</div>
                 <div>1ª Corregedoria da Capital</div>
                 <div className="normal-case text-[10px] text-muted-foreground/80">corregedoriageral@policiacivil.sp</div>
               </div>

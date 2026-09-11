@@ -23,11 +23,11 @@ interface IpcRow {
 export const Route = createFileRoute("/ipc/$id")({
   head: ({ params }) => ({
     meta: [
-      { title: `IPCs do procedimento — Corregedoria da Polícia Civil` },
+      { title: `IPCs do procedimento — Corregedoria da PMESP` },
       {
         name: "description",
         content:
-          "Informes Preliminares Conclusivos (IPC) tornados públicos para este processo administrativo pela Corregedoria Geral da Polícia Civil.",
+          "Informes Preliminares Conclusivos (IPC) tornados públicos para este processo administrativo pela Corregedoria da Polícia Militar do Estado de São Paulo.",
       },
       { property: "og:title", content: `IPCs do procedimento ${params.id}` },
       {
@@ -91,7 +91,7 @@ function IpcPublicoPadPage() {
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
           Todos os Informes Preliminares Conclusivos (IPC) deste processo administrativo tornados
-          públicos pela Corregedoria Geral da Polícia Civil. Os demais atos permanecem sob sigilo
+          públicos pela Corregedoria da Polícia Militar do Estado de São Paulo. Os demais atos permanecem sob sigilo
           funcional.
         </p>
 

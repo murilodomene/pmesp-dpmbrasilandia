@@ -96,7 +96,7 @@ function PdoPage() {
           <div>
             <h1 className="font-serif text-2xl">PDO — Diligências Ostensivas</h1>
             <p className="text-xs text-muted-foreground">
-              Registro de abordagens fiscalizatórias em viaturas da Polícia Civil.
+              Registro de abordagens fiscalizatórias em viaturas da Polícia Militar do Estado de São Paulo.
             </p>
           </div>
           <button

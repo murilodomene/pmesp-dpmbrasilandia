@@ -10,16 +10,16 @@ import { Trash2, Plus } from "lucide-react";
 export const Route = createFileRoute("/denunciar")({
   head: () => ({
     meta: [
-      { title: "Fazer denúncia — Corregedoria da Polícia Civil" },
+      { title: "Fazer denúncia — Corregedoria da PMESP" },
       {
         name: "description",
         content:
-          "Registre denúncia de conduta indevida de policial civil. Sigilo garantido, aceita anonimato.",
+          "Registre denúncia de conduta indevida de policial militar. Sigilo garantido, aceita anonimato.",
       },
       { property: "og:title", content: "Fazer denúncia — Corregedoria" },
       {
         property: "og:description",
-        content: "Canal oficial para reportar conduta indevida de policial civil.",
+        content: "Canal oficial para reportar conduta indevida de policial militar.",
       },
     ],
   }),

@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { Search, Save, Pencil, X, FileText, ChevronUp, ChevronDown, GitBranch } from "lucide-react";
 import { HierarquiaQuadro } from "@/components/HierarquiaQuadro";
 import { FluxoPAD } from "@/components/FluxoPAD";
+import { PMESP_CREST_URL } from "@/lib/branding";
 
 const HIERARQUIA_ROLES = new Set(["delegado_geral", "delegado_corregedor", "corregedor", "coordenador"]);
 const FLUXO_ROLES = HIERARQUIA_ROLES;
@@ -340,14 +341,14 @@ function DocumentosPage() {
                   <div className="border-b border-border/60 bg-surface-2/40 px-6 py-6">
                     <div className="flex items-start gap-4">
                       <img
-                        src="/brasao-pcsp.png"
+                        src={PMESP_CREST_URL}
                         alt=""
                         aria-hidden
                         className="h-14 w-auto flex-shrink-0 opacity-90 sm:h-16"
                       />
                       <div className="min-w-0 flex-1">
                         <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground sm:text-[11px]">
-                          Polícia Civil do Estado de São Paulo — Corregedoria Geral
+                          Polícia Militar do Estado de São Paulo — Corregedoria
                         </div>
                         <h2 className="mt-1 font-serif text-2xl leading-tight text-foreground sm:text-3xl">
                           {selected.titulo}
@@ -355,7 +356,7 @@ function DocumentosPage() {
                         <p className="mt-1 text-xs italic text-muted-foreground sm:text-sm">
                           {selected.id === "regimento"
                             ? "Estrutura, competências e funcionamento da Corregedoria."
-                            : "Diretrizes, condutas e regras gerais da Polícia Civil."}
+                            : "Diretrizes, condutas e regras gerais da Polícia Militar do Estado de São Paulo."}
                         </p>
                       </div>
                     </div>

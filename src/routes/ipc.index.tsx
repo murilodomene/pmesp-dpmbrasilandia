@@ -7,17 +7,17 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/ipc/")({
   head: () => ({
     meta: [
-      { title: "IPCs Públicos — Corregedoria da Polícia Civil" },
+      { title: "IPCs Públicos — Corregedoria da PMESP" },
       {
         name: "description",
         content:
-          "Consulta pública dos Informes Preliminares Conclusivos (IPC) tornados públicos pela Corregedoria Geral da Polícia Civil, organizados por processo administrativo.",
+          "Consulta pública dos Informes Preliminares Conclusivos (IPC) tornados públicos pela Corregedoria da Polícia Militar do Estado de São Paulo, organizados por processo administrativo.",
       },
       { property: "og:title", content: "IPCs Públicos — Corregedoria" },
       {
         property: "og:description",
         content:
-          "Informes Preliminares Conclusivos disponibilizados publicamente pela Corregedoria da Polícia Civil.",
+          "Informes Preliminares Conclusivos disponibilizados publicamente pela Corregedoria da Polícia Militar do Estado de São Paulo.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -102,7 +102,7 @@ function IpcPublicoIndexPage() {
         <h1 className="mt-2 font-serif text-3xl">IPCs Públicos</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
           Informes Preliminares Conclusivos (IPC) tornados públicos pela Corregedoria Geral da
-          Polícia Civil, organizados por processo administrativo. Clique em uma pasta para abrir os
+          Polícia Militar do Estado de São Paulo, organizados por processo administrativo. Clique em uma pasta para abrir os
           IPCs cadastrados no respectivo procedimento.
         </p>
 

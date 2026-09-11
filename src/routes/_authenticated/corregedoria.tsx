@@ -1530,6 +1530,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
           quando={dialog.quando}
           prolator={dialog.prolator}
           cargo={dialog.cargo}
+          portariaDados={dialog.portariaDados}
           procedimento={denuncia.numero_protocolo}
           denunciado={
             policiais.length
@@ -2583,6 +2584,7 @@ function VerAtoDialog({
   cargo,
   procedimento,
   denunciado,
+  portariaDados,
   onClose,
 }: {
   especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata";
@@ -2592,6 +2594,7 @@ function VerAtoDialog({
   cargo: string;
   procedimento: string;
   denunciado: string;
+  portariaDados?: unknown;
   onClose: () => void;
 }) {
   const pdfRef = useDocumentRef();
@@ -2600,13 +2603,15 @@ function VerAtoDialog({
   const assunto =
     especie === "portaria" ? "Portaria Inaugural" : especie === "decisao" ? "Decisão" : "Despacho";
   const titulo = assunto;
+  const portariaEstruturada = especie === "portaria" && isPortariaDados(portariaDados) ? portariaDados : null;
 
   async function baixarPdf() {
     if (!pdfRef.current) return;
     setGerando(true);
     try {
       const fname = `${assunto.replace(/\s+/g, "_")}_${procedimento.replace(/[^\w-]/g, "_")}.pdf`;
-      await exportDocumentToPdf(pdfRef.current, fname);
+      if (portariaEstruturada) await exportPortariaToPdf(pdfRef.current, fname);
+      else await exportDocumentToPdf(pdfRef.current, fname);
     } finally {
       setGerando(false);
     }
@@ -2637,7 +2642,8 @@ function VerAtoDialog({
           </div>
         </div>
 
-        <div className="surface p-5">
+        <div className={portariaEstruturada ? "" : "surface p-5"}>
+          {portariaEstruturada ? <PortariaTemplate ref={pdfRef} dados={portariaEstruturada} /> : <>
           <DocumentTemplate
             variant="screen"
             procedimento={procedimento}
@@ -2650,10 +2656,11 @@ function VerAtoDialog({
           >
             {renderAtoBody(especie, teor)}
           </DocumentTemplate>
+          </>}
         </div>
 
         {/* PDF invisível */}
-        <div className="pointer-events-none fixed left-[-10000px] top-0" aria-hidden>
+        {!portariaEstruturada && <div className="pointer-events-none fixed left-[-10000px] top-0" aria-hidden>
           <DocumentTemplate
             ref={pdfRef}
             variant="pdf"
@@ -2666,7 +2673,7 @@ function VerAtoDialog({
           >
             {renderAtoBody(especie, teor, true)}
           </DocumentTemplate>
-        </div>
+        </div>}
       </div>
     </div>
   );
@@ -3380,6 +3387,7 @@ function ExportarProcessoBtn({
     cancelado_por_nome?: string | null;
     motivo_cancelamento?: string | null;
     anexos?: Array<{ nome: string; path: string }> | null;
+    portaria_dados?: unknown;
   }>;
 }) {
   const [gerando, setGerando] = useState(false);

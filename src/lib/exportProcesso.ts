@@ -9,6 +9,8 @@
 import { calcularPrescricao, type DenunciaStatus, formatarDiasRestantes } from "@/lib/prescricao";
 import { sanitizeAtoHtml, isHtmlAto } from "@/components/RichTextEditor";
 import { supabase } from "@/integrations/supabase/client";
+import { isPortariaDados } from "@/components/PortariaTemplate";
+import crestAsset from "@/assets/brasao-corregedoria-pmesp-transparente.png.asset.json";
 
 export interface ExportPolicial {
   id: string;
@@ -29,6 +31,7 @@ export interface ExportMovimento {
   cancelado_por_nome?: string | null;
   motivo_cancelamento?: string | null;
   anexos?: Array<{ nome: string; path: string }> | null;
+  portaria_dados?: unknown;
 }
 export interface ExportOitiva {
   id: string;
@@ -58,7 +61,7 @@ export interface ExportProcessoData {
   oitivas: ExportOitiva[];
 }
 
-const BRASAO_SRC = "/brasao-pcsp.png";
+const BRASAO_SRC = crestAsset.url;
 
 /* ------------ helpers ------------ */
 
@@ -261,6 +264,24 @@ function atoContentPage(
   d: ExportDenuncia,
   policiais: ExportPolicial[],
 ): string {
+  if (m.especie === "portaria" && isPortariaDados(m.portaria_dados)) {
+    const p = m.portaria_dados;
+    const lista = (itens: string[]) => itens.map((item) => `<div style="margin:2px 0 2px 22px">${esc(item)}</div>`).join("");
+    const secao = (titulo: string) => `<div style="background:#c7c7c7;text-align:center;font-weight:bold;margin:6px 0;padding:1px 0">${titulo}</div>`;
+    return pageWrap(`
+      <div style="display:grid;grid-template-columns:145px 1fr;align-items:center;font-family:Arial,sans-serif;color:#111">
+        <div style="text-align:center"><img src="${BRASAO_SRC}" style="width:91px;height:106px;object-fit:contain" /></div>
+        <div><div style="font-size:17px;font-weight:bold">SECRETARIA DA SEGURANÇA PÚBLICA</div><div style="font-size:16px;font-weight:bold">POLÍCIA MILITAR DO ESTADO DE SÃO PAULO</div><div style="font-size:9px;font-weight:bold;margin-top:2px">CHAVE IDENTIFICADORA</div><svg class="portaria-barcode" data-value="${esc(p.chave)}"></svg><div style="font:12px 'Courier New',monospace">${esc(p.chave)}</div></div>
+      </div>
+      <div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.28;color:#111">
+        <h2 style="text-align:center;font-size:20px;margin:26px 0 14px">IPM Nº ${esc(p.ipmNumero)}</h2>
+        <p><strong>DATA DE INSTAURAÇÃO:</strong> ${esc(p.dataInstauracao)}</p><p><strong>DATA DO FATO:</strong> ${esc(p.dataFato)}</p><div style="height:14px"></div>
+        <p><strong>ENCARREGADO:</strong> ${esc(p.encarregado)}</p><p><strong>MUNICÍPIO DE INSTAURAÇÃO:</strong> ${esc(p.municipioInstauracao)}</p>
+        ${secao("NATUREZAS")}${lista(p.naturezas)}${secao("POLICIAIS MILITARES INDICIADOS")}${lista(p.indiciados)}${secao("LOCAL DOS FATOS")}<p>${esc(p.localFatos)}</p>${secao("PORTARIA")}
+        <main style="margin-top:26px;text-align:justify">${sanitizeAtoHtml(p.corpo)}</main><p style="margin-top:34px;text-align:justify">${esc(p.localData)}</p><div style="margin-top:34px;text-align:center"><p>${esc(p.signatarioNome.toUpperCase())}</p><p>${esc(p.signatarioPosto.toUpperCase())}</p></div>
+      </div>
+    `);
+  }
   const denunciado = policiais.length
     ? policiais.map((p) => `${p.nome}${p.rg_funcional ? ` — ${p.rg_funcional}` : ""}`).join("; ")
     : "Não identificado";
@@ -369,9 +390,10 @@ async function fetchAnexoDataUrl(path: string): Promise<string | null> {
 /* ------------ export principal ------------ */
 
 export async function exportProcessoCompleto(data: ExportProcessoData): Promise<void> {
-  const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+  const [{ default: html2canvas }, { default: jsPDF }, { default: JsBarcode }] = await Promise.all([
     import("html2canvas"),
     import("jspdf"),
+    import("jsbarcode"),
   ]);
 
   const movsAsc = [...data.movimentos].sort(
@@ -418,6 +440,9 @@ export async function exportProcessoCompleto(data: ExportProcessoData): Promise<
     }
   }
   doc.body.innerHTML = pages.join("");
+  doc.querySelectorAll<SVGSVGElement>(".portaria-barcode").forEach((element) => {
+    JsBarcode(element, element.dataset.value ?? "", { format: "CODE128", displayValue: false, height: 42, width: 1.45, margin: 0, lineColor: "#111111" });
+  });
 
   try {
     const imgs = Array.from(doc.querySelectorAll("img"));

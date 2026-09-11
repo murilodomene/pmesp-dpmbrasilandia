@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as QaPortariaRouteImport } from './routes/qa-portaria'
 import { Route as MpRouteImport } from './routes/mp'
 import { Route as ManualRouteImport } from './routes/manual'
 import { Route as DenunciarRouteImport } from './routes/denunciar'
@@ -43,11 +42,6 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QaPortariaRoute = QaPortariaRouteImport.update({
-  id: '/qa-portaria',
-  path: '/qa-portaria',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MpRoute = MpRouteImport.update({
@@ -172,7 +166,6 @@ export interface FileRoutesByFullPath {
   '/denunciar': typeof DenunciarRoute
   '/manual': typeof ManualRoute
   '/mp': typeof MpRoute
-  '/qa-portaria': typeof QaPortariaRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/avisos': typeof AuthenticatedAvisosRoute
@@ -198,7 +191,6 @@ export interface FileRoutesByTo {
   '/denunciar': typeof DenunciarRoute
   '/manual': typeof ManualRoute
   '/mp': typeof MpRoute
-  '/qa-portaria': typeof QaPortariaRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/avisos': typeof AuthenticatedAvisosRoute
@@ -226,7 +218,6 @@ export interface FileRoutesById {
   '/denunciar': typeof DenunciarRoute
   '/manual': typeof ManualRoute
   '/mp': typeof MpRoute
-  '/qa-portaria': typeof QaPortariaRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/avisos': typeof AuthenticatedAvisosRoute
@@ -254,7 +245,6 @@ export interface FileRouteTypes {
     | '/denunciar'
     | '/manual'
     | '/mp'
-    | '/qa-portaria'
     | '/reset-password'
     | '/sitemap.xml'
     | '/avisos'
@@ -280,7 +270,6 @@ export interface FileRouteTypes {
     | '/denunciar'
     | '/manual'
     | '/mp'
-    | '/qa-portaria'
     | '/reset-password'
     | '/sitemap.xml'
     | '/avisos'
@@ -307,7 +296,6 @@ export interface FileRouteTypes {
     | '/denunciar'
     | '/manual'
     | '/mp'
-    | '/qa-portaria'
     | '/reset-password'
     | '/sitemap.xml'
     | '/_authenticated/avisos'
@@ -335,7 +323,6 @@ export interface RootRouteChildren {
   DenunciarRoute: typeof DenunciarRoute
   ManualRoute: typeof ManualRoute
   MpRoute: typeof MpRoute
-  QaPortariaRoute: typeof QaPortariaRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   IpcIdRoute: typeof IpcIdRoute
@@ -356,13 +343,6 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/qa-portaria': {
-      id: '/qa-portaria'
-      path: '/qa-portaria'
-      fullPath: '/qa-portaria'
-      preLoaderRoute: typeof QaPortariaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mp': {
@@ -564,7 +544,6 @@ const rootRouteChildren: RootRouteChildren = {
   DenunciarRoute: DenunciarRoute,
   ManualRoute: ManualRoute,
   MpRoute: MpRoute,
-  QaPortariaRoute: QaPortariaRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   IpcIdRoute: IpcIdRoute,

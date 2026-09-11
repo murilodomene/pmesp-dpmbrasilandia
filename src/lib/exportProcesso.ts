@@ -159,10 +159,10 @@ const HEADER_HTML = `
     <img src="${BRASAO_SRC}" alt="" crossorigin="anonymous" style="height:70px;width:auto" />
     <div style="font-family:Georgia,'Times New Roman',serif;font-size:10.5px;font-weight:bold;text-transform:uppercase;line-height:1.35;color:#374151">
       <div>Secretaria da Segurança Pública</div>
-      <div>Polícia Civil do Estado de São Paulo</div>
-      <div>Corregedoria Geral da Polícia Civil</div>
+      <div>Polícia Militar do Estado de São Paulo</div>
+      <div>Corregedoria da Polícia Militar do Estado de São Paulo</div>
       <div>1ª Corregedoria da Capital</div>
-      <div style="text-transform:none">corregedoriageral@policiacivil.sp</div>
+      <div style="text-transform:none">corregedoriageral@pmesp.sp</div>
     </div>
   </header>`;
 
@@ -302,7 +302,7 @@ function atoContentPage(
     m.especie === "ipc"
       ? `
         ${bodyHtml(extrairRelatoIpc(m.teor))}
-        <div style="margin-top:18px"><strong>CIENTE DOS FATOS:</strong> Corregedoria Geral da Polícia Civil</div>
+        <div style="margin-top:18px"><strong>CIENTE DOS FATOS:</strong> Corregedoria da Polícia Militar do Estado de São Paulo</div>
       `
       : bodyHtml(m.teor);
 

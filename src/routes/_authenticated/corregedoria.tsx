@@ -46,7 +46,6 @@ import { contarObservacoesPorPad, contarObservacoesPorPolicial } from "@/lib/obs
 import { OPMS } from "@/lib/personnel-options";
 
 
-
 import { getSessionInfo } from "@/lib/usuarios.functions";
 import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2, Download, ShieldCheck, Bell, MessageSquare, Copy, Mic, Plus } from "lucide-react";
 import { DocumentTemplate, exportDocumentToPdf, useDocumentRef } from "@/components/DocumentTemplate";
@@ -181,8 +180,7 @@ function Corregedoria() {
   }
 
   const isDelegado =
-    session?.cargo === "ssp" || session?.cargo === "corregedor_geral" || session?.cargo === "subcorregedor_geral";
-    session?.cargo === "cmtg" || session?.cargo === "corregedor_geral" || session?.cargo === "subcorregedor_geral";
+    session?.cargo === "ssp" || session?.cargo=== "cmtg" || session?.cargo === "corregedor_geral" || session?.cargo === "subcorregedor_geral";
 
   const carregando = !denuncias;
 
@@ -340,7 +338,6 @@ interface ItemKanban {
 }
 
 
-
 function ListaProcessos({
   itens,
   carregando,
@@ -465,9 +462,6 @@ function LinhaProcesso({
 
 
 
-
-
-
 function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; onDeleted?: () => void }) {
   const qc = useQueryClient();
   const getFn = useServerFn(getDenuncia);
@@ -477,14 +471,11 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
   });
 
   const podeRetificar =
-    cargo === "ssp" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral" || cargo === "subcorregedor_geral";
-    cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral" || cargo === "subcorregedor_geral";
+    cargo === "ssp" || cargo=== "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral" || cargo === "subcorregedor_geral";
   const podeEditarCargo = cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral";
 
-  const podeExcluir = cargo === "ssp" || cargo === "corregedor_geral" || cargo === "subcorregedor_geral";
-  const podeExcluir = cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "subcorregedor_geral";
+  const podeExcluir = cargo === "ssp" || const podeExcluir = cargo=== "cmtg" || cargo === "corregedor_geral" || cargo === "subcorregedor_geral";
   const podeExcluirMovSilencioso = cargo === "corregedor_geral" || cargo === "subcorregedor_geral";
-
 
   const [dialog, setDialog] = useState<
     | { kind: "status" }
@@ -512,7 +503,6 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     | { kind: "intimar" }
     | null
   >(null);
-
 
   const lancarFn = useServerFn(lancarMovimento);
   const [especie, setEspecie] = useState<"despacho" | "decisao" | "ipc" | "ata" | "certidao" | null>(null);
@@ -610,12 +600,10 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
   const podeRegistrarRecurso =
     status === "ag_decurso_prazo" &&
     !denuncia.certidao_gerada &&
-    (cargo === "ssp" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral" || cargo === "subcorregedor_geral");
-    (cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral" || cargo === "subcorregedor_geral");
+    (cargo === "ssp" || (cargo=== "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral" || cargo === "subcorregedor_geral");
   const podeCertificarResultado =
     status === "em_recurso" &&
-    (cargo === "ssp" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral" || cargo === "subcorregedor_geral");
-    (cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral" || cargo === "subcorregedor_geral");
+    (cargo === "ssp" || (cargo=== "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral" || cargo === "subcorregedor_geral");
   const temIpcLavrado = movimentos.some(
     (m) => m.especie === "ipc" && !(m as { cancelado_em?: string | null }).cancelado_em,
   );
@@ -625,11 +613,9 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     status !== "transito_julgado" &&
     status !== "arquivada" &&
     status !== "em_recurso" &&
-    (cargo === "ssp" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral");
-    (cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral");
+    (cargo === "ssp" || (cargo=== "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral");
   const isInternoCorregedoria =
-    cargo === "ssp" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral";
-    cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral";
+    cargo === "ssp" || cargo=== "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral";
 
   return (
     <div className="space-y-4">
@@ -643,8 +629,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
               <NaturezaInline
                 denunciaId={denuncia.id}
                 valor={denuncia.ocorrencia_tipo ?? null}
-                podeEditar={cargo === "ssp" || cargo === "corregedor_geral" || cargo === "subcorregedor_geral"}
-                podeEditar={cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "subcorregedor_geral"}
+                podeEditar={cargo === "ssp" || podeEditar={cargo=== "cmtg" || cargo === "corregedor_geral" || cargo === "subcorregedor_geral"}
               />
 
               {decurso && (
@@ -678,8 +663,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
             >
               Movimentar status
             </button>
-            {(cargo === "ssp" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral" || cargo === "subcorregedor_geral") && (
-            {(cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral" || cargo === "subcorregedor_geral") && (
+            {(cargo === "ssp" || {(cargo=== "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral" || cargo === "subcorregedor_geral") && (
               <button
                 onClick={() => setDialog({ kind: "intimar" })}
                 title="Intimar usuário interno"
@@ -715,8 +699,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 Certificar trânsito administrativo
               </button>
             )}
-            {(cargo === "ssp" || cargo === "corregedor_geral" || cargo === "subcorregedor_geral") && (
-            {(cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "subcorregedor_geral") && (
+            {(cargo === "ssp" || {(cargo=== "cmtg" || cargo === "corregedor_geral" || cargo === "subcorregedor_geral") && (
               <ExportarProcessoBtn
                 denuncia={denuncia}
                 policiais={policiais}
@@ -751,8 +734,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 }}
                 adicionais={((data as { denunciantesAdicionais?: DenuncianteAdicional[] }).denunciantesAdicionais ?? [])}
                 denunciaId={denuncia.id}
-                podeGerenciar={cargo === "ssp" || cargo === "corregedor_geral" || cargo === "subcorregedor_geral"}
-                podeGerenciar={cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "subcorregedor_geral"}
+                podeGerenciar={cargo === "ssp" || podeGerenciar={cargo=== "cmtg" || cargo === "corregedor_geral" || cargo === "subcorregedor_geral"}
                 onChanged={() => qc.invalidateQueries({ queryKey: ["denuncia", id] })}
               />
             </Row>
@@ -797,7 +779,6 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 ))}
               </div>
             </Row>
-
 
             <Row k="Ocorrência">
               {denuncia.ocorrencia_data
@@ -1137,7 +1118,6 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
       </div>
 
 
-
       {/* Timeline */}
       <div className="surface p-5">
         <h3 className="font-serif text-lg">Linha do tempo</h3>
@@ -1237,7 +1217,6 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 <MessageSquare className="h-3.5 w-3.5" /> Texto Discord
               </button>
             );
-
 
             if (isAto) {
               return (
@@ -1349,8 +1328,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                       />
                     </div>
                     <div className="flex flex-wrap justify-end gap-2">
-                      {(cargo === "ssp" || cargo === "corregedor_geral") && (
-                      {(cargo === "cmtg" || cargo === "corregedor_geral") && (
+                      {(cargo === "ssp" || {(cargo=== "cmtg" || cargo === "corregedor_geral") && (
                         <button
                           onClick={async () => {
                             const origin =
@@ -1524,8 +1502,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
       </div>
 
       {/* Acesso do Ministério Público — apenas SSP / Corregedor-Geral */}
-      {(cargo === "ssp" || cargo === "corregedor_geral" || cargo === "subcorregedor_geral") && (
-      {(cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "subcorregedor_geral") && (
+      {(cargo === "ssp" || {(cargo=== "cmtg" || cargo === "corregedor_geral" || cargo === "subcorregedor_geral") && (
         <AcessoMpSection denunciaId={id} />
       )}
 
@@ -1625,8 +1602,6 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
       )}
 
 
-
-
       <style>{`.input{background:var(--input);border:1px solid var(--border);border-radius:6px;padding:.55rem .7rem;font-size:.9rem;color:var(--foreground);width:100%}`}</style>
     </div>
   );
@@ -1670,7 +1645,6 @@ function montarTeorIpc(params: {
     `Corregedoria da Polícia Militar do Estado de São Paulo`,
   ].join("\n");
 }
-
 
 function montarTeorAta(params: { depoente: string; relato: string }): string {
   const dep = params.depoente.trim().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -1850,7 +1824,6 @@ function Modal({
     </div>
   );
 }
-
 
 function StatusDialog({
   id,
@@ -2321,7 +2294,6 @@ function PortariaDialog({
 }
 
 
-
 const ATO_ASSUNTO: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao", string> = {
   despacho: "Despacho",
   decisao: "Decisão",
@@ -2519,7 +2491,6 @@ function TimelineCertidaoCard({
 }
 
 
-
 /**
  * Extrai a seção do RELATO DOS FATOS do teor estruturado do IPC
  * (produzido por montarTeorIpc). Preserva HTML se houver.
@@ -2576,7 +2547,6 @@ function TimelineIpcCard({
       ))}
     </div>
   );
-
 
   const camposBase = [
     { label: "Unidade", valor: unidade },
@@ -2644,8 +2614,6 @@ function TimelineIpcCard({
     </div>
   );
 }
-
-
 
 
 function VerAtoDialog({
@@ -2792,7 +2760,6 @@ function ProrrogarDialog({ id, onClose }: { id: string; onClose: () => void }) {
     </Modal>
   );
 }
-
 
 function OitivaDialog({ id, onClose }: { id: string; onClose: () => void }) {
   const qc = useQueryClient();
@@ -2961,7 +2928,6 @@ function RetificarDialog({
     </Modal>
   );
 }
-
 
 // ============ Acesso do Ministério Público ============
 function AcessoMpSection({ denunciaId }: { denunciaId: string }) {
@@ -3134,8 +3100,6 @@ function ExcluirDenunciaDialog({
     </Modal>
   );
 }
-
-
 
 
 function CancelarMovDialog({
@@ -3597,7 +3561,6 @@ function ObservacoesPolicialBadge({ nome, matricula }: { nome: string; matricula
   );
 }
 
-
 function buildDiscordMandado(params: {
   teor: string;
   numeroProtocolo: string;
@@ -3713,7 +3676,6 @@ function TextoDiscordDialog({
     </Modal>
   );
 }
-
 
 type DenuncianteAdicional = {
   id: string;
@@ -3952,8 +3914,6 @@ function DenuncianteFormDialog({
     </Modal>
   );
 }
-
-
 
 
 

@@ -52,8 +52,7 @@ function DocumentosPage() {
   const [salvando, setSalvando] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const podeEditar = cargo === "ssp" || cargo === "corregedor_geral" || cargo === "subcorregedor_geral";
-  const podeEditar = cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "subcorregedor_geral";
+  const podeEditar = cargo === "ssp" || const podeEditar = cargo=== "cmtg" || cargo === "corregedor_geral" || cargo === "subcorregedor_geral";
 
   useEffect(() => {
     if (!session) return;

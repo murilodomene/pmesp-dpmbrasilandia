@@ -52,7 +52,6 @@ export const marcarTodasLidas = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-
 export const buscarInternos = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>

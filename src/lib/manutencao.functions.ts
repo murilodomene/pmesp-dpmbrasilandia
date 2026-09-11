@@ -22,7 +22,6 @@ async function requireDelegadoCorregedor(context: { supabase: any; userId: strin
   }
 }
 
-
 export const limparDados = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>

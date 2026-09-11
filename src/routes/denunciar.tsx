@@ -146,7 +146,6 @@ function DenunciarPage() {
         )}
 
 
-
         <section className="surface mt-8 p-6">
           <h2 className="font-serif text-lg">Denunciante</h2>
           <label className="mt-4 flex items-center gap-2 text-sm">

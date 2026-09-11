@@ -74,7 +74,6 @@ export const submitDenuncia = createServerFn({ method: "POST" })
     return { protocolo };
   });
 
-
 export const consultarPublica = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) => z.object({ protocolo: z.string().trim().min(3).max(40) }).parse(data))
   .handler(async ({ data }) => {
@@ -105,7 +104,6 @@ export const listDenuncias = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return data ?? [];
   });
-
 
 export const getDenuncia = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -155,7 +153,6 @@ export const getDenuncia = createServerFn({ method: "GET" })
       denunciantesAdicionais: denAdd.data ?? [],
     };
   });
-
 
 
 async function getProlator(context: { supabase: ReturnType<typeof publicClient>; userId: string }) {
@@ -403,7 +400,6 @@ export const prorrogar = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-
 export const juntarOitiva = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
@@ -513,8 +509,7 @@ export const atualizarNatureza = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const p = await getProlator(context);
-    if (p.prolator_cargo !== "ssp" && p.prolator_cargo !== "corregedor_geral" && p.prolator_cargo !== "subcorregedor_geral") {
-    if (p.prolator_cargo !== "cmtg" && p.prolator_cargo !== "corregedor_geral" && p.prolator_cargo !== "subcorregedor_geral") {
+    if (p.prolator_cargo !== "ssp" && if (p.prolator_cargo!== "cmtg" && p.prolator_cargo !== "corregedor_geral" && p.prolator_cargo !== "subcorregedor_geral") {
       throw new Error("Apenas SSP ou Corregedor-Geral podem editar a natureza.");
     }
     const { data: atual } = await context.supabase
@@ -541,7 +536,6 @@ export const atualizarNatureza = createServerFn({ method: "POST" })
     return { changed: true };
   });
 
-
 export const CARGOS_POLICIAIS = POSTOS_GRADUACOES;
 
 export const retificarDenunciado = createServerFn({ method: "POST" })
@@ -561,8 +555,7 @@ export const retificarDenunciado = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const p = await getProlator(context);
     const podeRetificar =
-      p.prolator_cargo === "ssp" ||
-      p.prolator_cargo === "cmtg" ||
+      p.prolator_cargo === "ssp" || p.prolator_cargo=== "cmtg" ||
       p.prolator_cargo === "corregedor_geral" ||
       p.prolator_cargo === "corregedor" ||
       p.prolator_cargo === "subcorregedor_geral";
@@ -631,10 +624,8 @@ export const retificarDenunciado = createServerFn({ method: "POST" })
       if (movErr) throw new Error(movErr.message);
     }
 
-
     return { changed: true };
   });
-
 
 export const lavrarPortaria = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -709,8 +700,7 @@ export const instaurarOficio = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const p = await getProlator(context);
     if (
-      p.prolator_cargo !== "ssp" &&
-      p.prolator_cargo !== "cmtg" &&
+      p.prolator_cargo !== "ssp" && p.prolator_cargo!== "cmtg" &&
       p.prolator_cargo !== "corregedor_geral" &&
       p.prolator_cargo !== "corregedor" &&
       p.prolator_cargo !== "subcorregedor_geral"
@@ -761,7 +751,6 @@ export const instaurarOficio = createServerFn({ method: "POST" })
 
     return { id: den.id, protocolo: den.numero_protocolo };
   });
-
 
 // Envio de denúncia por Cidadão autenticado — vincula owner_id.
 export const submitDenunciaCidadao = createServerFn({ method: "POST" })
@@ -1038,7 +1027,6 @@ export const excluirMovimentoSilencioso = createServerFn({ method: "POST" })
   });
 
 
-
 // ============ TARJAS DE SINALIZAÇÃO ============
 
 const CORES_TARJA = ["vermelho", "amarelo", "verde", "azul"] as const;
@@ -1113,8 +1101,7 @@ const denuncianteInput = z.object({
 
 function podeGerenciarDenunciantes(role: string | null | undefined) {
   return (
-    role === "ssp" ||
-    role === "cmtg" ||
+    role === "ssp" || role=== "cmtg" ||
     role === "corregedor_geral" ||
     role === "corregedor" ||
     role === "subcorregedor_geral"
@@ -1196,7 +1183,5 @@ export const removerDenunciante = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
-
-
 
 

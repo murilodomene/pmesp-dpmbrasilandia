@@ -368,7 +368,6 @@ async function fetchAnexoDataUrl(path: string): Promise<string | null> {
 
 /* ------------ export principal ------------ */
 
-
 export async function exportProcessoCompleto(data: ExportProcessoData): Promise<void> {
   const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
     import("html2canvas"),

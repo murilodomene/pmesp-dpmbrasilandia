@@ -43,7 +43,6 @@ export function RichTextEditor({ value, onChange, placeholder, minHeight = 180 }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, editor]);
 
-
   if (!editor) return null;
 
   return (

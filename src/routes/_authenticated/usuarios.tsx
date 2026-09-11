@@ -62,7 +62,6 @@ export const Route = createFileRoute("/_authenticated/usuarios")({
   component: UsuariosPage,
 });
 
-
 const CARGO_LABEL: Record<string, string> = {
   ssp: "SSP",
   cmtg: "CMTG",
@@ -112,7 +111,6 @@ function UsuariosPage() {
   const [confirmando, setConfirmando] = useState<Usuario | null>(null);
   const [excluindo, setExcluindo] = useState<Usuario | null>(null);
   const [aprovando, setAprovando] = useState<Usuario | null>(null);
-
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();

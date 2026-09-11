@@ -12,7 +12,6 @@ export interface DocumentTemplateCampo {
   block?: boolean;
 }
 
-
 export interface DocumentTemplateProps {
   procedimento: string;
   denunciado: string;
@@ -36,7 +35,6 @@ export interface DocumentTemplateProps {
   /** Campos estruturados. Se ausente, exibe apenas Procedimento + Denunciado. */
   campos?: DocumentTemplateCampo[];
 }
-
 
 /**
  * Envelopa Despacho, Decisão e Portaria. Duas apresentações:
@@ -124,7 +122,6 @@ export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps
             </div>
           )}
 
-
           <section className="mt-4 grid gap-2 text-[12px] sm:text-[13px]">
             {campos ? (
               campos.map((c) =>
@@ -149,7 +146,6 @@ export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps
               </>
             )}
           </section>
-
 
           <main
             className="mx-1 my-6 whitespace-pre-wrap text-justify text-[12px] leading-relaxed sm:mx-4 sm:text-[13px]"
@@ -251,7 +247,6 @@ export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps
           )}
         </dl>
 
-
         <div className="h-px w-full bg-border/60" />
 
         {/* Corpo */}
@@ -284,7 +279,6 @@ export async function exportDocumentToPdf(
     import("html2canvas-pro"),
     import("jspdf"),
   ]);
-
 
   const canvas = await html2canvas(element, {
     scale: 2,

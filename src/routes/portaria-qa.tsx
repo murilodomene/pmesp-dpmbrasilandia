@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useRef } from "react";
 import { PortariaTemplate, exportPortariaToPdf, type PortariaDados } from "@/components/PortariaTemplate";
 
-export const Route = createFileRoute("/__portaria-qa")({
+export const Route = createFileRoute("/portaria-qa")({
   head: () => ({ meta: [{ title: "Conferência da Portaria PMESP" }, { name: "description", content: "Conferência visual temporária da Portaria PMESP." }, { property: "og:title", content: "Conferência da Portaria PMESP" }, { property: "og:description", content: "Conferência visual temporária da Portaria PMESP." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: QA,
 });

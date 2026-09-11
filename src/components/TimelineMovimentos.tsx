@@ -441,7 +441,12 @@ function TimelineAtoCard({
   return (
     <div className="space-y-2">
       {portariaEstruturada ? (
-        <PortariaTemplate ref={pdfRef} dados={portariaEstruturada} />
+        <>
+          <PortariaTemplate dados={portariaEstruturada} variant="screen" />
+          <div className="pointer-events-none fixed left-[-10000px] top-0" aria-hidden>
+            <PortariaTemplate ref={pdfRef} dados={portariaEstruturada} variant="pdf" />
+          </div>
+        </>
       ) : (
         <>
       <DocumentTemplate

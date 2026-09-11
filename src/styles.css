@@ -215,7 +215,15 @@
 .ato-body-pdf u { text-decoration: underline; }
 .ato-body-pdf a { color: #1e40af; text-decoration: underline; }
 
-/* Portaria: o mesmo papel é usado na tela e na exportação. */
+/* Portaria em tela: integrada ao tema escuro. */
+.portaria-body-screen p { margin: 0 0 0.75rem 0; text-align: justify; }
+.portaria-body-screen p:last-child { margin-bottom: 0; }
+.portaria-body-screen strong, .portaria-body-screen b { font-weight: 700; }
+.portaria-body-screen em, .portaria-body-screen i { font-style: italic; }
+.portaria-body-screen u { text-decoration: underline; }
+.portaria-body-screen a { color: var(--color-primary); text-decoration: underline; }
+
+/* Portaria formal: usada somente na exportação em PDF. */
 .portaria-body p { margin: 0 0 10px 0; text-align: justify; }
 .portaria-body p:last-child { margin-bottom: 0; }
 .portaria-body strong, .portaria-body b { font-weight: 700; }

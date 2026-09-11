@@ -1,1 +1,0 @@
-ALTER TYPE public.denuncia_status ADD VALUE IF NOT EXISTS 'novo' BEFORE 'recebida';

@@ -1,1 +1,0 @@
-ALTER TABLE public.denuncias ALTER COLUMN status SET DEFAULT 'novo'::public.denuncia_status;

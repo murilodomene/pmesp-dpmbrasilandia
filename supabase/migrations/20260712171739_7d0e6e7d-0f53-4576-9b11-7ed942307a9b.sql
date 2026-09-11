@@ -1,1 +1,0 @@
-ALTER TABLE public.observacoes ALTER COLUMN policial_nome DROP NOT NULL;

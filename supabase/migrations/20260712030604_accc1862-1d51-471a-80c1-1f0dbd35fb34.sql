@@ -1,1 +1,0 @@
-GRANT EXECUTE ON FUNCTION public.gerar_protocolo() TO anon, authenticated;

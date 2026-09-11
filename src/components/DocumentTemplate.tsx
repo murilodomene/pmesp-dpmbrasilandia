@@ -97,17 +97,17 @@ export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps
 
           <header className="flex flex-col items-center gap-2 border-b-2 border-gray-400 pb-3 text-center">
             <img
-              src="/brasao-pcsp.png"
-              alt="Brasão da Polícia Civil do Estado de São Paulo"
+              src={PMESP_CREST_URL}
+              alt="Brasão da Polícia Militar do Estado de São Paulo"
               className="h-16 w-auto sm:h-20"
               crossOrigin="anonymous"
             />
             <div className="font-serif text-[10px] font-bold uppercase leading-snug text-gray-700 sm:text-[11px]">
               <div>Secretaria da Segurança Pública</div>
-              <div>Polícia Civil do Estado de São Paulo</div>
-              <div>Corregedoria Geral da Polícia Civil</div>
+              <div>Polícia Militar do Estado de São Paulo</div>
+              <div>Corregedoria da Polícia Militar do Estado de São Paulo</div>
               <div>1ª Corregedoria da Capital</div>
-              <div className="normal-case">corregedoriageral@policiacivil.sp</div>
+              <div className="normal-case">corregedoriageral@pmesp.sp</div>
             </div>
           </header>
 

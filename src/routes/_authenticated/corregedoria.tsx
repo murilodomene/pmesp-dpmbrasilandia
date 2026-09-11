@@ -488,6 +488,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
         quando: string;
         prolator: string;
         cargo: string;
+        portariaDados?: unknown;
       }
     | { kind: "prorrogar" }
     | { kind: "oitiva" }

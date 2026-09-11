@@ -18,6 +18,7 @@ import {
   instaurarOficio,
 } from "@/lib/denuncias.functions";
 import { getSessionInfo } from "@/lib/usuarios.functions";
+import { OPMS } from "@/lib/personnel-options";
 import { Plus, Trash2, X, Clock } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/painel")({
@@ -419,18 +420,7 @@ function Row({ k, v }: { k: string; v: string | null | undefined }) {
   );
 }
 
-const UNIDADES = [
-  "DEIC",
-  "CORREGEPOL",
-  "DECAP",
-  "DHPP",
-  "CERCO",
-  "GARRA",
-  "DENARC",
-  "GER",
-  "SAT",
-  "GOE",
-] as const;
+const UNIDADES = OPMS;
 
 type Envolvido = { nome: string; rg_funcional: string; unidade: string };
 
@@ -653,7 +643,7 @@ function OficioModal({ onClose }: { onClose: () => void }) {
             {envolvidos.map((env, i) => (
               <div key={i} className="grid grid-cols-1 gap-2 md:grid-cols-[1fr_140px_140px_auto]">
                 <input
-                  placeholder="Nome / cargo"
+                  placeholder="Nome"
                   value={env.nome}
                   onChange={(e) => updateEnv(i, { nome: e.target.value })}
                   className={`rounded-md border bg-input px-3 py-2 text-sm ${

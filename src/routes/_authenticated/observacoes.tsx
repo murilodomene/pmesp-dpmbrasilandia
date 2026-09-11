@@ -17,6 +17,7 @@ import { RichTextEditor, sanitizeAtoHtml, isHtmlAto } from "@/components/RichTex
 import { AtoAnexosUploader, type AtoAnexo } from "@/components/AtoAnexosUploader";
 import { AtoAnexosLinks } from "@/components/AtoAnexosLinks";
 import { PMESP_CREST_URL } from "@/lib/branding";
+import { OPMS, POSTOS_GRADUACOES } from "@/lib/personnel-options";
 
 export const Route = createFileRoute("/_authenticated/observacoes")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -35,20 +36,9 @@ export const Route = createFileRoute("/_authenticated/observacoes")({
   notFoundComponent: () => <div className="p-6 text-sm">Não encontrado.</div>,
 });
 
-const CARGOS_POLICIAIS = [
-  "ACADEPOL",
-  "Agente de 3º Classe",
-  "Agente de 2º Classe",
-  "Agente de 1º Classe",
-  "Agente de Classe Especial",
-  "Investigador",
-  "Investigador-Chefe",
-  "Perito",
-  "Escrivão",
-  "Delegado",
-];
+const CARGOS_POLICIAIS = POSTOS_GRADUACOES;
 
-const UNIDADES = ["DEIC", "CORREGEPOL", "DECAP", "DHPP", "CERCO", "GARRA", "DENARC", "GER", "SAT", "GOE"];
+const UNIDADES = OPMS;
 
 type Pad = { observacao_id: string; denuncia_id: string; numero_protocolo: string };
 type Observacao = {
@@ -545,7 +535,7 @@ function ObservacaoDialog({ obs, onClose }: { obs?: Observacao; onClose: () => v
               </datalist>
             </label>
             <label className="grid gap-1 text-xs">
-              <span className="text-muted-foreground">Cargo</span>
+              <span className="text-muted-foreground">Posto/Graduação</span>
               <select
                 className="rounded-md border border-border bg-input px-3 py-2 text-sm"
                 value={cargoPol}

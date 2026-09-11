@@ -43,6 +43,7 @@ import {
   removerDenunciante,
 } from "@/lib/denuncias.functions";
 import { contarObservacoesPorPad, contarObservacoesPorPolicial } from "@/lib/observacoes.functions";
+import { OPMS } from "@/lib/personnel-options";
 
 
 
@@ -95,7 +96,7 @@ const STATUS_LIST_MANUAL: DenunciaStatus[] = [
   "ag_decurso_prazo",
   "arquivada",
 ];
-const UNIDADES = ["DEIC", "CORREGEPOL", "DECAP", "DHPP", "CERCO", "GARRA", "DENARC", "GER", "SAT", "GOE"] as const;
+const UNIDADES = OPMS;
 const ESPECIES = [
   { v: "despacho", l: "Despacho", icon: FileText },
   { v: "decisao", l: "Decisão", icon: Scale },
@@ -2223,13 +2224,17 @@ function PortariaDialog({
                 <input className="input" value={d.matricula} onChange={(e) => updateDen(idx, { matricula: e.target.value })} />
               </label>
               <label className="grid gap-1 text-xs md:col-span-2">
-                <span className="text-muted-foreground">Cargo (opcional)</span>
-                <input
+                <span className="text-muted-foreground">Posto/Graduação (opcional)</span>
+                <select
                   className="input"
                   value={d.cargo}
                   onChange={(e) => updateDen(idx, { cargo: e.target.value })}
-                  placeholder="ex.: Investigador de Polícia"
-                />
+                >
+                  <option value="">Selecionar...</option>
+                  {CARGOS_POLICIAIS.map((posto) => (
+                    <option key={posto} value={posto}>{posto}</option>
+                  ))}
+                </select>
               </label>
               <label className="grid gap-1 text-xs md:col-span-2">
                 <span className="text-muted-foreground">
@@ -2895,7 +2900,7 @@ function RetificarDialog({
       </label>
       <label className="mt-3 grid gap-1.5">
         <span className="text-xs uppercase tracking-wider text-muted-foreground">
-          Cargo{!podeEditarCargo && " (somente Delegado Corregedor ou Corregedor)"}
+          Posto/Graduação{!podeEditarCargo && " (somente Delegado Corregedor ou Corregedor)"}
         </span>
         <select
           className="input"

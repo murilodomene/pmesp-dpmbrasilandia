@@ -370,6 +370,7 @@ export type Database = {
           interrompe: boolean
           ipc_publicado: boolean
           motivo_cancelamento: string | null
+          portaria_dados: Json | null
           prolator_cargo: Database["public"]["Enums"]["app_role"]
           prolator_id: string | null
           prolator_nome: string
@@ -389,6 +390,7 @@ export type Database = {
           interrompe?: boolean
           ipc_publicado?: boolean
           motivo_cancelamento?: string | null
+          portaria_dados?: Json | null
           prolator_cargo: Database["public"]["Enums"]["app_role"]
           prolator_id?: string | null
           prolator_nome: string
@@ -408,6 +410,7 @@ export type Database = {
           interrompe?: boolean
           ipc_publicado?: boolean
           motivo_cancelamento?: string | null
+          portaria_dados?: Json | null
           prolator_cargo?: Database["public"]["Enums"]["app_role"]
           prolator_id?: string | null
           prolator_nome?: string

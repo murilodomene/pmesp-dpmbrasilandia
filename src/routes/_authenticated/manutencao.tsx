@@ -194,6 +194,8 @@ function ManutencaoPage() {
           </div>
         </div>
 
+        <NumeracaoCard />
+
         <div className="grid gap-4">
           {CARDS.map((c) => (
             <div key={c.tipo} className="rounded-lg border border-border bg-surface p-5">

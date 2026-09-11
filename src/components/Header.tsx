@@ -86,11 +86,11 @@ export function Header() {
   return (
     <header className="border-b border-border bg-surface/60 backdrop-blur">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 md:flex-nowrap">
-        <Link to="/" className="flex shrink-0 items-center gap-2">
+        <Link to="/" className="flex shrink-0 items-center gap-2.5">
           <img
             src={PMESP_CREST_URL}
             alt="Brasão da Corregedoria da Polícia Militar do Estado de São Paulo"
-            className="h-9 w-auto"
+            className="block h-11 w-9 shrink-0 object-contain"
           />
           <div className="leading-tight">
             <div className="font-serif text-sm whitespace-nowrap">Corregedoria</div>

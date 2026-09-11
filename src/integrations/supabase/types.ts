@@ -942,6 +942,7 @@ export type Database = {
         | "3º BPchq - Humaitá"
         | "4º BPchq - COE/GATE"
         | "4ºGB - Bombeiros"
+        | "DPM"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1122,6 +1123,7 @@ export const Constants = {
         "3º BPchq - Humaitá",
         "4º BPchq - COE/GATE",
         "4ºGB - Bombeiros",
+        "DPM",
       ],
     },
   },

@@ -1,4 +1,5 @@
 import { Lock } from "lucide-react";
+import { PMESP_CREST_URL } from "@/lib/branding";
 
 interface ProcessoLetterheadProps {
   numeroProtocolo: string;
@@ -20,14 +21,14 @@ export function ProcessoLetterhead({
       <header className="flex flex-col items-center gap-2 border-b-2 border-border/70 px-5 py-4 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
         <div className="flex items-center gap-3">
           <img
-            src="/brasao-pcsp.png"
-            alt="Brasão da Polícia Civil do Estado de São Paulo"
+            src={PMESP_CREST_URL}
+            alt="Brasão da Corregedoria da Polícia Militar do Estado de São Paulo"
             className="h-14 w-auto sm:h-16"
           />
           <div className="text-[10px] font-semibold uppercase leading-snug tracking-wide text-muted-foreground sm:text-[11px]">
             <div>Secretaria da Segurança Pública</div>
-            <div>Polícia Civil do Estado de São Paulo</div>
-            <div>Corregedoria Geral da Polícia Civil</div>
+            <div>Polícia Militar do Estado de São Paulo</div>
+            <div>Corregedoria da Polícia Militar do Estado de São Paulo</div>
             <div>1ª Corregedoria da Capital</div>
             <div className="normal-case text-muted-foreground/80">
               corregedoriageral@policiacivil.sp

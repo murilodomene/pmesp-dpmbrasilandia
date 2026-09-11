@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { NotificacoesBell } from "@/components/NotificacoesBell";
 import { UserAvatar } from "@/components/UserAvatar";
+import { PMESP_CREST_URL } from "@/lib/branding";
 
 interface Profile {
   nome: string;
@@ -84,17 +85,17 @@ export function Header() {
 
   return (
     <header className="border-b border-border bg-surface/60 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl flex-nowrap items-center justify-between gap-3 px-4 py-3">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 md:flex-nowrap">
         <Link to="/" className="flex shrink-0 items-center gap-2">
           <img
-            src="/brasao-pcsp.png"
-            alt="Brasão da Polícia Civil de São Paulo"
+            src={PMESP_CREST_URL}
+            alt="Brasão da Corregedoria da Polícia Militar do Estado de São Paulo"
             className="h-9 w-auto"
           />
           <div className="leading-tight">
             <div className="font-serif text-sm whitespace-nowrap">Corregedoria</div>
             <div className="text-[10px] uppercase tracking-widest text-muted-foreground whitespace-nowrap">
-              Polícia Civil
+              Polícia Militar do Estado de São Paulo
             </div>
           </div>
         </Link>
@@ -163,7 +164,7 @@ export function Header() {
               </DropdownMenu>
             </div>
           ) : (
-            <div className="flex flex-nowrap items-center gap-1.5">
+            <div className="flex flex-wrap items-center justify-end gap-1.5">
               <Link
                 to="/cidadao"
                 className="whitespace-nowrap rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"

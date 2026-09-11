@@ -1349,11 +1349,11 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                             const autoridadeNome = (m.prolator_nome || "").toUpperCase();
                             const autoridadeCargo = cargoLabelFull(m.prolator_cargo as string);
                             const msg =
-                              `<:PCESP:1307085628730773534> **CORREGEDORIA GERAL DA POLÍCIA CIVIL DO ESTADO DE SÃO PAULO**\n\n` +
+                              `<:PMESP:1307085628730773534> **CORREGEDORIA DA POLÍCIA MILITAR DO ESTADO DE SÃO PAULO**\n\n` +
                               "```RESULTADO DO INQUÉRITO```\n\n" +
                               `> Autos nº ${denuncia.numero_protocolo}\n` +
                               `> Denunciado: ${denunciadosTxt}\n\n\n` +
-                              `A Corregedoria Geral da Polícia Civil, no uso de suas atribuições legais e regulamentares torna público o resultado do processo administrativo supramencionado:\n\n` +
+                              `A Corregedoria da Polícia Militar do Estado de São Paulo, no uso de suas atribuições legais e regulamentares torna público o resultado do processo administrativo supramencionado:\n\n` +
                               `**LINK**: ${link}\n\n` +
                               `São Paulo/SP, na data da assinatura digital.\n\n` +
                               "```" + `${autoridadeNome}\n${autoridadeCargo}` + "```";
@@ -1653,7 +1653,7 @@ function montarTeorIpc(params: {
     params.relato.trim(),
     ``,
     `| 4º CIENTE DOS FATOS:`,
-    `Corregedoria Geral da Polícia Civil`,
+    `Corregedoria da Polícia Militar do Estado de São Paulo`,
   ].join("\n");
 }
 
@@ -2090,7 +2090,7 @@ function montarModeloPortaria(params: {
   denunciados: DenunciadoPortaria[];
   providencias: string;
 }): string {
-  const preamblePrefix = `A Corregedoria Geral da Polícia Civil do Estado de São Paulo, por intermédio do ${params.cargoProlator}, ${params.nomeProlator}, ${params.matriculaProlator}, com fundamento nos arts. 78, inciso I c/c 79 do Manual de Procedimentos, instaura o presente PROCESSO ADMINISTRATIVO DISCIPLINAR`;
+  const preamblePrefix = `A Corregedoria da Polícia Militar do Estado de São Paulo, por intermédio do ${params.cargoProlator}, ${params.nomeProlator}, ${params.matriculaProlator}, com fundamento nos arts. 78, inciso I c/c 79 do Manual de Procedimentos, instaura o presente PROCESSO ADMINISTRATIVO DISCIPLINAR`;
   const providencias = params.providencias.trim() || PROVIDENCIAS_PADRAO;
   const dataFmt = new Date().toLocaleDateString("pt-BR");
   const fecho = `\n\nCumpra-se.\n\nDatado e assinado digitalmente em ${dataFmt}.`;
@@ -2103,7 +2103,7 @@ function montarModeloPortaria(params: {
     const d = dens[0];
     const cargoDen = d.cargo.trim() || "[CARGO_DENUNCIADO]";
     const artigos = d.artigos.trim() || "[ARTIGOS_ENQUADRADOS]";
-    return `${preamblePrefix} com a finalidade de apurar a conduta do policial civil ${d.nome}, ${d.matricula || "matrícula não informada"}, ${cargoDen}, em face do suposto cometimento da(s) infração(ões) administrativa(s) relatada(s).
+    return `${preamblePrefix} com a finalidade de apurar a conduta do policial militar ${d.nome}, ${d.matricula || "matrícula não informada"}, ${cargoDen}, em face do suposto cometimento da(s) infração(ões) administrativa(s) relatada(s).
 
 Com efeito, a partir dos fatos constantes da presente denúncia, os comportamentos supramencionados configuram, em tese, infração aos dispositivos ${artigos}.
 
@@ -3297,7 +3297,7 @@ function ConvocacaoDialog({
       `<p><strong>MANDADO DE CITAÇÃO</strong></p>` +
       `<p>Autos nº ${numeroProtocolo}<br/>Convocado(a): ${nomeFmt}, RG ${rgFmt}, ${uniFmt}</p>` +
       `<p>${dataHoraLinha.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</p>` +
-      `<p>A Corregedoria Geral da Polícia Civil, no uso de suas atribuições legais e regulamentares, <strong>CONVOCA</strong> o servidor público qualificado neste instrumento a comparecer à 1ª Delegacia da Polícia Civil, no dia e horário indicados, a fim de prestar esclarecimentos.</p>` +
+      `<p>A Corregedoria da Polícia Militar do Estado de São Paulo, no uso de suas atribuições legais e regulamentares, <strong>CONVOCA</strong> o servidor público qualificado neste instrumento a comparecer à 1ª Delegacia da Polícia Civil, no dia e horário indicados, a fim de prestar esclarecimentos.</p>` +
       `<p>O não comparecimento sem justificativa acarretará em sanções disciplinares administrativas. Caso não possa comparecer na data e local informados, deve-se entrar em contato via ticket, apresentando justificativa.</p>` +
       `<p>Fica o servidor, ainda, <strong>CIENTIFICADO</strong> dos seguintes termos:</p>` +
       `<p><strong>1)</strong> Da faculdade de constituir advogado regularmente inscrito na OAB para acompanhar o ato;</p>` +
@@ -3611,7 +3611,7 @@ function buildDiscordMandado(params: {
   const dataHora = dhMatch ? dhMatch[1].trim() : "[DATA] às [HORA]";
 
   return [
-    `<:PCESP:1307085628730773534> **CORREGEDORIA GERAL DA POLÍCIA CIVIL DO ESTADO DE SÃO PAULO**`,
+    `<:PMESP:1307085628730773534> **CORREGEDORIA DA POLÍCIA MILITAR DO ESTADO DE SÃO PAULO**`,
     ``,
     "```MANDADO DE CITAÇÃO```",
     ``,
@@ -3620,7 +3620,7 @@ function buildDiscordMandado(params: {
     ``,
     `**DATA E HORA: ${dataHora}**`,
     ``,
-    `A Corregedoria Geral da Polícia Civil, no uso de suas atribuições legais e regulamentares, **CONVOCA **o servidor público qualificado neste instrumento a comparecer à 1ª Delegacia da Polícia Civil, no dia e horário indicados, a fim de prestar esclarecimentos.`,
+    `A Corregedoria da Polícia Militar do Estado de São Paulo, no uso de suas atribuições legais e regulamentares, **CONVOCA **o servidor público qualificado neste instrumento a comparecer à 1ª Delegacia da Polícia Civil, no dia e horário indicados, a fim de prestar esclarecimentos.`,
     ``,
     `O não comparecimento sem justificativa acarretará em sanções disciplinares administrativas. Caso não possa comparecer na data e local informados, deve-se entrar em contato via ticket, apresentando justificativa.`,
     ``,

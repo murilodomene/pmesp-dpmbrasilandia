@@ -1,6 +1,7 @@
 import { forwardRef, useRef } from "react";
 import { ShieldCheck } from "lucide-react";
 import { isHtmlAto, sanitizeAtoHtml } from "./RichTextEditor";
+import { PMESP_CREST_URL } from "@/lib/branding";
 
 export type AtoTipo = "DESPACHO" | "DECISÃO" | "PORTARIA" | "IPC" | "CERTIDÃO" | "MANDADO" | "TERMO DE DEPOIMENTO";
 
@@ -183,15 +184,15 @@ export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps
         {/* Cabeçalho institucional, alinhado à esquerda, integrado ao tema */}
         <header className="flex items-start gap-3 pb-3">
           <img
-            src="/brasao-pcsp.png"
+            src={PMESP_CREST_URL}
             alt=""
             aria-hidden
             className="h-12 w-auto flex-shrink-0 opacity-90 sm:h-14"
           />
           <div className="text-[10px] font-semibold uppercase leading-snug tracking-wide text-muted-foreground sm:text-[11px]">
             <div>Secretaria da Segurança Pública</div>
-            <div>Polícia Civil do Estado de São Paulo</div>
-            <div>Corregedoria Geral da Polícia Civil</div>
+            <div>Polícia Militar do Estado de São Paulo</div>
+            <div>Corregedoria da Polícia Militar do Estado de São Paulo</div>
             <div>1ª Corregedoria da Capital</div>
             <div className="normal-case text-[10px] text-muted-foreground/80">
               corregedoriageral@policiacivil.sp

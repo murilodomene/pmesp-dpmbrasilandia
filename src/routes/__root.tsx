@@ -77,27 +77,25 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Corregedoria da Polícia Civil" },
+      { title: "Corregedoria da Polícia Militar de São Paulo" },
       {
         name: "description",
         content:
-          "Canal oficial de denúncias e sistema interno de procedimentos disciplinares da Corregedoria da Polícia Civil.",
+          "Canal oficial de denúncias e sistema interno de procedimentos disciplinares da Corregedoria da Polícia Militar do Estado de São Paulo.",
       },
-      { property: "og:title", content: "Corregedoria da Polícia Civil" },
+      { property: "og:title", content: "Corregedoria da Polícia Militar de São Paulo" },
       {
         property: "og:description",
-        content: "Canal oficial de denúncias e sistema interno de procedimentos disciplinares da Corregedoria da Polícia Civil.",
+        content: "Canal oficial de denúncias e sistema interno de procedimentos disciplinares da Corregedoria da Polícia Militar do Estado de São Paulo.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Corregedoria da Polícia Civil" },
-      { name: "twitter:description", content: "Canal oficial de denúncias e sistema interno de procedimentos disciplinares da Corregedoria da Polícia Civil." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/6bfbc1fc-b96f-441a-a11f-0636a53ca45c/id-preview-dfce3ba8--c4a50768-6b27-4967-9e96-cee53ecda3f5.lovable.app-1783792569455.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/6bfbc1fc-b96f-441a-a11f-0636a53ca45c/id-preview-dfce3ba8--c4a50768-6b27-4967-9e96-cee53ecda3f5.lovable.app-1783792569455.png" },
+      { name: "twitter:title", content: "Corregedoria da Polícia Militar de São Paulo" },
+      { name: "twitter:description", content: "Canal oficial de denúncias e sistema interno de procedimentos disciplinares da Corregedoria da Polícia Militar do Estado de São Paulo." },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.png", type: "image/png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {

@@ -80,10 +80,7 @@ export const PortariaTemplate = forwardRef<HTMLElement, { dados: PortariaDados; 
             <div className="text-xs font-semibold uppercase text-muted-foreground sm:text-sm">SECRETARIA DA SEGURANÇA PÚBLICA</div>
             <div className="text-xs font-semibold uppercase text-foreground sm:text-base">POLÍCIA MILITAR DO ESTADO DE SÃO PAULO</div>
             <div className="mt-2 text-[10px] font-bold uppercase text-primary">CHAVE IDENTIFICADORA</div>
-            <div className="inline-flex max-w-full flex-col items-center rounded-sm bg-white px-3 py-2">
-              <Barcode value={dados.chave} compact />
-              <div className="font-mono text-[11px] leading-tight text-[#111111]">{dados.chave}</div>
-            </div>
+            <div className="font-mono text-[11px] leading-tight text-foreground">{dados.chave}</div>
           </header>
 
           <div className="h-px bg-border/60" />

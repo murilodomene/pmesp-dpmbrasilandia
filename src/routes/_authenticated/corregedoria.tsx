@@ -859,6 +859,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                           quando: portariaMov.criado_em,
                           prolator: portariaMov.prolator_nome,
                           cargo: portariaMov.prolator_cargo as string,
+                           portariaDados: portariaMov.portaria_dados,
                         })
                       }
                       className="flex items-center justify-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
@@ -1265,6 +1266,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                                 .join("; ")
                             : "Não identificado"
                         }
+                         portariaDados={m.portaria_dados}
                       />
                     </div>
                     {(() => {
@@ -2118,6 +2120,14 @@ Pelo exposto, para que os denunciados venham se defender das imputações acima 
 ${providencias}${fecho}`;
 }
 
+function Field({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return <label className="grid gap-1 text-xs"><span className="text-muted-foreground">{label}</span><input className="input" value={value} onChange={(event) => onChange(event.target.value)} /></label>;
+}
+
+function RepeatableFields({ label, values, onChange }: { label: string; values: string[]; onChange: (values: string[]) => void }) {
+  return <div className="grid gap-2 text-xs md:col-span-2"><span className="text-muted-foreground">{label}</span>{values.map((value, index) => <div key={index} className="flex gap-2"><input className="input" value={value} onChange={(event) => onChange(values.map((item, itemIndex) => itemIndex === index ? event.target.value : item))} />{values.length > 1 && <button type="button" onClick={() => onChange(values.filter((_, itemIndex) => itemIndex !== index))} className="rounded-md border border-border px-2" aria-label={`Remover item de ${label}`}><X className="h-4 w-4" /></button>}</div>)}<button type="button" onClick={() => onChange([...values, ""])} className="inline-flex w-fit items-center gap-1 rounded-md border border-border px-3 py-1.5"><Plus className="h-3.5 w-3.5" /> Adicionar item</button></div>;
+}
+
 function PortariaDialog({
   id,
   denuncia,
@@ -2287,6 +2297,7 @@ function TimelineAtoCard({
   cargo,
   procedimento,
   denunciado,
+  portariaDados,
 }: {
   especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao";
   teor: string;
@@ -2295,17 +2306,20 @@ function TimelineAtoCard({
   cargo: string;
   procedimento: string;
   denunciado: string;
+  portariaDados?: unknown;
 }) {
   const pdfRef = useDocumentRef();
   const [gerando, setGerando] = useState(false);
   const assunto = ATO_ASSUNTO[especie];
+  const portariaEstruturada = especie === "portaria" && isPortariaDados(portariaDados) ? portariaDados : null;
 
   async function exportarPdf() {
     if (!pdfRef.current) return;
     setGerando(true);
     try {
       const fname = `${assunto.replace(/\s+/g, "_")}_${procedimento.replace(/[^\w-]/g, "_")}.pdf`;
-      await exportDocumentToPdf(pdfRef.current, fname);
+      if (portariaEstruturada) await exportPortariaToPdf(pdfRef.current, fname);
+      else await exportDocumentToPdf(pdfRef.current, fname);
     } finally {
       setGerando(false);
     }
@@ -2313,6 +2327,7 @@ function TimelineAtoCard({
 
   return (
     <div className="space-y-2">
+      {portariaEstruturada ? <PortariaTemplate ref={pdfRef} dados={portariaEstruturada} /> : <>
       {/* Exibição integrada ao sistema (tema escuro) */}
       <DocumentTemplate
         variant="screen"
@@ -2343,6 +2358,7 @@ function TimelineAtoCard({
           {renderAtoBody(especie, teor, true)}
         </DocumentTemplate>
       </div>
+      </>}
 
       <div className="flex justify-end">
         <button

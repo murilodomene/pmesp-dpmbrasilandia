@@ -31,7 +31,7 @@ export function ProcessoLetterhead({
             <div>Corregedoria da Polícia Militar do Estado de São Paulo</div>
             <div>1ª Corregedoria da Capital</div>
             <div className="normal-case text-muted-foreground/80">
-              corregedoriageral@policiacivil.sp
+              corregedoriageral@pmesp.sp
             </div>
           </div>
         </div>

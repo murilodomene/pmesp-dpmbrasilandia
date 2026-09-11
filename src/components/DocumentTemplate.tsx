@@ -191,7 +191,7 @@ export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps
             <div>Corregedoria da Polícia Militar do Estado de São Paulo</div>
             <div>1ª Corregedoria da Capital</div>
             <div className="normal-case text-[10px] text-muted-foreground/80">
-              corregedoriageral@policiacivil.sp
+              corregedoriageral@pmesp.sp
             </div>
           </div>
         </header>

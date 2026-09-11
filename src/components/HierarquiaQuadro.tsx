@@ -91,7 +91,7 @@ function badgeCls(kind: "status" | "patente" | "transferido" | "cargo", value: s
 const COLS: { key: keyof Membro; label: string; badge?: "status" | "patente" | "transferido" | "cargo"; options?: string[] }[] = [
   { key: "nome", label: "Nome" },
   { key: "rg", label: "RG" },
-  { key: "patente", label: "Patente", badge: "patente", options: PATENTES },
+  { key: "patente", label: "Posto/Graduação", badge: "patente", options: PATENTES },
   { key: "transferido", label: "Transferência", badge: "transferido", options: TRANSFERIDOS },
   { key: "status", label: "Status", badge: "status", options: STATUSES },
   { key: "cargo", label: "Cargo", badge: "cargo", options: CARGOS },

@@ -535,7 +535,7 @@ function ObservacaoDialog({ obs, onClose }: { obs?: Observacao; onClose: () => v
               </datalist>
             </label>
             <label className="grid gap-1 text-xs">
-              <span className="text-muted-foreground">Cargo</span>
+              <span className="text-muted-foreground">Posto/Graduação</span>
               <select
                 className="rounded-md border border-border bg-input px-3 py-2 text-sm"
                 value={cargoPol}

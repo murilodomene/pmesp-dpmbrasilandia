@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PortariaTemplate } from "@/components/PortariaTemplate";
 
-export const Route = createFileRoute("/__qa_portaria")({
+export const Route = createFileRoute("/qa-portaria")({
   component: () => (
     <div className="min-h-screen bg-background p-6">
       <PortariaTemplate

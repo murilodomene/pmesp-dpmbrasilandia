@@ -57,7 +57,9 @@ function AvisosPage() {
 
   const ativo = status === "ativo";
   const podeVer = ativo && (cargo === "ssp" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral");
+  const podeVer = ativo && (cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral");
   const podePublicar = ativo && (cargo === "ssp" || cargo === "corregedor_geral" || cargo === "subcorregedor_geral");
+  const podePublicar = ativo && (cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "subcorregedor_geral");
 
   const listFn = useServerFn(listAvisos);
   const { data: avisos = [], isLoading } = useQuery({

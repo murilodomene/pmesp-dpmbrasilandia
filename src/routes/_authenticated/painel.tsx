@@ -64,6 +64,7 @@ function PainelInterno() {
   const cargo = session?.cargo ?? null;
   const podeInstaurar =
     cargo === "ssp" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral";
+    cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral";
 
   if (session && (session.profile?.status !== "ativo" || !session.cargo)) {
     return <RedirectPendente />;

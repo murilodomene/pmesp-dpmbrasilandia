@@ -126,7 +126,7 @@ export const gerarProcedimentoDoPdo = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const me = await requireStaff(context as any);
-    if (!["corregedor_geral", "ssp", "corregedor", "subcorregedor_geral"].includes(me.cargo)) {
+    if (!["corregedor_geral", "ssp", "cmtg", "corregedor", "subcorregedor_geral"].includes(me.cargo)) {
       throw new Error("Sem permissão para gerar procedimento.");
     }
     const sb = context.supabase as any;

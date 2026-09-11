@@ -40,6 +40,7 @@ const DESFECHOS = [
 
 const CARGO_LABEL: Record<string, string> = {
   ssp: "SSP",
+  cmtg: "CMTG",
   corregedor_geral: "Corregedor-Geral",
   subcorregedor_geral: "Subcorregedor-Geral",
   corregedor: "Corregedor",
@@ -61,6 +62,7 @@ function PdoPage() {
   const canDelete = cargo === "corregedor_geral" || cargo === "subcorregedor_geral";
   const canGenerate =
     cargo === "corregedor_geral" || cargo === "ssp" || cargo === "corregedor" || cargo === "subcorregedor_geral";
+    cargo === "corregedor_geral" || cargo === "cmtg" || cargo === "corregedor" || cargo === "subcorregedor_geral";
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();

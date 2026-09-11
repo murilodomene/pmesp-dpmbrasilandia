@@ -54,6 +54,7 @@ export const criarAviso = createServerFn({ method: "POST" })
     if (rErr) throw new Error(rErr.message);
     const cargo = ur?.role;
     if (cargo !== "ssp" && cargo !== "corregedor_geral" && cargo !== "subcorregedor_geral") {
+    if (cargo !== "cmtg" && cargo !== "corregedor_geral" && cargo !== "subcorregedor_geral") {
       throw new Error("Apenas SSP ou Corregedor-Geral podem publicar avisos.");
     }
 

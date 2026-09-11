@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const CARGOS_INTERNOS = ["ssp", "corregedor_geral", "corregedor", "subcorregedor_geral"] as const;
+const CARGOS_INTERNOS = ["ssp", "cmtg", "corregedor_geral", "corregedor", "subcorregedor_geral"] as const;
 
 const AnexoSchema = z.object({
   nome: z.string().trim().min(1).max(200),

@@ -18,6 +18,7 @@ export const Route = createFileRoute("/_authenticated/perfil")({
 
 const CARGO_LABEL: Record<string, string> = {
   ssp: "SSP",
+  cmtg: "CMTG",
   corregedor_geral: "Corregedor-Geral",
   subcorregedor_geral: "Subcorregedor-Geral",
   corregedor: "Corregedor",

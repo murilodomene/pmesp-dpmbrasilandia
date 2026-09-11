@@ -6,6 +6,7 @@ import { buscarInternos, criarIntimacao } from "@/lib/notificacoes.functions";
 
 const CARGO_LABEL: Record<string, string> = {
   ssp: "SSP",
+  cmtg: "CMTG",
   corregedor_geral: "Corregedor-Geral",
   subcorregedor_geral: "Subcorregedor-Geral",
   corregedor: "Corregedor",

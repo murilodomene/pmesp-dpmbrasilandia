@@ -514,6 +514,7 @@ export const atualizarNatureza = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const p = await getProlator(context);
     if (p.prolator_cargo !== "ssp" && p.prolator_cargo !== "corregedor_geral" && p.prolator_cargo !== "subcorregedor_geral") {
+    if (p.prolator_cargo !== "cmtg" && p.prolator_cargo !== "corregedor_geral" && p.prolator_cargo !== "subcorregedor_geral") {
       throw new Error("Apenas SSP ou Corregedor-Geral podem editar a natureza.");
     }
     const { data: atual } = await context.supabase
@@ -561,6 +562,7 @@ export const retificarDenunciado = createServerFn({ method: "POST" })
     const p = await getProlator(context);
     const podeRetificar =
       p.prolator_cargo === "ssp" ||
+      p.prolator_cargo === "cmtg" ||
       p.prolator_cargo === "corregedor_geral" ||
       p.prolator_cargo === "corregedor" ||
       p.prolator_cargo === "subcorregedor_geral";
@@ -708,6 +710,7 @@ export const instaurarOficio = createServerFn({ method: "POST" })
     const p = await getProlator(context);
     if (
       p.prolator_cargo !== "ssp" &&
+      p.prolator_cargo !== "cmtg" &&
       p.prolator_cargo !== "corregedor_geral" &&
       p.prolator_cargo !== "corregedor" &&
       p.prolator_cargo !== "subcorregedor_geral"
@@ -1111,6 +1114,7 @@ const denuncianteInput = z.object({
 function podeGerenciarDenunciantes(role: string | null | undefined) {
   return (
     role === "ssp" ||
+    role === "cmtg" ||
     role === "corregedor_geral" ||
     role === "corregedor" ||
     role === "subcorregedor_geral"

@@ -61,7 +61,7 @@ function PdoPage() {
   const isStaff = cargo && cargo !== "cidadao" && cargo !== "mp";
   const canDelete = cargo === "corregedor_geral" || cargo === "subcorregedor_geral";
   const canGenerate =
-    cargo === "corregedor_geral" || cargo === "ssp" || cargo === "corregedor_geral" || cargo=== "cmtg" || cargo === "corregedor" || cargo === "subcorregedor_geral";
+    cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral";
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();

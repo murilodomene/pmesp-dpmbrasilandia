@@ -253,6 +253,8 @@ function cargoLabel(c: string | null | undefined): string {
   if (!c) return "";
   return c === "ssp"
     ? "SSP"
+    : c === "cmtg"
+      ? "CMTG"
     : c === "corregedor_geral"
       ? "Corregedor-Geral"
       : c === "subcorregedor_geral"

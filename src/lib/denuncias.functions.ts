@@ -509,7 +509,7 @@ export const atualizarNatureza = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const p = await getProlator(context);
-    if (p.prolator_cargo !== "ssp" && if (p.prolator_cargo!== "cmtg" && p.prolator_cargo !== "corregedor_geral" && p.prolator_cargo !== "subcorregedor_geral") {
+    if (p.prolator_cargo !== "ssp" && p.prolator_cargo !== "cmtg" && p.prolator_cargo !== "corregedor_geral" && p.prolator_cargo !== "subcorregedor_geral") {
       throw new Error("Apenas SSP ou Corregedor-Geral podem editar a natureza.");
     }
     const { data: atual } = await context.supabase

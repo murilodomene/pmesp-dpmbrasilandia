@@ -85,7 +85,7 @@ function ObservacoesPage() {
   }, [session]);
 
   const ativo = status === "ativo";
-  const podeVer = ativo && (cargo === "ssp" || const podeVer = ativo && (cargo=== "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral");
+  const podeVer = ativo && (cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral");
 
   const listFn = useServerFn(listObservacoes);
   const { data: obs = [], isLoading } = useQuery({

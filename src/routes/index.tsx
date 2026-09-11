@@ -4,6 +4,16 @@ import { ShieldCheck, FileSearch, Scale } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: Index,
+  head: () => ({
+    meta: [
+      { title: "Corregedoria da Polícia Militar de São Paulo" },
+      { name: "description", content: "Canal oficial da Corregedoria da Polícia Militar do Estado de São Paulo para denúncias e consulta de procedimentos." },
+      { property: "og:title", content: "Corregedoria da Polícia Militar de São Paulo" },
+      { property: "og:description", content: "Canal oficial da Corregedoria da Polícia Militar do Estado de São Paulo para denúncias e consulta de procedimentos." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
 });
 
 const CARDS = [
@@ -30,13 +40,13 @@ function Index() {
       <Header />
 
       <section className="mx-auto max-w-6xl px-4 pb-16 pt-16 md:pt-24">
-        <div className="eyebrow">Corregedoria · Polícia Civil</div>
+        <div className="eyebrow">Corregedoria · Polícia Militar do Estado de São Paulo</div>
         <h1 className="mt-4 max-w-3xl font-serif text-4xl leading-[1.05] md:text-6xl">
           Controle interno, com rigor e cadência.
         </h1>
         <p className="mt-6 max-w-2xl text-base text-muted-foreground md:text-lg">
           Canal oficial de recebimento de denúncias e sistema de condução de procedimentos
-          disciplinares contra servidores da Polícia Civil.
+          disciplinares contra servidores da Polícia Militar do Estado de São Paulo.
         </p>
 
         <div className="mt-8 flex flex-wrap gap-3">

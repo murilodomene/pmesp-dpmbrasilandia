@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { NotificacoesBell } from "@/components/NotificacoesBell";
 import { UserAvatar } from "@/components/UserAvatar";
+import { PMESP_CREST_URL } from "@/lib/branding";
 
 interface Profile {
   nome: string;
@@ -87,14 +88,14 @@ export function Header() {
       <div className="mx-auto flex max-w-7xl flex-nowrap items-center justify-between gap-3 px-4 py-3">
         <Link to="/" className="flex shrink-0 items-center gap-2">
           <img
-            src="/brasao-pcsp.png"
-            alt="Brasão da Polícia Civil de São Paulo"
+            src={PMESP_CREST_URL}
+            alt="Brasão da Corregedoria da Polícia Militar do Estado de São Paulo"
             className="h-9 w-auto"
           />
           <div className="leading-tight">
             <div className="font-serif text-sm whitespace-nowrap">Corregedoria</div>
             <div className="text-[10px] uppercase tracking-widest text-muted-foreground whitespace-nowrap">
-              Polícia Civil
+              Polícia Militar do Estado de São Paulo
             </div>
           </div>
         </Link>

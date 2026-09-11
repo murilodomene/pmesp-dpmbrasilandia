@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Save, Trash2, X, Pencil } from "lucide-react";
+import { PMESP_CREST_URL } from "@/lib/branding";
 
 type Grupo =
   | "delegado"
@@ -241,10 +242,10 @@ export function HierarquiaQuadro({ cargo }: { cargo: string | null }) {
   return (
     <div className="p-6">
       <header className="mb-6 flex items-center gap-4 border-b border-border pb-4">
-        <img src="/brasao-pcsp.png" alt="Brasão PCSP" className="h-14 w-auto" />
+        <img src={PMESP_CREST_URL} alt="Brasão da Corregedoria da PMESP" className="h-14 w-auto" />
         <div>
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-            Polícia Civil do Estado de São Paulo — Corregedoria Geral
+            Polícia Militar do Estado de São Paulo — Corregedoria
           </div>
           <h3 className="font-serif text-xl">Hierarquia — Corregedoria</h3>
           <div className="text-xs text-muted-foreground">

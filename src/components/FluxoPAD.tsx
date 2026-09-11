@@ -1,4 +1,5 @@
 import { StickyNote } from "lucide-react";
+import { PMESP_CREST_URL } from "@/lib/branding";
 
 type Etapa = {
   n: number;
@@ -33,14 +34,14 @@ export function FluxoPAD() {
       {/* Cabeçalho institucional */}
       <header className="mb-8 flex flex-col items-center gap-3 border-b border-border/60 pb-6 text-center">
         <img
-          src="/brasao-pcsp.png"
+          src={PMESP_CREST_URL}
           alt=""
           aria-hidden
           className="h-16 w-auto opacity-90 sm:h-20"
         />
         <div>
           <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground sm:text-[11px]">
-            Corregedoria Geral da Polícia Civil
+            Corregedoria da Polícia Militar do Estado de São Paulo
           </div>
           <h1 className="mt-1 font-serif text-2xl leading-tight text-foreground sm:text-3xl">
             Fluxo do Processo Administrativo

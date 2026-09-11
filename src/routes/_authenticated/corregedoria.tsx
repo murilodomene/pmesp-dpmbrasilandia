@@ -43,6 +43,7 @@ import {
   removerDenunciante,
 } from "@/lib/denuncias.functions";
 import { contarObservacoesPorPad, contarObservacoesPorPolicial } from "@/lib/observacoes.functions";
+import { OPMS } from "@/lib/personnel-options";
 
 
 

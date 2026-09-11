@@ -18,6 +18,7 @@ import {
   instaurarOficio,
 } from "@/lib/denuncias.functions";
 import { getSessionInfo } from "@/lib/usuarios.functions";
+import { OPMS } from "@/lib/personnel-options";
 import { Plus, Trash2, X, Clock } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/painel")({

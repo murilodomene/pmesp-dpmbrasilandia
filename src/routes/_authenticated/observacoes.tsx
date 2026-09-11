@@ -17,6 +17,7 @@ import { RichTextEditor, sanitizeAtoHtml, isHtmlAto } from "@/components/RichTex
 import { AtoAnexosUploader, type AtoAnexo } from "@/components/AtoAnexosUploader";
 import { AtoAnexosLinks } from "@/components/AtoAnexosLinks";
 import { PMESP_CREST_URL } from "@/lib/branding";
+import { OPMS, POSTOS_GRADUACOES } from "@/lib/personnel-options";
 
 export const Route = createFileRoute("/_authenticated/observacoes")({
   validateSearch: (search: Record<string, unknown>) => ({

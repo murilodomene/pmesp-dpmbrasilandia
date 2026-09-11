@@ -1,0 +1,1 @@
+ALTER TYPE public.unidade_pc ADD VALUE IF NOT EXISTS 'DPM';

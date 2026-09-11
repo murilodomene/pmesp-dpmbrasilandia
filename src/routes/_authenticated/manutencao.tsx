@@ -1,9 +1,13 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { limparDados } from "@/lib/manutencao.functions";
+import {
+  definirProximoProtocolo,
+  lerContadorProtocolo,
+  limparDados,
+} from "@/lib/manutencao.functions";
 import {
   Dialog,
   DialogContent,

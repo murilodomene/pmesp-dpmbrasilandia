@@ -70,21 +70,19 @@ export const PortariaTemplate = forwardRef<HTMLElement, { dados: PortariaDados; 
     if (variant === "screen") {
       return (
         <article ref={ref} data-portaria-template className="portaria-screen w-full text-sm leading-relaxed text-foreground">
-          <header className="flex flex-col gap-4 pb-4 sm:flex-row sm:items-center">
+          <header className="flex flex-col items-center gap-2 pb-4 text-center">
             <img
               src={PMESP_CREST_URL}
               alt="Brasão da Polícia Militar do Estado de São Paulo"
               className="h-20 w-16 flex-none object-contain sm:h-24 sm:w-20"
               crossOrigin="anonymous"
             />
-            <div className="min-w-0 flex-1 text-center sm:text-left">
-              <div className="text-xs font-semibold uppercase text-muted-foreground sm:text-sm">SECRETARIA DA SEGURANÇA PÚBLICA</div>
-              <div className="mt-0.5 text-xs font-semibold uppercase text-foreground sm:text-base">POLÍCIA MILITAR DO ESTADO DE SÃO PAULO</div>
-              <div className="mt-3 text-[10px] font-bold uppercase text-primary">CHAVE IDENTIFICADORA</div>
-              <div className="mt-1 inline-flex max-w-full flex-col items-center rounded-sm bg-foreground px-2 py-1">
-                <Barcode value={dados.chave} compact />
-                <div className="font-mono text-[11px] leading-none text-background">{dados.chave}</div>
-              </div>
+            <div className="text-xs font-semibold uppercase text-muted-foreground sm:text-sm">SECRETARIA DA SEGURANÇA PÚBLICA</div>
+            <div className="text-xs font-semibold uppercase text-foreground sm:text-base">POLÍCIA MILITAR DO ESTADO DE SÃO PAULO</div>
+            <div className="mt-2 text-[10px] font-bold uppercase text-primary">CHAVE IDENTIFICADORA</div>
+            <div className="inline-flex max-w-full flex-col items-center rounded-sm bg-white px-3 py-2">
+              <Barcode value={dados.chave} compact />
+              <div className="font-mono text-[11px] leading-tight text-[#111111]">{dados.chave}</div>
             </div>
           </header>
 

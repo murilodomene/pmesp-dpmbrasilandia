@@ -55,7 +55,7 @@ export const Route = createFileRoute("/_authenticated/usuarios")({
       .select("role")
       .eq("user_id", uid)
       .maybeSingle();
-    if (((role as { role: string } | null)?.role !== "corregedor_geral") && ((role as { role: string } | null)?.(role !== "subcorregedor_geral" && role !== "corregedor_supervisor"))) {
+    if (((role as { role: string } | null)?.role !== "corregedor_geral") && ((role as { role: string } | null)?.role !== "subcorregedor_geral") && ((role as { role: string } | null)?.role !== "corregedor_supervisor")) {
       throw redirect({ to: "/painel" });
     }
   },
@@ -418,6 +418,7 @@ function EditarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: (
                   <SelectItem value="corregedor">Corregedor</SelectItem>
                   <SelectItem value="cmtg">CMTG</SelectItem>
                   <SelectItem value="subcorregedor_geral">Subcorregedor-Geral</SelectItem>
+                  <SelectItem value="corregedor_supervisor">Corregedor Supervisor</SelectItem>
                   <SelectItem value="corregedor_geral">Corregedor-Geral</SelectItem>
                   <SelectItem value="ssp">SSP</SelectItem>
                 </SelectContent>
@@ -558,6 +559,7 @@ function AprovarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: 
                 <SelectItem value="corregedor">Corregedor</SelectItem>
                 <SelectItem value="cmtg">CMTG</SelectItem>
                 <SelectItem value="subcorregedor_geral">Subcorregedor-Geral</SelectItem>
+                  <SelectItem value="corregedor_supervisor">Corregedor Supervisor</SelectItem>
                 <SelectItem value="corregedor_geral">Corregedor-Geral</SelectItem>
                 <SelectItem value="ssp">SSP</SelectItem>
               </SelectContent>

@@ -53,7 +53,7 @@ const CARDS: Array<{
     tipo: "processos",
     titulo: "Limpar processos administrativos",
     descricao:
-      "Remove TODAS as denúncias/PADs e o que está atrelado (movimentações, atos, oitivas, certidões, intimações, acessos do MP, provas anexadas). Reinicia a numeração para 1-001.",
+      "Remove TODAS as denúncias/PADs e o que está atrelado (movimentações, atos, oitivas, certidões, intimações, acessos do MP, provas anexadas). Reinicia a numeração para 001.",
     palavra: "PROCESSOS",
   },
   {

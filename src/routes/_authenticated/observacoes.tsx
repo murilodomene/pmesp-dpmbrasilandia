@@ -596,7 +596,7 @@ function ObservacaoDialog({ obs, onClose }: { obs?: Observacao; onClose: () => v
             <div className="relative">
               <input
                 className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm"
-                placeholder="Busque por número (ex.: 1-001/2026)"
+                placeholder="Busque por número (ex.: 001/2026)"
                 value={padTermo}
                 onChange={(e) => setPadTermo(e.target.value)}
               />

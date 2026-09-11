@@ -9,6 +9,7 @@ const CARGO_LABEL: Record<string, string> = {
   cmtg: "CMTG",
   corregedor_geral: "Corregedor-Geral",
   subcorregedor_geral: "Subcorregedor-Geral",
+  corregedor_supervisor: "Corregedor Supervisor",
   corregedor: "Corregedor",
 };
 

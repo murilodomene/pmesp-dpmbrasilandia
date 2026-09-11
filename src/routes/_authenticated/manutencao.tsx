@@ -38,7 +38,7 @@ export const Route = createFileRoute("/_authenticated/manutencao")({
       .select("role")
       .eq("user_id", uid)
       .maybeSingle();
-    if (((role as { role: string } | null)?.role !== "corregedor_geral") && ((role as { role: string } | null)?.role !== "subcorregedor_geral")) {
+    if (((role as { role: string } | null)?.role !== "corregedor_geral") && ((role as { role: string } | null)?.(role !== "subcorregedor_geral" && role !== "corregedor_supervisor"))) {
       throw redirect({ to: "/painel" });
     }
   },

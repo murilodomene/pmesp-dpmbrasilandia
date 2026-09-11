@@ -56,8 +56,8 @@ function AvisosPage() {
   }, [session]);
 
   const ativo = status === "ativo";
-  const podeVer = ativo && (cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || cargo === "subcorregedor_geral");
-  const podePublicar = ativo && (cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "subcorregedor_geral");
+  const podeVer = ativo && (cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || (cargo === "subcorregedor_geral" || cargo === "corregedor_supervisor"));
+  const podePublicar = ativo && (cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || (cargo === "subcorregedor_geral" || cargo === "corregedor_supervisor"));
 
   const listFn = useServerFn(listAvisos);
   const { data: avisos = [], isLoading } = useQuery({
@@ -174,7 +174,8 @@ function AvisoViewer({
       ? "SSP"
       : aviso.autor_cargo === "corregedor_geral"
         ? "Corregedor-Geral"
-        : aviso.autor_cargo === "subcorregedor_geral"
+        : aviso.autor_cargo === "corregedor_supervisor"
+        ? "Corregedor Supervisor": (aviso.autor_cargo === "subcorregedor_geral" || aviso.autor_cargo === "corregedor_supervisor")
         ? "Subcorregedor-Geral"
         : "Corregedor";
 

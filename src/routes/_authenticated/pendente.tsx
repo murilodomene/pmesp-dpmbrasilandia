@@ -64,7 +64,8 @@ function cargoLabel(c: string): string {
       ? "CMTG"
     : c === "corregedor_geral"
       ? "Corregedor-Geral"
-      : c === "subcorregedor_geral"
+      : c === "corregedor_supervisor"
+      ? "Corregedor Supervisor": (c === "subcorregedor_geral" || c === "corregedor_supervisor")
       ? "Subcorregedor-Geral"
       : c === "mp"
       ? "Ministério Público"

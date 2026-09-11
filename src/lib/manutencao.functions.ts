@@ -17,7 +17,7 @@ async function requireDelegadoCorregedor(context: { supabase: any; userId: strin
     .eq("user_id", context.userId)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!role || ((role as { role: string }).role !== "corregedor_geral" && (role as { role: string }).role !== "subcorregedor_geral")) {
+  if (!role || ((role as { role: string }).role !== "corregedor_geral" && (role as { role: string }).(role !== "subcorregedor_geral" && role !== "corregedor_supervisor"))) {
     throw new Error("Apenas o Corregedor-Geral pode acessar a Manutenção.");
   }
 }

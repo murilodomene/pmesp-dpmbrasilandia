@@ -413,6 +413,7 @@ export async function exportProcessoCompleto(data: ExportProcessoData): Promise<
       *{box-sizing:border-box}
       img{max-width:100%}
       .ato-body-pdf p{margin:0;min-height:1.15em;line-height:1.15}
+      .ato-body-pdf p:empty::before{content:"\00a0"}
       .ato-body-pdf strong,.ato-body-pdf b{font-weight:700}
       .ato-body-pdf em,.ato-body-pdf i{font-style:italic}
       .ato-body-pdf u{text-decoration:underline}

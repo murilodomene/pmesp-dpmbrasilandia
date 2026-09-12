@@ -183,9 +183,8 @@
 }
 
 
-/* Editor rich text (TipTap) */
-.prose-tiptap p { margin: 0 0 0.5rem 0; min-height: 1.25rem; }
-.prose-tiptap p:last-child { margin-bottom: 0; }
+/* Editor rich text (TipTap). Cada parágrafo vazio equivale a uma linha preservada. */
+.prose-tiptap p { margin: 0; min-height: 1.15em; line-height: 1.15; }
 .prose-tiptap strong, .prose-tiptap b { font-weight: 700; }
 .prose-tiptap em, .prose-tiptap i { font-style: italic; }
 .prose-tiptap u { text-decoration: underline; }
@@ -199,17 +198,15 @@
   height: 0;
 }
 
-/* Conteúdo renderizado de atos (dark, integrado ao tema) */
-.ato-body p { margin: 0 0 0.6rem 0; }
-.ato-body p:last-child { margin-bottom: 0; }
+/* Conteúdo renderizado de atos (dark, integrado ao tema). */
+.ato-body p { margin: 0; min-height: 1.15em; line-height: 1.15; }
 .ato-body strong, .ato-body b { font-weight: 700; }
 .ato-body em, .ato-body i { font-style: italic; }
 .ato-body u { text-decoration: underline; }
 .ato-body a { color: var(--color-primary); text-decoration: underline; }
 
-/* Conteúdo do ato no PDF (fundo branco) */
-.ato-body-pdf p { margin: 0 0 0.6rem 0; }
-.ato-body-pdf p:last-child { margin-bottom: 0; }
+/* Conteúdo do ato no PDF (fundo branco), com a mesma métrica do editor. */
+.ato-body-pdf p { margin: 0; min-height: 1.15em; line-height: 1.15; }
 .ato-body-pdf strong, .ato-body-pdf b { font-weight: 700; }
 .ato-body-pdf em, .ato-body-pdf i { font-style: italic; }
 .ato-body-pdf u { text-decoration: underline; }

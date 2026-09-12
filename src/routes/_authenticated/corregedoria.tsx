@@ -1039,6 +1039,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                       onChange={setTeor}
                       placeholder="Descreva o fato. Use a barra acima para formatação."
                       minHeight={160}
+                      enableLineHeight
                     />
                   </div>
                 </div>
@@ -1066,6 +1067,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                       onChange={setTeor}
                       placeholder="Transcreva a ata / termo de depoimento."
                       minHeight={200}
+                      enableLineHeight
                     />
                   </div>
                 </div>
@@ -1077,6 +1079,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                   onChange={setTeor}
                   placeholder="Redija o teor do ato. Use a barra acima para formatação."
                   minHeight={160}
+                  enableLineHeight
                 />
                 <div>
                   <div className="mb-1 text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -3346,6 +3349,7 @@ function ConvocacaoDialog({
               : "Clique em «Usar texto pré-formatado» ou digite a convocação livremente."
           }
           minHeight={220}
+          enableLineHeight
         />
       </div>
 

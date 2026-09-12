@@ -143,8 +143,8 @@ function statusLabel(s: string): string {
 }
 
 function bodyHtml(teor: string): string {
-  if (isHtmlAto(teor)) return sanitizeAtoHtml(teor);
-  return `<div style="white-space:pre-wrap">${esc(teor)}</div>`;
+  if (isHtmlAto(teor)) return `<div class="ato-body-pdf">${sanitizeAtoHtml(teor)}</div>`;
+  return `<div class="ato-body-pdf" style="white-space:pre-wrap">${esc(teor)}</div>`;
 }
 
 function extrairRelatoIpc(teor: string): string {
@@ -412,6 +412,11 @@ export async function exportProcessoCompleto(data: ExportProcessoData): Promise<
       html,body{margin:0;padding:0;background:#ffffff;color:#111827;font-family:Georgia,'Times New Roman',serif}
       *{box-sizing:border-box}
       img{max-width:100%}
+      .ato-body-pdf p{margin:0;min-height:1.15em;line-height:1.15}
+      .ato-body-pdf strong,.ato-body-pdf b{font-weight:700}
+      .ato-body-pdf em,.ato-body-pdf i{font-style:italic}
+      .ato-body-pdf u{text-decoration:underline}
+      .ato-body-pdf a{color:#1e40af;text-decoration:underline}
     </style></head><body></body></html>`;
   });
 

@@ -1,0 +1,1 @@
+ALTER TABLE public.denuncia_policiais DROP CONSTRAINT IF EXISTS denuncia_policiais_cargo_check;

@@ -52,7 +52,7 @@ export function RichTextEditor({ value, onChange, placeholder, minHeight = 180, 
     content: value || "",
     editorProps: {
       attributes: {
-        class: "prose-tiptap focus:outline-none",
+        class: `prose-tiptap${enableLineHeight ? " ato-editor-spacing" : ""} focus:outline-none`,
         style: `min-height:${minHeight}px`,
         "data-placeholder": placeholder ?? "",
       },

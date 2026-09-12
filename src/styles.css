@@ -183,8 +183,10 @@
 }
 
 
-/* Editor rich text (TipTap). Cada parágrafo vazio equivale a uma linha preservada. */
-.prose-tiptap p { margin: 0; min-height: 1.15em; line-height: 1.15; }
+/* Editor rich text (TipTap) */
+.prose-tiptap p { margin: 0 0 0.5rem 0; min-height: 1.25rem; }
+.prose-tiptap p:last-child { margin-bottom: 0; }
+.prose-tiptap.ato-editor-spacing p { margin: 0; min-height: 1.15em; line-height: 1.15; }
 .prose-tiptap strong, .prose-tiptap b { font-weight: 700; }
 .prose-tiptap em, .prose-tiptap i { font-style: italic; }
 .prose-tiptap u { text-decoration: underline; }

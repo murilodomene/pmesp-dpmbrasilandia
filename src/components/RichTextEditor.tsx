@@ -3,29 +3,56 @@ import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
 import Link from "@tiptap/extension-link";
+import { Extension } from "@tiptap/core";
 import DOMPurify from "isomorphic-dompurify";
-import { Bold, Italic, Underline as UnderlineIcon, AlignLeft, AlignCenter, AlignRight, AlignJustify, Link as LinkIcon } from "lucide-react";
-import { useEffect } from "react";
+import { Bold, Italic, Underline as UnderlineIcon, AlignLeft, AlignCenter, AlignRight, AlignJustify, Link as LinkIcon, Rows3 } from "lucide-react";
+import { useEffect, useState } from "react";
+
+const DEFAULT_LINE_HEIGHT = "1.15";
+const LINE_HEIGHTS = ["1", "1.15", "1.5", "2"] as const;
+
+const LineHeight = Extension.create({
+  name: "lineHeight",
+  addGlobalAttributes() {
+    return [
+      {
+        types: ["paragraph"],
+        attributes: {
+          lineHeight: {
+            default: DEFAULT_LINE_HEIGHT,
+            parseHTML: (element) => element.style.lineHeight || DEFAULT_LINE_HEIGHT,
+            renderHTML: (attributes) => ({
+              style: `line-height: ${String(attributes.lineHeight || DEFAULT_LINE_HEIGHT)}`,
+            }),
+          },
+        },
+      },
+    ];
+  },
+});
 
 interface RichTextEditorProps {
   value: string;
   onChange: (html: string) => void;
   placeholder?: string;
   minHeight?: number;
+  /** Habilita entrelinhas por parágrafo para os atos internos. */
+  enableLineHeight?: boolean;
 }
 
-export function RichTextEditor({ value, onChange, placeholder, minHeight = 180 }: RichTextEditorProps) {
+export function RichTextEditor({ value, onChange, placeholder, minHeight = 180, enableLineHeight = false }: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ heading: false, codeBlock: false, blockquote: false, horizontalRule: false }),
       Underline,
       TextAlign.configure({ types: ["paragraph"], alignments: ["left", "center", "right", "justify"] }),
       Link.configure({ openOnClick: false, autolink: true, HTMLAttributes: { rel: "noopener noreferrer nofollow", target: "_blank", class: "text-primary underline decoration-dotted underline-offset-2" } }),
+      ...(enableLineHeight ? [LineHeight] : []),
     ],
     content: value || "",
     editorProps: {
       attributes: {
-        class: "prose-tiptap focus:outline-none",
+        class: `prose-tiptap${enableLineHeight ? " ato-editor-spacing" : ""} focus:outline-none`,
         style: `min-height:${minHeight}px`,
         "data-placeholder": placeholder ?? "",
       },
@@ -47,7 +74,7 @@ export function RichTextEditor({ value, onChange, placeholder, minHeight = 180 }
 
   return (
     <div className="rounded-md border border-border bg-surface">
-      <Toolbar editor={editor} />
+      <Toolbar editor={editor} enableLineHeight={enableLineHeight} />
       <div className="px-3 py-2 text-sm">
         <EditorContent editor={editor} />
       </div>
@@ -55,7 +82,24 @@ export function RichTextEditor({ value, onChange, placeholder, minHeight = 180 }
   );
 }
 
-function Toolbar({ editor }: { editor: Editor }) {
+function Toolbar({ editor, enableLineHeight }: { editor: Editor; enableLineHeight: boolean }) {
+  const [lineHeight, setLineHeight] = useState(DEFAULT_LINE_HEIGHT);
+
+  useEffect(() => {
+    if (!enableLineHeight) return;
+    const syncLineHeight = () => {
+      const next = String(editor.getAttributes("paragraph").lineHeight || DEFAULT_LINE_HEIGHT);
+      setLineHeight(LINE_HEIGHTS.includes(next as (typeof LINE_HEIGHTS)[number]) ? next : DEFAULT_LINE_HEIGHT);
+    };
+    syncLineHeight();
+    editor.on("selectionUpdate", syncLineHeight);
+    editor.on("transaction", syncLineHeight);
+    return () => {
+      editor.off("selectionUpdate", syncLineHeight);
+      editor.off("transaction", syncLineHeight);
+    };
+  }, [editor, enableLineHeight]);
+
   const btn = (active: boolean) =>
     `rounded p-1.5 text-xs transition ${active ? "bg-primary/20 text-primary" : "hover:bg-surface-2 text-muted-foreground"}`;
   return (
@@ -68,6 +112,30 @@ function Toolbar({ editor }: { editor: Editor }) {
       <button type="button" onClick={() => editor.chain().focus().setTextAlign("center").run()} className={btn(editor.isActive({ textAlign: "center" }))} aria-label="Centro"><AlignCenter className="h-3.5 w-3.5" /></button>
       <button type="button" onClick={() => editor.chain().focus().setTextAlign("right").run()} className={btn(editor.isActive({ textAlign: "right" }))} aria-label="Direita"><AlignRight className="h-3.5 w-3.5" /></button>
       <button type="button" onClick={() => editor.chain().focus().setTextAlign("justify").run()} className={btn(editor.isActive({ textAlign: "justify" }))} aria-label="Justificado"><AlignJustify className="h-3.5 w-3.5" /></button>
+      {enableLineHeight && (
+        <>
+          <span className="mx-1 h-4 w-px bg-border" />
+          <label className="inline-flex items-center gap-1 text-muted-foreground" title="Espaçamento entre linhas">
+            <Rows3 className="h-3.5 w-3.5" aria-hidden />
+            <span className="sr-only">Espaçamento entre linhas</span>
+            <select
+              aria-label="Espaçamento entre linhas"
+              value={lineHeight}
+              onChange={(event) => {
+                const next = event.target.value;
+                setLineHeight(next);
+                editor.chain().focus().updateAttributes("paragraph", { lineHeight: next }).run();
+              }}
+              className="rounded border border-border bg-surface-2 px-1.5 py-1 text-xs text-foreground"
+            >
+              <option value="1">1,0</option>
+              <option value="1.15">1,15</option>
+              <option value="1.5">1,5</option>
+              <option value="2">2,0</option>
+            </select>
+          </label>
+        </>
+      )}
       <span className="mx-1 h-4 w-px bg-border" />
       <button
         type="button"

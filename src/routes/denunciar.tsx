@@ -316,6 +316,13 @@ function DenunciarPage() {
                 placeholder="https://..."
               />
             </Field>
+            <div className="rounded-md border border-border/60 bg-surface-2/40 p-3 text-xs text-muted-foreground">
+              <strong className="font-medium text-foreground">Atenção quanto aos clipes:</strong>{" "}
+              o clipe encaminhado deverá conter o contexto integral da interação com o(s)
+              policial(is) envolvido(s), do início ao fim, visando proporcionar uma análise
+              integral do caso. Trechos isolados ou editados podem comprometer a avaliação dos
+              fatos.
+            </div>
           </div>
         </section>
 

@@ -54,6 +54,15 @@ const DESFECHO_DISCORD: Record<string, string> = {
   gera_procedimento: "IRREGULARIDADE QUE ORIGINA PROCEDIMENTO",
 };
 
+const CARGO_DISCORD: Record<string, string> = {
+  ssp: "SSP",
+  cmtg: "CMTG",
+  corregedor_geral: "Corregedor Geral",
+  subcorregedor_geral: "Subcorregedor Geral",
+  corregedor_supervisor: "Corregedor Supervisor",
+  corregedor: "Corregedor",
+};
+
 function pdoDiscordText(pdo: any): string {
   const E = "<:dpm:1511263085632163942>";
   const join = (...p: (string | undefined | null)[]) => p.filter((x) => x && String(x).trim()).join(" · ");
@@ -69,9 +78,10 @@ function pdoDiscordText(pdo: any): string {
     })
     .join("\n\n");
   const vtr = join(pdo.vtr_prefixo, pdo.vtr_placa, pdo.vtr_unidade) || "—";
+  const cargoAssinatura =
+    CARGO_DISCORD[pdo.lavrado_por_cargo] ?? (pdo.lavrado_por_cargo ? String(pdo.lavrado_por_cargo) : "");
   return [
-    `${E}** `,
-    `Corregedoria Geral da Polícia Militar do Estado de São Paulo**`,
+    `${E}** Corregedoria Geral da Polícia Militar do Estado de São Paulo**`,
     "",
     "```PATRULHAMENTO OSTENSIVO DISCIPLINAR```",
     "",
@@ -95,7 +105,7 @@ function pdoDiscordText(pdo: any): string {
     `RELATO: ${pdo.relato?.trim() || "Sem alteração."}`,
     "",
     `> ${pdo.lavrado_por_nome}`,
-    `> ${E}`,
+    cargoAssinatura ? `> ${E} ${cargoAssinatura}` : `> ${E}`,
   ].join("\n\n");
 }
 

@@ -182,3 +182,22 @@ export const excluirPdo = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// Lista membros internos ativos (nome, matrícula, cargo) para preencher a equipe corregedora.
+export const listCorregedoresPdo = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await requireStaff(context as any);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [{ data: profs, error: e1 }, { data: roles, error: e2 }] = await Promise.all([
+      supabaseAdmin.from("profiles").select("id, nome, matricula").eq("status", "ativo"),
+      supabaseAdmin.from("user_roles").select("user_id, role"),
+    ]);
+    if (e1) throw new Error(e1.message);
+    if (e2) throw new Error(e2.message);
+    const roleMap = new Map((roles ?? []).map((r: any) => [r.user_id, r.role as string]));
+    return (profs ?? [])
+      .map((p: any) => ({ nome: p.nome as string, matricula: (p.matricula ?? "") as string, role: roleMap.get(p.id) ?? "" }))
+      .filter((p) => p.role && p.role !== "cidadao" && p.role !== "mp")
+      .sort((a, b) => a.nome.localeCompare(b.nome));
+  });

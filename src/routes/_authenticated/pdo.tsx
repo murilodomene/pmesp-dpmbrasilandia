@@ -11,6 +11,7 @@ import {
   getPdo,
   gerarProcedimentoDoPdo,
   excluirPdo,
+  listCorregedoresPdo,
 } from "@/lib/pdo.functions";
 import { Plus, ArrowRight, X, Trash2, Loader2, Search } from "lucide-react";
 
@@ -46,6 +47,58 @@ const CARGO_LABEL: Record<string, string> = {
   corregedor_supervisor: "Corregedor Supervisor",
   corregedor: "Corregedor",
 };
+
+const DESFECHO_DISCORD: Record<string, string> = {
+  regular: "REGULAR",
+  sanada: "IRREGULARIDADE SANADA NO LOCAL",
+  gera_procedimento: "IRREGULARIDADE QUE ORIGINA PROCEDIMENTO",
+};
+
+function pdoDiscordText(pdo: any): string {
+  const E = "<:dpm:1511263085632163942>";
+  const join = (...p: (string | undefined | null)[]) => p.filter((x) => x && String(x).trim()).join(" · ");
+  const equipe = (pdo.equipe ?? []).map((m: any) => join(m.cargo, m.nome, m.matricula)).join("\n\n");
+  const abordados = (Array.isArray(pdo.abordados) ? pdo.abordados : [])
+    .map((a: any, i: number) => join(`P${i + 1}`, a.nome, a.matricula, a.cargo))
+    .join("\n\n");
+  const itens = (pdo.itens ?? [])
+    .map((it: any) => {
+      const label = ITENS.find((x) => x.chave === it.chave)?.label ?? it.chave;
+      const est = ESTADOS.find((e) => e.v === it.estado)?.l ?? it.estado;
+      return `${label}: ${est}${it.observacao ? ` — ${it.observacao}` : ""}`;
+    })
+    .join("\n\n");
+  const vtr = join(pdo.vtr_prefixo, pdo.vtr_placa, pdo.vtr_unidade) || "—";
+  return [
+    `${E}** `,
+    `Corregedoria Geral da Polícia Militar do Estado de São Paulo**`,
+    "",
+    "```PATRULHAMENTO OSTENSIVO DISCIPLINAR```",
+    "",
+    `DATA/HORA: ${new Date(pdo.abordagem_em).toLocaleString("pt-BR")}`,
+    "",
+    `LOCAL: ${pdo.local}`,
+    "",
+    `VTR: ${vtr}`,
+    "",
+    `DESFECHO: ${DESFECHO_DISCORD[pdo.desfecho] ?? String(pdo.desfecho).toUpperCase()}`,
+    "",
+    "EQUIPE CORREGEDORA:",
+    equipe || "—",
+    "",
+    "FISCALIZADOS:",
+    abordados || "—",
+    "",
+    "ITENS VERIFICADOS: ",
+    itens || "—",
+    "",
+    `RELATO: ${pdo.relato?.trim() || "Sem alteração."}`,
+    "",
+    `> ${pdo.lavrado_por_nome}`,
+    `> ${E}`,
+  ].join("\n\n");
+}
+
 
 function PdoPage() {
   const sessionFn = useServerFn(getSessionInfo);
@@ -270,6 +323,27 @@ function NovoPdoDialog({
       matricula: session?.profile?.matricula ?? "",
     },
   ]);
+  const corrFn = useServerFn(listCorregedoresPdo);
+  const { data: corregedores } = useQuery({
+    queryKey: ["pdo-corregedores"],
+    queryFn: () => corrFn(),
+  });
+  const preencheMembro = (i: number, campo: "nome" | "matricula", valor: string) => {
+    const achado = (corregedores ?? []).find((c) =>
+      campo === "nome"
+        ? c.nome.toLowerCase() === valor.trim().toLowerCase()
+        : !!c.matricula && c.matricula === valor.trim(),
+    );
+    setEquipe((eq) =>
+      eq.map((x, j) =>
+        j !== i
+          ? x
+          : achado
+            ? { cargo: CARGO_LABEL[achado.role] ?? x.cargo, nome: achado.nome, matricula: achado.matricula }
+            : { ...x, [campo]: valor },
+      ),
+    );
+  };
   const [abordados, setAbordados] = useState([{ nome: "", matricula: "", cargo: "" }]);
   const [itens, setItens] = useState(
     ITENS.map((i) => ({ chave: i.chave, estado: "conforme" as const, observacao: "" })),
@@ -343,6 +417,20 @@ function NovoPdoDialog({
           }
         >
           <div className="space-y-2">
+            <datalist id="pdo-corr-nomes">
+              {(corregedores ?? []).map((c) => (
+                <option key={c.nome + c.matricula} value={c.nome}>
+                  {c.matricula}
+                </option>
+              ))}
+            </datalist>
+            <datalist id="pdo-corr-mats">
+              {(corregedores ?? []).filter((c) => c.matricula).map((c) => (
+                <option key={c.matricula + c.nome} value={c.matricula}>
+                  {c.nome}
+                </option>
+              ))}
+            </datalist>
             {equipe.map((m, i) => (
               <div key={i} className="grid gap-2 md:grid-cols-[1fr_1.4fr_1fr_auto]">
                 <input
@@ -353,16 +441,19 @@ function NovoPdoDialog({
                 />
                 <input
                   value={m.nome}
-                  onChange={(e) => atualiza(setEquipe, i, "nome", e.target.value)}
-                  placeholder="Nome"
+                  list="pdo-corr-nomes"
+                  onChange={(e) => preencheMembro(i, "nome", e.target.value)}
+                  placeholder="Nome (selecione ou digite)"
                   className="input"
                 />
                 <input
                   value={m.matricula}
-                  onChange={(e) => atualiza(setEquipe, i, "matricula", e.target.value)}
-                  placeholder="Matrícula"
+                  list="pdo-corr-mats"
+                  onChange={(e) => preencheMembro(i, "matricula", e.target.value)}
+                  placeholder="Passaporte / Matrícula"
                   className="input"
                 />
+
                 <button
                   type="button"
                   disabled={equipe.length === 1}
@@ -615,6 +706,23 @@ function VerPdoDialog({
             {new Date(pdo.assinado_em).toLocaleString("pt-BR")} — {pdo.lavrado_por_nome} (
             {CARGO_LABEL[pdo.lavrado_por_cargo] ?? pdo.lavrado_por_cargo})
           </div>
+        </div>
+
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(pdoDiscordText(pdo));
+                toast.success("Texto para o Discord copiado.");
+              } catch {
+                toast.error("Não foi possível copiar.");
+              }
+            }}
+            className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
+          >
+            Copiar para Discord
+          </button>
         </div>
 
         {pdo.desfecho === "gera_procedimento" && (

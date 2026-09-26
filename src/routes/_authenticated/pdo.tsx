@@ -54,48 +54,47 @@ const DESFECHO_DISCORD: Record<string, string> = {
   gera_procedimento: "IRREGULARIDADE QUE ORIGINA PROCEDIMENTO",
 };
 
+const CARGO_DISCORD: Record<string, string> = {
+  ssp: "SSP",
+  cmtg: "CMTG",
+  corregedor_geral: "Corregedor Geral",
+  subcorregedor_geral: "Subcorregedor Geral",
+  corregedor_supervisor: "Corregedor Supervisor",
+  corregedor: "Corregedor",
+};
+
 function pdoDiscordText(pdo: any): string {
   const E = "<:dpm:1511263085632163942>";
   const join = (...p: (string | undefined | null)[]) => p.filter((x) => x && String(x).trim()).join(" · ");
-  const equipe = (pdo.equipe ?? []).map((m: any) => join(m.cargo, m.nome, m.matricula)).join("\n\n");
-  const abordados = (Array.isArray(pdo.abordados) ? pdo.abordados : [])
-    .map((a: any, i: number) => join(`P${i + 1}`, a.nome, a.matricula, a.cargo))
-    .join("\n\n");
-  const itens = (pdo.itens ?? [])
-    .map((it: any) => {
-      const label = ITENS.find((x) => x.chave === it.chave)?.label ?? it.chave;
-      const est = ESTADOS.find((e) => e.v === it.estado)?.l ?? it.estado;
-      return `${label}: ${est}${it.observacao ? ` — ${it.observacao}` : ""}`;
-    })
-    .join("\n\n");
+  const cargoAssinatura =
+    CARGO_DISCORD[pdo.lavrado_por_cargo] ?? (pdo.lavrado_por_cargo ? String(pdo.lavrado_por_cargo) : "");
   const vtr = join(pdo.vtr_prefixo, pdo.vtr_placa, pdo.vtr_unidade) || "—";
+  const equipe = (pdo.equipe ?? []).map((m: any) => join(m.cargo, m.nome, m.matricula));
+  const abordados = (Array.isArray(pdo.abordados) ? pdo.abordados : []).map((a: any, i: number) =>
+    join(`P${i + 1}`, a.nome, a.matricula, a.cargo),
+  );
+  const itens = (pdo.itens ?? []).map((it: any) => {
+    const label = ITENS.find((x) => x.chave === it.chave)?.label ?? it.chave;
+    const est = ESTADOS.find((e) => e.v === it.estado)?.l ?? it.estado;
+    return `${label}: ${est}${it.observacao ? ` — ${it.observacao}` : ""}`;
+  });
+  // Uma única linha em branco entre cada linha do modelo.
   return [
-    `${E}** `,
-    `Corregedoria Geral da Polícia Militar do Estado de São Paulo**`,
-    "",
+    `${E}** Corregedoria Geral da Polícia Militar do Estado de São Paulo**`,
     "```PATRULHAMENTO OSTENSIVO DISCIPLINAR```",
-    "",
     `DATA/HORA: ${new Date(pdo.abordagem_em).toLocaleString("pt-BR")}`,
-    "",
     `LOCAL: ${pdo.local}`,
-    "",
     `VTR: ${vtr}`,
-    "",
     `DESFECHO: ${DESFECHO_DISCORD[pdo.desfecho] ?? String(pdo.desfecho).toUpperCase()}`,
-    "",
     "EQUIPE CORREGEDORA:",
-    equipe || "—",
-    "",
+    ...(equipe.length ? equipe : ["—"]),
     "FISCALIZADOS:",
-    abordados || "—",
-    "",
+    ...(abordados.length ? abordados : ["—"]),
     "ITENS VERIFICADOS: ",
-    itens || "—",
-    "",
+    ...(itens.length ? itens : ["—"]),
     `RELATO: ${pdo.relato?.trim() || "Sem alteração."}`,
-    "",
     `> ${pdo.lavrado_por_nome}`,
-    `> ${E}`,
+    cargoAssinatura ? `> ${E} ${cargoAssinatura}` : `> ${E}`,
   ].join("\n\n");
 }
 

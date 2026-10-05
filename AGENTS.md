@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Keep `/ipc` routes as compatibility redirects to the canonical public `/ipm` routes, because previously shared public links must remain valid.

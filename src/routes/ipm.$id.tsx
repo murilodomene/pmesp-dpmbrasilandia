@@ -20,7 +20,7 @@ interface IpcRow {
   policiais: Policial[];
 }
 
-export const Route = createFileRoute("/ipc/$id")({
+export const Route = createFileRoute("/ipm/$id")({
   head: ({ params }) => ({
     meta: [
       { title: `IPMs do procedimento — Corregedoria da PMESP` },

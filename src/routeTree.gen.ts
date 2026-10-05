@@ -19,8 +19,8 @@ import { Route as CidadaoRouteImport } from './routes/cidadao'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as IpcIndexRouteImport } from './routes/ipc.index'
-import { Route as IpcIdRouteImport } from './routes/ipc.$id'
+import { Route as IpmIndexRouteImport } from './routes/ipm.index'
+import { Route as IpmIdRouteImport } from './routes/ipm.$id'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedPendenteRouteImport } from './routes/_authenticated/pendente'
@@ -83,14 +83,14 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IpcIndexRoute = IpcIndexRouteImport.update({
-  id: '/ipc/',
-  path: '/ipc/',
+const IpmIndexRoute = IpmIndexRouteImport.update({
+  id: '/ipm/',
+  path: '/ipm/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IpcIdRoute = IpcIdRouteImport.update({
-  id: '/ipc/$id',
-  path: '/ipc/$id',
+const IpmIdRoute = IpmIdRouteImport.update({
+  id: '/ipm/$id',
+  path: '/ipm/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
@@ -180,8 +180,8 @@ export interface FileRoutesByFullPath {
   '/pendente': typeof AuthenticatedPendenteRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
-  '/ipc/$id': typeof IpcIdRoute
-  '/ipc/': typeof IpcIndexRoute
+  '/ipm/$id': typeof IpmIdRoute
+  '/ipm/': typeof IpmIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -205,8 +205,8 @@ export interface FileRoutesByTo {
   '/pendente': typeof AuthenticatedPendenteRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
-  '/ipc/$id': typeof IpcIdRoute
-  '/ipc': typeof IpcIndexRoute
+  '/ipm/$id': typeof IpmIdRoute
+  '/ipm': typeof IpmIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -232,8 +232,8 @@ export interface FileRoutesById {
   '/_authenticated/pendente': typeof AuthenticatedPendenteRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
-  '/ipc/$id': typeof IpcIdRoute
-  '/ipc/': typeof IpcIndexRoute
+  '/ipm/$id': typeof IpmIdRoute
+  '/ipm/': typeof IpmIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -259,8 +259,8 @@ export interface FileRouteTypes {
     | '/pendente'
     | '/perfil'
     | '/usuarios'
-    | '/ipc/$id'
-    | '/ipc/'
+    | '/ipm/$id'
+    | '/ipm/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -284,8 +284,8 @@ export interface FileRouteTypes {
     | '/pendente'
     | '/perfil'
     | '/usuarios'
-    | '/ipc/$id'
-    | '/ipc'
+    | '/ipm/$id'
+    | '/ipm'
   id:
     | '__root__'
     | '/'
@@ -310,8 +310,8 @@ export interface FileRouteTypes {
     | '/_authenticated/pendente'
     | '/_authenticated/perfil'
     | '/_authenticated/usuarios'
-    | '/ipc/$id'
-    | '/ipc/'
+    | '/ipm/$id'
+    | '/ipm/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -325,8 +325,8 @@ export interface RootRouteChildren {
   MpRoute: typeof MpRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
-  IpcIdRoute: typeof IpcIdRoute
-  IpcIndexRoute: typeof IpcIndexRoute
+  IpmIdRoute: typeof IpmIdRoute
+  IpmIndexRoute: typeof IpmIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -401,18 +401,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/ipc/': {
-      id: '/ipc/'
-      path: '/ipc'
-      fullPath: '/ipc/'
-      preLoaderRoute: typeof IpcIndexRouteImport
+    '/ipm/': {
+      id: '/ipm/'
+      path: '/ipm'
+      fullPath: '/ipm/'
+      preLoaderRoute: typeof IpmIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/ipc/$id': {
-      id: '/ipc/$id'
-      path: '/ipc/$id'
-      fullPath: '/ipc/$id'
-      preLoaderRoute: typeof IpcIdRouteImport
+    '/ipm/$id': {
+      id: '/ipm/$id'
+      path: '/ipm/$id'
+      fullPath: '/ipm/$id'
+      preLoaderRoute: typeof IpmIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/usuarios': {
@@ -546,8 +546,8 @@ const rootRouteChildren: RootRouteChildren = {
   MpRoute: MpRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
-  IpcIdRoute: IpcIdRoute,
-  IpcIndexRoute: IpcIndexRoute,
+  IpmIdRoute: IpmIdRoute,
+  IpmIndexRoute: IpmIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

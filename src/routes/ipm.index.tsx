@@ -127,7 +127,7 @@ function IpcPublicoIndexPage() {
             {folders.map((f) => (
               <li key={f.denuncia_id}>
                 <Link
-                  to="/ipc/$id"
+                  to="/ipm/$id"
                   params={{ id: f.denuncia_id }}
                   className="surface group flex items-center gap-4 p-4 transition-colors hover:bg-surface-2 focus:outline-none focus:ring-2 focus:ring-ring"
                 >

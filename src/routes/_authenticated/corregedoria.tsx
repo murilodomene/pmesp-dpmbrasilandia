@@ -1340,7 +1340,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                           onClick={async () => {
                             const origin =
                               typeof window !== "undefined" ? window.location.origin : "";
-                            const link = `${origin}/ipc/${denuncia.id}`;
+                            const link = `${origin}/ipm/${denuncia.id}`;
                             const denunciadosTxt = policiais.length
                               ? policiais.map((p) => p.nome).join(", ")
                               : "Não identificado";

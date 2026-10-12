@@ -218,6 +218,36 @@
 .ato-body-pdf a { color: #1e40af; text-decoration: underline; }
 
 /* Portaria em tela: integrada ao tema escuro. */
+.document-pdf {
+  --pdf-paper: #ffffff;
+  --pdf-ink: #111827;
+  --pdf-muted: #374151;
+  --pdf-rule: #94a3b8;
+  box-sizing: border-box;
+  width: 794px;
+  min-width: 794px;
+  max-width: 794px;
+  padding: 76px 76px 0;
+  background: var(--pdf-paper);
+  color: var(--pdf-ink);
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.document-pdf header { border-color: var(--pdf-rule); }
+.document-pdf header img { width: auto; height: 80px; }
+.document-pdf header div { font-family: Arial, sans-serif; font-size: 11px; color: var(--pdf-muted); letter-spacing: 0; }
+.document-pdf > div { color: var(--pdf-ink); }
+.document-pdf > div > div { font-family: Arial, sans-serif; letter-spacing: 0; }
+.document-pdf section, .document-pdf section div { font-size: 14px; }
+.document-pdf main { margin: 24px 0; font-size: 14px; white-space: normal; }
+.document-pdf footer { color: var(--pdf-muted); border-color: var(--pdf-rule); font-size: 12px; }
+.document-pdf footer svg { display: none; }
+.document-pdf footer > div { display: block; }
+.document-pdf a { color: var(--pdf-ink); }
+
+/* Portaria em tela: integrada ao tema escuro. */
 .portaria-body-screen p { margin: 0 0 0.75rem 0; text-align: justify; }
 .portaria-body-screen p:last-child { margin-bottom: 0; }
 .portaria-body-screen strong, .portaria-body-screen b { font-weight: 700; }

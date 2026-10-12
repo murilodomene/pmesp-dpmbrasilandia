@@ -11,6 +11,8 @@ import { sanitizeAtoHtml, isHtmlAto } from "@/components/RichTextEditor";
 import { supabase } from "@/integrations/supabase/client";
 import { isPortariaDados } from "@/components/PortariaTemplate";
 import crestAsset from "@/assets/brasao-corregedoria-pmesp-transparente.png.asset.json";
+import { appendPdfElement } from "@/lib/pdf-export";
+import { ROLE_LABELS, type AppRole } from "@/lib/access-roles";
 
 export interface ExportPolicial {
   id: string;
@@ -115,6 +117,7 @@ function labelEspecie(e: string): string {
 
 function cargoLabel(c: string | null | undefined): string {
   if (!c) return "";
+  if (c in ROLE_LABELS) return ROLE_LABELS[c as AppRole];
   return c === "delegado_geral"
     ? "Delegado Geral"
     : c === "delegado_corregedor"
@@ -161,7 +164,6 @@ const HEADER_HTML = `
       <div>Secretaria da Segurança Pública</div>
       <div>Polícia Militar do Estado de São Paulo</div>
       <div>Corregedoria da Polícia Militar do Estado de São Paulo</div>
-      <div>1ª Corregedoria da Capital</div>
       <div style="text-transform:none">corregedoriageral@pmesp.sp</div>
     </div>
   </header>`;
@@ -390,8 +392,7 @@ async function fetchAnexoDataUrl(path: string): Promise<string | null> {
 /* ------------ export principal ------------ */
 
 export async function exportProcessoCompleto(data: ExportProcessoData): Promise<void> {
-  const [{ default: html2canvas }, { default: jsPDF }, { default: JsBarcode }] = await Promise.all([
-    import("html2canvas"),
+  const [{ default: jsPDF }, { default: JsBarcode }] = await Promise.all([
     import("jspdf"),
     import("jsbarcode"),
   ]);
@@ -421,7 +422,8 @@ export async function exportProcessoCompleto(data: ExportProcessoData): Promise<
     </style></head><body></body></html>`;
   });
 
-  const doc = iframe.contentDocument!;
+  const doc = iframe.contentDocument;
+  if (!doc) { iframe.remove(); throw new Error("Não foi possível preparar o PDF."); }
   const pages: string[] = [];
   pages.push(coverPage(data.denuncia, data.policiais));
   for (let i = 0; i < movsAsc.length; i++) {
@@ -465,22 +467,13 @@ export async function exportProcessoCompleto(data: ExportProcessoData): Promise<
       ),
     );
 
-    const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+    const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
 
     const pageEls = Array.from(doc.querySelectorAll<HTMLElement>(".pdf-page"));
     for (let i = 0; i < pageEls.length; i++) {
-      const canvas = await html2canvas(pageEls[i], {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        logging: false,
-        windowWidth: 794,
-      });
-      const imgH = (canvas.height * pageW) / canvas.width;
-      if (i > 0) pdf.addPage();
-      pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, pageW, Math.min(imgH, pageH));
+      await appendPdfElement(pdf, pageEls[i], i > 0);
     }
 
     const total = pdf.getNumberOfPages();

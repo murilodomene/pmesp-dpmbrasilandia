@@ -176,6 +176,11 @@ function pageWrap(inner: string): string {
     ">${inner}</section>`;
 }
 
+// Preserve the approved Portaria geometry independently of the other templates.
+function portariaPageWrap(inner: string): string {
+  return `<section class="pdf-page" style="box-sizing:border-box;width:794px;min-height:1123px;background:#ffffff;color:#111827;font-family:Georgia,'Times New Roman',serif;padding:56px 64px 96px;position:relative">${inner}</section>`;
+}
+
 function coverPage(d: ExportDenuncia, policiais: ExportPolicial[]): string {
   const p = calcularPrescricao({
     termo_inicial: d.termo_inicial,
@@ -220,7 +225,7 @@ function coverPage(d: ExportDenuncia, policiais: ExportPolicial[]): string {
         <div style="font-weight:bold">PRESCRIÇÃO:</div><div>${prescr}</div>
       </div>
     </div>
-    <div style="position:absolute;bottom:44px;left:64px;right:64px;text-align:center;font-size:10.5px;color:#6b7280;font-style:italic">
+    <div style="margin-top:80px;text-align:center;font-size:10.5px;color:#6b7280;font-style:italic">
       Capa de autuação gerada automaticamente pelo sistema.
     </div>
   `);
@@ -270,7 +275,7 @@ function atoContentPage(
     const p = m.portaria_dados;
     const lista = (itens: string[]) => itens.map((item) => `<div style="margin:2px 0 2px 22px">${esc(item)}</div>`).join("");
     const secao = (titulo: string) => `<div style="background:#c7c7c7;text-align:center;font-weight:bold;margin:6px 0;padding:1px 0">${titulo}</div>`;
-    return pageWrap(`
+    return portariaPageWrap(`
       <div style="display:grid;grid-template-columns:145px 1fr;align-items:center;font-family:Arial,sans-serif;color:#111">
         <div style="text-align:center"><img src="${BRASAO_SRC}" style="width:91px;height:106px;object-fit:contain" /></div>
         <div><div style="font-size:17px;font-weight:bold">SECRETARIA DA SEGURANÇA PÚBLICA</div><div style="font-size:16px;font-weight:bold">POLÍCIA MILITAR DO ESTADO DE SÃO PAULO</div><div style="font-size:9px;font-weight:bold;margin-top:2px">CHAVE IDENTIFICADORA</div><svg class="portaria-barcode" data-value="${esc(p.chave)}"></svg><div style="font:12px 'Courier New',monospace">${esc(p.chave)}</div></div>

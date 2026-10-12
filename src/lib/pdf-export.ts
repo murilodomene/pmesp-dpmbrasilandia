@@ -35,6 +35,14 @@ export async function appendPdfElement(pdf: jsPDF, element: HTMLElement, newPage
       const rect = block.getBoundingClientRect();
       return { top: rect.top - root.top, bottom: rect.bottom - root.top };
     });
+  // Keep a signature with the preceding text rather than on an otherwise empty page.
+  for (const footer of element.querySelectorAll("footer")) {
+    const rect = footer.getBoundingClientRect();
+    const top = rect.top - root.top;
+    const preceding = lines.filter((line) => line.bottom <= top).sort((a, b) => b.top - a.top);
+    const lead = preceding[Math.min(1, preceding.length - 1)];
+    if (lead) blocks.push({ top: lead.top, bottom: rect.bottom - root.top });
+  }
   const contentBottom = Math.max(0, ...lines.map((line) => line.bottom), ...blocks.map((block) => block.bottom));
   const totalHeight = Math.min(Math.ceil(root.height), Math.ceil(contentBottom + 20));
   let offset = 0;

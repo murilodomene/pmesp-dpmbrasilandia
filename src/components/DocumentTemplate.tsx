@@ -2,6 +2,7 @@ import { forwardRef, useRef } from "react";
 import { ShieldCheck } from "lucide-react";
 import { isHtmlAto, sanitizeAtoHtml } from "./RichTextEditor";
 import { PMESP_CREST_URL } from "@/lib/branding";
+import { exportPdfElement } from "@/lib/pdf-export";
 
 export type AtoTipo = "DESPACHO" | "DECISÃO" | "PORTARIA" | "IPM" | "CERTIDÃO" | "MANDADO" | "TERMO DE DEPOIMENTO";
 
@@ -82,18 +83,13 @@ export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps
         : null);
 
     if (variant === "pdf") {
+      const titulo = tipo ?? (assunto ? assunto.toLocaleUpperCase("pt-BR") : "ATO ADMINISTRATIVO");
       return (
         <div
           ref={ref}
           data-document-template
-          className={`relative mx-auto w-full max-w-[210mm] overflow-hidden rounded-md border border-gray-200 bg-white p-4 text-gray-900 shadow-sm sm:p-8 md:p-10 ${
-            markerClass ? "pl-5 sm:pl-9 md:pl-11" : ""
-          }`}
-          style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
+          className="document-pdf"
         >
-          {markerClass && (
-            <span aria-hidden className={`absolute inset-y-0 left-0 w-1.5 ${markerClass}`} />
-          )}
 
           <header className="flex flex-col items-center gap-2 border-b-2 border-gray-400 pb-3 text-center">
             <img
@@ -106,15 +102,14 @@ export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps
               <div>Secretaria da Segurança Pública</div>
               <div>Polícia Militar do Estado de São Paulo</div>
               <div>Corregedoria da Polícia Militar do Estado de São Paulo</div>
-              <div>1ª Corregedoria da Capital</div>
               <div className="normal-case">corregedoriageral@pmesp.sp</div>
             </div>
           </header>
 
-          {tipo && (
+          {titulo && (
             <div className="mt-3 text-center">
               <div className="font-serif text-[15px] font-bold tracking-[0.25em] text-gray-900">
-                {tipo}
+                {titulo}
               </div>
               {subtitulo && (
                 <div className="mt-0.5 text-[10px] italic text-gray-600">{subtitulo}</div>
@@ -142,7 +137,6 @@ export const DocumentTemplate = forwardRef<HTMLDivElement, DocumentTemplateProps
               <>
                 <div><span className="font-bold">PROCEDIMENTO:</span> {procedimento}</div>
                 <div><span className="font-bold">DENUNCIADO:</span> {denunciado}</div>
-                {assunto && <div><span className="font-bold">ASSUNTO:</span> {assunto}</div>}
               </>
             )}
           </section>
@@ -275,52 +269,7 @@ export async function exportDocumentToPdf(
   element: HTMLElement,
   filename: string,
 ): Promise<void> {
-  const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
-    import("html2canvas-pro"),
-    import("jspdf"),
-  ]);
-
-  const canvas = await html2canvas(element, {
-    scale: 2,
-    useCORS: true,
-    backgroundColor: "#ffffff",
-    logging: false,
-    windowWidth: element.scrollWidth,
-  });
-
-  const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
-  const pageW = pdf.internal.pageSize.getWidth();
-  const pageH = pdf.internal.pageSize.getHeight();
-  const margin = 20;
-  const imgW = pageW - margin * 2;
-  const imgH = (canvas.height * imgW) / canvas.width;
-
-  if (imgH <= pageH - margin * 2) {
-    pdf.addImage(canvas.toDataURL("image/png"), "PNG", margin, margin, imgW, imgH);
-  } else {
-    const pxPerMm = canvas.width / imgW;
-    const pageHpx = Math.floor((pageH - margin * 2) * pxPerMm);
-    let y = 0;
-    let first = true;
-    while (y < canvas.height) {
-      const sliceH = Math.min(pageHpx, canvas.height - y);
-      const slice = document.createElement("canvas");
-      slice.width = canvas.width;
-      slice.height = sliceH;
-      const ctx = slice.getContext("2d");
-      if (!ctx) break;
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, slice.width, slice.height);
-      ctx.drawImage(canvas, 0, y, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
-      const sliceImgH = (sliceH * imgW) / canvas.width;
-      if (!first) pdf.addPage();
-      pdf.addImage(slice.toDataURL("image/png"), "PNG", margin, margin, imgW, sliceImgH);
-      first = false;
-      y += sliceH;
-    }
-  }
-
-  pdf.save(filename);
+  await exportPdfElement(element, filename);
 }
 
 export function useDocumentRef() {

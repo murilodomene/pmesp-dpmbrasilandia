@@ -11,6 +11,8 @@ import { sanitizeAtoHtml, isHtmlAto } from "@/components/RichTextEditor";
 import { supabase } from "@/integrations/supabase/client";
 import { isPortariaDados } from "@/components/PortariaTemplate";
 import crestAsset from "@/assets/brasao-corregedoria-pmesp-transparente.png.asset.json";
+import { appendPdfElement } from "@/lib/pdf-export";
+import { ROLE_LABELS, type AppRole } from "@/lib/access-roles";
 
 export interface ExportPolicial {
   id: string;
@@ -115,6 +117,7 @@ function labelEspecie(e: string): string {
 
 function cargoLabel(c: string | null | undefined): string {
   if (!c) return "";
+  if (c in ROLE_LABELS) return ROLE_LABELS[c as AppRole];
   return c === "delegado_geral"
     ? "Delegado Geral"
     : c === "delegado_corregedor"
@@ -157,11 +160,10 @@ function extrairRelatoIpc(teor: string): string {
 const HEADER_HTML = `
   <header style="display:flex;flex-direction:column;align-items:center;gap:6px;border-bottom:2px solid #94a3b8;padding-bottom:10px;text-align:center">
     <img src="${BRASAO_SRC}" alt="" crossorigin="anonymous" style="height:70px;width:auto" />
-    <div style="font-family:Georgia,'Times New Roman',serif;font-size:10.5px;font-weight:bold;text-transform:uppercase;line-height:1.35;color:#374151">
+    <div style="font-family:Arial,sans-serif;font-size:11px;font-weight:bold;text-transform:uppercase;line-height:1.35;color:#374151">
       <div>Secretaria da Segurança Pública</div>
       <div>Polícia Militar do Estado de São Paulo</div>
       <div>Corregedoria da Polícia Militar do Estado de São Paulo</div>
-      <div>1ª Corregedoria da Capital</div>
       <div style="text-transform:none">corregedoriageral@pmesp.sp</div>
     </div>
   </header>`;
@@ -170,8 +172,13 @@ function pageWrap(inner: string): string {
   return `
     <section class="pdf-page" style="
       box-sizing:border-box;width:794px;min-height:1123px;background:#ffffff;color:#111827;
-      font-family:Georgia,'Times New Roman',serif;padding:56px 64px 96px;position:relative;
+      font-family:Arial,sans-serif;padding:76px 76px 0;position:relative;overflow-wrap:anywhere;
     ">${inner}</section>`;
+}
+
+// Preserve the approved Portaria geometry independently of the other templates.
+function portariaPageWrap(inner: string): string {
+  return `<section class="pdf-page" style="box-sizing:border-box;width:794px;min-height:1123px;background:#ffffff;color:#111827;font-family:Georgia,'Times New Roman',serif;padding:56px 64px 96px;position:relative">${inner}</section>`;
 }
 
 function coverPage(d: ExportDenuncia, policiais: ExportPolicial[]): string {
@@ -218,7 +225,7 @@ function coverPage(d: ExportDenuncia, policiais: ExportPolicial[]): string {
         <div style="font-weight:bold">PRESCRIÇÃO:</div><div>${prescr}</div>
       </div>
     </div>
-    <div style="position:absolute;bottom:44px;left:64px;right:64px;text-align:center;font-size:10.5px;color:#6b7280;font-style:italic">
+    <div style="margin-top:80px;text-align:center;font-size:10.5px;color:#6b7280;font-style:italic">
       Capa de autuação gerada automaticamente pelo sistema.
     </div>
   `);
@@ -268,7 +275,7 @@ function atoContentPage(
     const p = m.portaria_dados;
     const lista = (itens: string[]) => itens.map((item) => `<div style="margin:2px 0 2px 22px">${esc(item)}</div>`).join("");
     const secao = (titulo: string) => `<div style="background:#c7c7c7;text-align:center;font-weight:bold;margin:6px 0;padding:1px 0">${titulo}</div>`;
-    return pageWrap(`
+    return portariaPageWrap(`
       <div style="display:grid;grid-template-columns:145px 1fr;align-items:center;font-family:Arial,sans-serif;color:#111">
         <div style="text-align:center"><img src="${BRASAO_SRC}" style="width:91px;height:106px;object-fit:contain" /></div>
         <div><div style="font-size:17px;font-weight:bold">SECRETARIA DA SEGURANÇA PÚBLICA</div><div style="font-size:16px;font-weight:bold">POLÍCIA MILITAR DO ESTADO DE SÃO PAULO</div><div style="font-size:9px;font-weight:bold;margin-top:2px">CHAVE IDENTIFICADORA</div><svg class="portaria-barcode" data-value="${esc(p.chave)}"></svg><div style="font:12px 'Courier New',monospace">${esc(p.chave)}</div></div>
@@ -390,8 +397,7 @@ async function fetchAnexoDataUrl(path: string): Promise<string | null> {
 /* ------------ export principal ------------ */
 
 export async function exportProcessoCompleto(data: ExportProcessoData): Promise<void> {
-  const [{ default: html2canvas }, { default: jsPDF }, { default: JsBarcode }] = await Promise.all([
-    import("html2canvas"),
+  const [{ default: jsPDF }, { default: JsBarcode }] = await Promise.all([
     import("jspdf"),
     import("jsbarcode"),
   ]);
@@ -421,7 +427,8 @@ export async function exportProcessoCompleto(data: ExportProcessoData): Promise<
     </style></head><body></body></html>`;
   });
 
-  const doc = iframe.contentDocument!;
+  const doc = iframe.contentDocument;
+  if (!doc) { iframe.remove(); throw new Error("Não foi possível preparar o PDF."); }
   const pages: string[] = [];
   pages.push(coverPage(data.denuncia, data.policiais));
   for (let i = 0; i < movsAsc.length; i++) {
@@ -465,22 +472,13 @@ export async function exportProcessoCompleto(data: ExportProcessoData): Promise<
       ),
     );
 
-    const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+    const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
 
     const pageEls = Array.from(doc.querySelectorAll<HTMLElement>(".pdf-page"));
     for (let i = 0; i < pageEls.length; i++) {
-      const canvas = await html2canvas(pageEls[i], {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        logging: false,
-        windowWidth: 794,
-      });
-      const imgH = (canvas.height * pageW) / canvas.width;
-      if (i > 0) pdf.addPage();
-      pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, pageW, Math.min(imgH, pageH));
+      await appendPdfElement(pdf, pageEls[i], i > 0);
     }
 
     const total = pdf.getNumberOfPages();

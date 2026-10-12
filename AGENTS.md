@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Keep `/ipc` routes as compatibility redirects to the canonical public `/ipm` routes, because previously shared public links must remain valid.
+- Use the shared browser PDF renderer for non-Portaria document and full-process exports: fixed A4 width, line-safe page captures and compressed JPEG avoid responsive distortion, truncated lines and oversized files; keep the approved standalone Portaria renderer separate.

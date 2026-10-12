@@ -160,7 +160,7 @@ function extrairRelatoIpc(teor: string): string {
 const HEADER_HTML = `
   <header style="display:flex;flex-direction:column;align-items:center;gap:6px;border-bottom:2px solid #94a3b8;padding-bottom:10px;text-align:center">
     <img src="${BRASAO_SRC}" alt="" crossorigin="anonymous" style="height:70px;width:auto" />
-    <div style="font-family:Georgia,'Times New Roman',serif;font-size:10.5px;font-weight:bold;text-transform:uppercase;line-height:1.35;color:#374151">
+    <div style="font-family:Arial,sans-serif;font-size:11px;font-weight:bold;text-transform:uppercase;line-height:1.35;color:#374151">
       <div>Secretaria da Segurança Pública</div>
       <div>Polícia Militar do Estado de São Paulo</div>
       <div>Corregedoria da Polícia Militar do Estado de São Paulo</div>
@@ -172,7 +172,7 @@ function pageWrap(inner: string): string {
   return `
     <section class="pdf-page" style="
       box-sizing:border-box;width:794px;min-height:1123px;background:#ffffff;color:#111827;
-      font-family:Georgia,'Times New Roman',serif;padding:56px 64px 96px;position:relative;
+      font-family:Arial,sans-serif;padding:76px 76px 0;position:relative;overflow-wrap:anywhere;
     ">${inner}</section>`;
 }
 

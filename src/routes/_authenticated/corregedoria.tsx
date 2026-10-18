@@ -24,6 +24,7 @@ import {
   atualizarNatureza,
   
   retificarDenunciado,
+  adicionarDenunciado,
   CARGOS_POLICIAIS,
   lavrarPortaria,
   alternarPublicacaoIpc,
@@ -779,6 +780,20 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                     )}
                   </div>
                 ))}
+                {podeRetificar && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setDialog({
+                        kind: "retificar",
+                        policial: { id: "", nome: "", rg_funcional: null, unidade: null, cargo: null },
+                      })
+                    }
+                    className="mt-1 inline-flex w-fit items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Adicionar denunciado
+                  </button>
+                )}
               </div>
             </Row>
 
@@ -2805,14 +2820,27 @@ function RetificarDialog({
 }) {
   const qc = useQueryClient();
   const fn = useServerFn(retificarDenunciado);
+  const addFn = useServerFn(adicionarDenunciado);
+  const novo = !policial.id;
   const [nome, setNome] = useState(policial.nome);
   const [mat, setMat] = useState(policial.rg_funcional ?? "");
   const [unidade, setUnidade] = useState<string>(policial.unidade ?? "");
   const [cargoPol, setCargoPol] = useState<string>(policial.cargo ?? "");
   const [motivo, setMotivo] = useState("");
   const m = useMutation({
-    mutationFn: () =>
-      fn({
+    mutationFn: (): Promise<unknown> =>
+      novo
+        ? addFn({
+            data: {
+              denuncia_id: denunciaId,
+              nome,
+              rg_funcional: mat || null,
+              unidade: (unidade || null) as typeof UNIDADES[number] | null,
+              cargo: (cargoPol || null) as typeof CARGOS_POLICIAIS[number] | null,
+              motivo: motivo || null,
+            },
+          })
+        : fn({
         data: {
           policial_id: policial.id,
           nome,
@@ -2829,12 +2857,13 @@ function RetificarDialog({
     },
   });
   const semMudanca =
+    !novo &&
     nome.trim() === policial.nome &&
     (mat.trim() || null) === (policial.rg_funcional ?? null) &&
     (unidade || null) === (policial.unidade ?? null) &&
     (cargoPol || null) === (policial.cargo ?? null);
   return (
-    <Modal title="Retificar denunciado" onClose={onClose}>
+    <Modal title={novo ? "Adicionar denunciado" : "Retificar denunciado"} onClose={onClose}>
       <label className="grid gap-1.5">
         <span className="text-xs uppercase tracking-wider text-muted-foreground">Nome</span>
         <input className="input" value={nome} onChange={(e) => setNome(e.target.value)} />
@@ -2902,7 +2931,7 @@ function RetificarDialog({
           disabled={!nome.trim() || semMudanca || m.isPending}
           className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
-          Confirmar retificação
+          {novo ? "Adicionar denunciado" : "Confirmar retificação"}
         </button>
       </div>
     </Modal>

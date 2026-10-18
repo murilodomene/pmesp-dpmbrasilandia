@@ -642,6 +642,47 @@ export const retificarDenunciado = createServerFn({ method: "POST" })
     return { changed: true };
   });
 
+export const adicionarDenunciado = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        denuncia_id: z.string().uuid(),
+        nome: z.string().trim().min(1).max(200),
+        rg_funcional: z.string().trim().max(50).optional().nullable(),
+        unidade: z.enum(UNIDADES).optional().nullable(),
+        cargo: z.enum(CARGOS_POLICIAIS).optional().nullable(),
+        motivo: z.string().trim().max(2000).optional().nullable(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const p = await getProlator(context);
+    const pode = ["ssp", "cmtg", "corregedor_geral", "subcorregedor_geral", "corregedor_supervisor", "corregedor"].includes(
+      p.prolator_cargo as string,
+    );
+    if (!pode) throw new Error("Sem permissão para adicionar denunciado.");
+    const row = {
+      denuncia_id: data.denuncia_id,
+      nome: data.nome.trim(),
+      rg_funcional: (data.rg_funcional ?? "").trim() || null,
+      unidade: data.unidade ?? null,
+      cargo: data.cargo ?? null,
+    };
+    const { error } = await context.supabase.from("denuncia_policiais").insert(row);
+    if (error) throw new Error(error.message);
+    const desc = `"${row.nome} (${row.rg_funcional ?? "sem matrícula"}${row.unidade ? `, ${row.unidade}` : ""}${row.cargo ? `, ${row.cargo}` : ""})"`;
+    const motivoTxt = data.motivo?.trim() ? ` Motivo: ${data.motivo.trim()}.` : "";
+    const { error: movErr } = await context.supabase.from("movimentos").insert({
+      denuncia_id: data.denuncia_id,
+      especie: "retificacao",
+      teor: `Incluído denunciado ${desc}.${motivoTxt}`,
+      ...p,
+    });
+    if (movErr) throw new Error(movErr.message);
+    return { ok: true };
+  });
+
 export const lavrarPortaria = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>

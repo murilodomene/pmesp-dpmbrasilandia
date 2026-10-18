@@ -2828,7 +2828,7 @@ function RetificarDialog({
   const [cargoPol, setCargoPol] = useState<string>(policial.cargo ?? "");
   const [motivo, setMotivo] = useState("");
   const m = useMutation({
-    mutationFn: () =>
+    mutationFn: (): Promise<unknown> =>
       novo
         ? addFn({
             data: {

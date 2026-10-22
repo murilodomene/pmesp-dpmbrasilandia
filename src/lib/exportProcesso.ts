@@ -13,7 +13,17 @@ import { isPortariaDados } from "@/components/PortariaTemplate";
 import crestAsset from "@/assets/brasao-corregedoria-pmesp-transparente.png.asset.json";
 import { appendPdfElement } from "@/lib/pdf-export";
 import { ROLE_LABELS, type AppRole } from "@/lib/access-roles";
-import { gerarProcessoPdf, nomeArquivoProcesso, type PdfDenuncia, type PdfImagem } from "@/lib/pdf/processo-pdf";
+import {
+  gerarAtoPdf,
+  gerarProcessoPdf,
+  nomeArquivoAto,
+  nomeArquivoProcesso,
+  type PdfAssets,
+  type PdfDenuncia,
+  type PdfImagem,
+  type PdfMovimento,
+  type PdfPolicial,
+} from "@/lib/pdf/processo-pdf";
 
 export interface ExportPolicial {
   id: string;
@@ -126,8 +136,8 @@ function cargoLabel(c: string | null | undefined): string {
       : c === "coordenador"
         ? "Coordenador"
         : c === "corregedor"
-        ? "Corregedor"
-        : c;
+          ? "Corregedor"
+          : c;
 }
 
 function statusLabel(s: string): string {
@@ -196,7 +206,9 @@ function coverPage(d: ExportDenuncia, policiais: ExportPolicial[]): string {
           .map(
             (pol) =>
               `<div>${esc(pol.nome)}${
-                pol.rg_funcional ? ` <span style="color:#4b5563">· ${esc(pol.rg_funcional)}</span>` : ""
+                pol.rg_funcional
+                  ? ` <span style="color:#4b5563">· ${esc(pol.rg_funcional)}</span>`
+                  : ""
               }${
                 pol.unidade ? ` <span style="color:#4b5563">· ${esc(pol.unidade)}</span>` : ""
               }</div>`,
@@ -274,8 +286,10 @@ function atoContentPage(
 ): string {
   if (m.especie === "portaria" && isPortariaDados(m.portaria_dados)) {
     const p = m.portaria_dados;
-    const lista = (itens: string[]) => itens.map((item) => `<div style="margin:2px 0 2px 22px">${esc(item)}</div>`).join("");
-    const secao = (titulo: string) => `<div style="background:#c7c7c7;text-align:center;font-weight:bold;margin:6px 0;padding:1px 0">${titulo}</div>`;
+    const lista = (itens: string[]) =>
+      itens.map((item) => `<div style="margin:2px 0 2px 22px">${esc(item)}</div>`).join("");
+    const secao = (titulo: string) =>
+      `<div style="background:#c7c7c7;text-align:center;font-weight:bold;margin:6px 0;padding:1px 0">${titulo}</div>`;
     return portariaPageWrap(`
       <div style="display:grid;grid-template-columns:145px 1fr;align-items:center;font-family:Arial,sans-serif;color:#111">
         <div style="text-align:center"><img src="${BRASAO_SRC}" style="width:91px;height:106px;object-fit:contain" /></div>
@@ -446,13 +460,27 @@ async function carregarImagemPublica(caminho: string): Promise<PdfImagem> {
 export async function exportProcessoCompletoV2(
   data: Omit<ExportProcessoData, "denuncia"> & { denuncia: PdfDenuncia },
 ): Promise<void> {
+  const assets = await carregarAssetsPdf(data.movimentos);
+  const pdf = await gerarProcessoPdf(
+    { denuncia: data.denuncia, policiais: data.policiais, movimentos: data.movimentos },
+    assets,
+  );
+  pdf.save(nomeArquivoProcesso(data.denuncia));
+}
+
+/** Timbre, emblema e imagens anexadas aos movimentos informados. */
+async function carregarAssetsPdf(
+  movimentos: Array<{ anexos?: Array<{ nome: string; path: string }> | null }>,
+): Promise<PdfAssets> {
   const [brasao, emblema] = await Promise.all([
     carregarImagemPublica("/pdf/brasao-ssp.png"),
     carregarImagemPublica("/pdf/emblema-pm.png"),
   ]);
   const anexos = new Map<string, PdfImagem>();
   const caminhos = Array.from(
-    new Set(data.movimentos.flatMap((m) => (Array.isArray(m.anexos) ? m.anexos.map((a) => a.path) : []))),
+    new Set(
+      movimentos.flatMap((m) => (Array.isArray(m.anexos) ? m.anexos.map((a) => a.path) : [])),
+    ),
   );
   await Promise.all(
     caminhos.map(async (path) => {
@@ -461,11 +489,33 @@ export async function exportProcessoCompletoV2(
       if (img) anexos.set(path, img);
     }),
   );
-  const pdf = await gerarProcessoPdf(
-    { denuncia: data.denuncia, policiais: data.policiais, movimentos: data.movimentos },
-    { brasao, emblema, anexos },
+  return { brasao, emblema, anexos };
+}
+
+/** Dados para o botão "Exportar PDF" de um ato individual. */
+export interface ExportAtoData {
+  denuncia: PdfDenuncia;
+  policiais: PdfPolicial[];
+  movimentos: PdfMovimento[];
+}
+
+/**
+ * Exporta somente um ato (despacho, decisão, portaria, solução etc.) no
+ * modelo vetorial oficial — o mesmo do processo completo, sem a capa.
+ */
+export async function exportAtoPdfV2(
+  data: ExportAtoData,
+  movimentoId: string,
+  opcoes?: { numeroEvento?: number | null },
+): Promise<void> {
+  const m = data.movimentos.find((x) => x.id === movimentoId);
+  if (!m) throw new Error("Ato não encontrado para exportação.");
+  const assets = await carregarAssetsPdf([m]);
+  const pdf = await gerarAtoPdf(
+    { ...data, movimentoId, numeroEvento: opcoes?.numeroEvento },
+    assets,
   );
-  pdf.save(nomeArquivoProcesso(data.denuncia));
+  pdf.save(nomeArquivoAto(m.especie, data.denuncia, m.portaria_dados));
 }
 
 /* ------------ export principal (versão anterior, por imagem) ------------ */
@@ -502,7 +552,10 @@ export async function exportProcessoCompleto(data: ExportProcessoData): Promise<
   });
 
   const doc = iframe.contentDocument;
-  if (!doc) { iframe.remove(); throw new Error("Não foi possível preparar o PDF."); }
+  if (!doc) {
+    iframe.remove();
+    throw new Error("Não foi possível preparar o PDF.");
+  }
   const pages: string[] = [];
   pages.push(coverPage(data.denuncia, data.policiais));
   for (let i = 0; i < movsAsc.length; i++) {
@@ -519,7 +572,10 @@ export async function exportProcessoCompleto(data: ExportProcessoData): Promise<
       m.especie === "ipc";
     pages.push(isAto ? atoContentPage(m, data.denuncia, data.policiais) : genericContentPage(m));
     // Anexos-prova (só despacho/decisão/certidão) — cada imagem em página própria.
-    if ((m.especie === "despacho" || m.especie === "decisao" || m.especie === "certidao") && Array.isArray(m.anexos)) {
+    if (
+      (m.especie === "despacho" || m.especie === "decisao" || m.especie === "certidao") &&
+      Array.isArray(m.anexos)
+    ) {
       for (const a of m.anexos) {
         const dataUrl = await fetchAnexoDataUrl(a.path);
         if (dataUrl) pages.push(await anexoImagePage(a.nome, dataUrl));
@@ -528,7 +584,14 @@ export async function exportProcessoCompleto(data: ExportProcessoData): Promise<
   }
   doc.body.innerHTML = pages.join("");
   doc.querySelectorAll<SVGSVGElement>(".portaria-barcode").forEach((element) => {
-    JsBarcode(element, element.dataset.value ?? "", { format: "CODE128", displayValue: false, height: 42, width: 1.45, margin: 0, lineColor: "#111111" });
+    JsBarcode(element, element.dataset.value ?? "", {
+      format: "CODE128",
+      displayValue: false,
+      height: 42,
+      width: 1.45,
+      margin: 0,
+      lineColor: "#111111",
+    });
   });
 
   try {
@@ -569,4 +632,3 @@ export async function exportProcessoCompleto(data: ExportProcessoData): Promise<
     iframe.remove();
   }
 }
-

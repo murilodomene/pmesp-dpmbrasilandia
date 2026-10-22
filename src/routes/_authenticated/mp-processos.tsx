@@ -9,7 +9,9 @@ import { type DenunciaStatus } from "@/lib/prescricao";
 import { listMeusProcessosMp, getDenuncia } from "@/lib/denuncias.functions";
 import { getSessionInfo } from "@/lib/usuarios.functions";
 import { ExternalLink, Download, ShieldAlert } from "lucide-react";
-import { exportProcessoCompleto } from "@/lib/exportProcesso";
+import { exportAtoPdfV2, exportProcessoCompletoV2 } from "@/lib/exportProcesso";
+import { ExportAtoContext } from "@/components/ExportAtoContext";
+import { toast } from "sonner";
 import { ProcessoLetterhead, ProcessoDetalheSkeleton } from "@/components/ProcessoLetterhead";
 import { TimelineMovimentos } from "@/components/TimelineMovimentos";
 
@@ -238,12 +240,25 @@ function DetalheProcesso({ id }: { id: string }) {
         )}
       </div>
 
-      <TimelineMovimentos
-        movimentos={data.movimentos as never}
-        procedimento={(d as any).numero_procedimento ?? d.numero_protocolo}
-        unidade={d.unidade || "—"}
-        policiais={data.policiais as never}
-      />
+      <ExportAtoContext.Provider
+        value={(movimentoId) =>
+          exportAtoPdfV2(
+            {
+              denuncia: data.denuncia as never,
+              policiais: data.policiais as never,
+              movimentos: data.movimentos as never,
+            },
+            movimentoId,
+          )
+        }
+      >
+        <TimelineMovimentos
+          movimentos={data.movimentos as never}
+          procedimento={(d as any).numero_procedimento ?? d.numero_protocolo}
+          unidade={d.unidade || "—"}
+          policiais={data.policiais as never}
+        />
+      </ExportAtoContext.Provider>
 
       <div className="surface p-5">
         <h2 className="font-serif text-lg">Oitivas</h2>
@@ -296,12 +311,14 @@ function ExportarProcessoMpBtn({ data }: { data: Awaited<ReturnType<typeof getDe
   async function onClick() {
     setGerando(true);
     try {
-      await exportProcessoCompleto({
+      await exportProcessoCompletoV2({
         denuncia: data.denuncia as never,
         policiais: data.policiais as never,
         movimentos: data.movimentos as never,
         oitivas: [],
       });
+    } catch (e) {
+      toast.error((e as Error)?.message || "Falha ao gerar o PDF do processo.");
     } finally {
       setGerando(false);
     }

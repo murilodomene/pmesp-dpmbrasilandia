@@ -56,7 +56,8 @@ import { getSessionInfo } from "@/lib/usuarios.functions";
 import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2, Download, ShieldCheck, Bell, MessageSquare, Copy, Mic, Plus } from "lucide-react";
 import { DocumentTemplate, exportDocumentToPdf, useDocumentRef } from "@/components/DocumentTemplate";
 import { RichTextEditor, isHtmlAto, sanitizeAtoHtml } from "@/components/RichTextEditor";
-import { exportProcessoCompleto, exportProcessoCompletoV2 } from "@/lib/exportProcesso";
+import { exportAtoPdfV2, exportProcessoCompleto, exportProcessoCompletoV2 } from "@/lib/exportProcesso";
+import { ExportAtoContext, useExportarAto } from "@/components/ExportAtoContext";
 import { AtoAnexosUploader, type AtoAnexo } from "@/components/AtoAnexosUploader";
 import { AtoAnexosLinks } from "@/components/AtoAnexosLinks";
 import { IntimarDialog } from "@/components/IntimarDialog";
@@ -496,6 +497,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     | { kind: "portaria" }
     | {
         kind: "verAto";
+        movimentoId?: string;
         especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata";
         teor: string;
         quando: string;
@@ -633,7 +635,12 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
   const isInternoCorregedoria =
     cargo === "ssp" || cargo=== "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || (cargo === "subcorregedor_geral" || cargo === "corregedor_supervisor");
 
+  // Botões "Exportar PDF" de cada ato: mesmo modelo vetorial do processo completo.
+  const exportarAto = (movimentoId: string) =>
+    exportAtoPdfV2({ denuncia, policiais, movimentos: movimentos as never }, movimentoId);
+
   return (
+    <ExportAtoContext.Provider value={exportarAto}>
     <div className="space-y-4">
       {/* Cabeçalho */}
       <div className="surface p-5">
@@ -893,6 +900,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                       onClick={() =>
                         setDialog({
                           kind: "verAto",
+                          movimentoId: portariaMov.id,
                           especie: "portaria",
                           teor: portariaMov.teor,
                           quando: portariaMov.criado_em,
@@ -1331,6 +1339,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                     </div>
                     <div className={canceladoEm ? "line-through decoration-destructive/60" : ""}>
                       <TimelineAtoCard
+                        movimentoId={m.id}
                         especie={m.especie as "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao" | "nota_culpa" | "termo_declaracoes" | "auto_interrogatorio"}
                         teor={m.teor}
                         quando={m.criado_em}
@@ -1393,6 +1402,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                     </div>
                     <div className={canceladoEm ? "line-through decoration-destructive/60" : ""}>
                       <TimelineIpcCard
+                        movimentoId={m.id}
                         teor={m.teor}
                         quando={m.criado_em}
                         prolator={m.prolator_nome}
@@ -1476,6 +1486,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                     </div>
                     <div className={canceladoEm ? "line-through decoration-destructive/60" : ""}>
                       <TimelineCertidaoCard
+                        movimentoId={m.id}
                         teor={m.teor}
                         quando={m.criado_em}
                         prolator={m.prolator_nome}
@@ -1602,6 +1613,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
       )}
       {dialog?.kind === "verAto" && (
         <VerAtoDialog
+          movimentoId={dialog.movimentoId}
           especie={dialog.especie}
           teor={dialog.teor}
           quando={dialog.quando}
@@ -1687,6 +1699,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
 
       <style>{`.input{background:var(--input);border:1px solid var(--border);border-radius:6px;padding:.55rem .7rem;font-size:.9rem;color:var(--foreground);width:100%}`}</style>
     </div>
+     </ExportAtoContext.Provider>
   );
 }
 
@@ -2393,6 +2406,7 @@ function renderAtoBody(_especie: "despacho" | "decisao" | "portaria" | "mandado"
 }
 
 function TimelineAtoCard({
+  movimentoId,
   especie,
   teor,
   quando,
@@ -2402,6 +2416,7 @@ function TimelineAtoCard({
   denunciado,
   portariaDados,
 }: {
+  movimentoId?: string;
   especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao" | "nota_culpa" | "termo_declaracoes" | "auto_interrogatorio";
   teor: string;
   quando: string;
@@ -2416,7 +2431,20 @@ function TimelineAtoCard({
   const assunto = ATO_ASSUNTO[especie];
   const portariaEstruturada = especie === "portaria" && isPortariaDados(portariaDados) ? portariaDados : null;
 
+  const exportarAto = useExportarAto();
+
   async function exportarPdf() {
+    if (exportarAto && movimentoId) {
+      setGerando(true);
+      try {
+        await exportarAto(movimentoId);
+      } catch (e) {
+        toast.error((e as Error)?.message || "Falha ao gerar o PDF.");
+      } finally {
+        setGerando(false);
+      }
+      return;
+    }
     if (!pdfRef.current) return;
     setGerando(true);
     try {
@@ -2482,6 +2510,7 @@ function TimelineAtoCard({
 }
 
 function TimelineCertidaoCard({
+  movimentoId,
   teor,
   quando,
   prolator,
@@ -2489,6 +2518,7 @@ function TimelineCertidaoCard({
   procedimento,
   denunciado,
 }: {
+  movimentoId?: string;
   teor: string;
   quando: string;
   prolator: string;
@@ -2499,7 +2529,20 @@ function TimelineCertidaoCard({
   const pdfRef = useDocumentRef();
   const [gerando, setGerando] = useState(false);
 
+  const exportarAto = useExportarAto();
+
   async function exportarPdf() {
+    if (exportarAto && movimentoId) {
+      setGerando(true);
+      try {
+        await exportarAto(movimentoId);
+      } catch (e) {
+        toast.error((e as Error)?.message || "Falha ao gerar o PDF.");
+      } finally {
+        setGerando(false);
+      }
+      return;
+    }
     if (!pdfRef.current) return;
     setGerando(true);
     try {
@@ -2568,6 +2611,7 @@ function extrairRelatoIpc(teor: string): string {
 }
 
 function TimelineIpcCard({
+  movimentoId,
   teor,
   quando,
   prolator,
@@ -2576,6 +2620,7 @@ function TimelineIpcCard({
   procedimento,
   identificacao,
 }: {
+  movimentoId?: string;
   teor: string;
   quando: string;
   prolator: string;
@@ -2620,7 +2665,20 @@ function TimelineIpcCard({
     { label: "Identificação do policial", valor: identificacao },
   ];
 
+  const exportarAto = useExportarAto();
+
   async function exportarPdf() {
+    if (exportarAto && movimentoId) {
+      setGerando(true);
+      try {
+        await exportarAto(movimentoId);
+      } catch (e) {
+        toast.error((e as Error)?.message || "Falha ao gerar o PDF.");
+      } finally {
+        setGerando(false);
+      }
+      return;
+    }
     if (!pdfRef.current) return;
     setGerando(true);
     try {
@@ -2683,6 +2741,7 @@ function TimelineIpcCard({
 
 
 function VerAtoDialog({
+  movimentoId,
   especie,
   teor,
   quando,
@@ -2693,6 +2752,7 @@ function VerAtoDialog({
   portariaDados,
   onClose,
 }: {
+  movimentoId?: string;
   especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata";
   teor: string;
   quando: string;
@@ -2711,7 +2771,20 @@ function VerAtoDialog({
   const titulo = assunto;
   const portariaEstruturada = especie === "portaria" && isPortariaDados(portariaDados) ? portariaDados : null;
 
+  const exportarAto = useExportarAto();
+
   async function baixarPdf() {
+    if (exportarAto && movimentoId) {
+      setGerando(true);
+      try {
+        await exportarAto(movimentoId);
+      } catch (e) {
+        toast.error((e as Error)?.message || "Falha ao gerar o PDF.");
+      } finally {
+        setGerando(false);
+      }
+      return;
+    }
     if (!pdfRef.current) return;
     setGerando(true);
     try {

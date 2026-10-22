@@ -1,3 +1,4 @@
+import { PostoGraduacaoSelect } from "@/components/PostoGraduacaoSelect";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -87,6 +88,7 @@ interface Usuario {
   created_at: string;
   rg: string | null;
   discord_id: string | null;
+  posto_graduacao?: string | null;
   telefone: string | null;
   foto_path: string | null;
 }
@@ -302,6 +304,7 @@ function EditarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: (
   const [cargo, setCargo] = useState<(typeof APP_ROLES)[number]>("cidadao");
   const [rg, setRg] = useState("");
   const [discord, setDiscord] = useState("");
+  const [posto, setPosto] = useState("");
   const [telefone, setTelefone] = useState("");
   const [fotoPath, setFotoPath] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -316,6 +319,7 @@ function EditarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: (
       setCargo((usuario.cargo as typeof cargo) ?? "cidadao");
       setRg(usuario.rg ?? "");
       setDiscord(usuario.discord_id ?? "");
+      setPosto(usuario.posto_graduacao ?? "");
       setTelefone(usuario.telefone ?? "");
       setFotoPath(usuario.foto_path);
     }
@@ -331,6 +335,7 @@ function EditarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: (
           cargo,
           rg: rg.trim() || null,
           discord_id: discord.trim() || null,
+          posto_graduacao: posto || null,
           telefone: telefone.trim() || null,
           foto_path: fotoPath,
         },
@@ -399,6 +404,10 @@ function EditarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: (
             <div>
               <Label>RG</Label>
               <Input value={rg} onChange={(e) => setRg(e.target.value)} />
+            </div>
+            <div>
+              <Label>Posto/Graduação</Label>
+              <PostoGraduacaoSelect value={posto} onChange={setPosto} />
             </div>
             <div>
               <Label>Discord ID</Label>
@@ -523,9 +532,10 @@ function AprovarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: 
   const qc = useQueryClient();
   const aprovarFn = useServerFn(aprovarUsuario);
   const [cargo, setCargo] = useState<(typeof APP_ROLES)[number]>("cidadao");
+  const [posto, setPosto] = useState("");
 
   const m = useMutation({
-    mutationFn: () => aprovarFn({ data: { user_id: usuario!.id, cargo } }),
+    mutationFn: () => aprovarFn({ data: { user_id: usuario!.id, cargo, posto_graduacao: posto || null } }),
     onSuccess: () => {
       toast.success("Cadastro aprovado.");
       qc.invalidateQueries({ queryKey: ["usuarios"] });
@@ -554,6 +564,10 @@ function AprovarModal({ usuario, onClose }: { usuario: Usuario | null; onClose: 
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div>
+            <Label>Posto/Graduação</Label>
+            <PostoGraduacaoSelect value={posto} onChange={setPosto} />
           </div>
         </div>
         <DialogFooter>

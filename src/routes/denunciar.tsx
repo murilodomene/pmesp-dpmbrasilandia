@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -107,7 +108,22 @@ function DenunciarPage() {
           </p>
           <div className="surface mt-8 p-8 text-center">
             <div className="text-xs uppercase tracking-widest text-muted-foreground">Protocolo</div>
-            <div className="tabular mt-2 font-serif text-4xl text-primary">{protocolo}</div>
+            <div className="tabular mt-2 break-all font-serif text-2xl text-primary sm:text-3xl">{protocolo}</div>
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard?.writeText(protocolo).then(
+                  () => toast.success("Protocolo copiado."),
+                  () => toast.error("Não foi possível copiar."),
+                );
+              }}
+              className="mt-4 rounded-md border border-border px-4 py-2 text-sm hover:bg-surface-2"
+            >
+              Copiar protocolo
+            </button>
+            <p className="mt-4 text-xs text-muted-foreground">
+              Guarde este protocolo em local seguro: ele é necessário para consultar o andamento da denúncia.
+            </p>
           </div>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link

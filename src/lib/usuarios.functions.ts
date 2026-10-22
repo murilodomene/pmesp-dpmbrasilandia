@@ -95,7 +95,7 @@ export const listUsuarios = createServerFn({ method: "GET" })
 export const aprovarUsuario = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
-    z.object({ user_id: z.string().uuid(), cargo: z.enum(ROLES) }).parse(data),
+    z.object({ user_id: z.string().uuid(), cargo: z.enum(ROLES), posto_graduacao: z.string().trim().max(100).optional().nullable() }).parse(data),
   )
   .handler(async ({ data, context }) => {
     await assertDelegado(context as never);
@@ -104,7 +104,7 @@ export const aprovarUsuario = createServerFn({ method: "POST" })
     if (confirmError) throw new Error(confirmError.message);
     const { error: e1 } = await context.supabase
       .from("profiles")
-      .update({ status: "ativo" })
+      .update({ status: "ativo", ...(data.posto_graduacao !== undefined ? { posto_graduacao: data.posto_graduacao || null } : {}) } as any)
       .eq("id", data.user_id);
     if (e1) throw new Error(e1.message);
     await context.supabase.from("user_roles").delete().eq("user_id", data.user_id);
@@ -152,6 +152,7 @@ export const editarUsuarioPublico = createServerFn({ method: "POST" })
         discord_id: z.string().trim().max(100).optional().nullable(),
         telefone: z.string().trim().max(30).optional().nullable(),
         foto_path: z.string().trim().max(500).optional().nullable(),
+        posto_graduacao: z.string().trim().max(100).optional().nullable(),
       })
       .parse(data),
   )
@@ -172,6 +173,7 @@ export const editarUsuarioPublico = createServerFn({ method: "POST" })
     if (data.discord_id !== undefined) updates.discord_id = data.discord_id;
     if (data.telefone !== undefined) updates.telefone = data.telefone;
     if (data.foto_path !== undefined) updates.foto_path = data.foto_path;
+    if (data.posto_graduacao !== undefined) updates.posto_graduacao = data.posto_graduacao || null;
 
     const { error: e1 } = await context.supabase
       .from("profiles")
@@ -208,6 +210,7 @@ export const atualizarPerfil = createServerFn({ method: "POST" })
         telefone: z.string().trim().max(30).optional().nullable(),
         foto_path: z.string().trim().max(500).optional().nullable(),
         unidade: z.enum(OPMS).optional().nullable(),
+        posto_graduacao: z.string().trim().max(100).optional().nullable(),
       })
       .parse(data),
   )
@@ -229,6 +232,7 @@ export const atualizarPerfil = createServerFn({ method: "POST" })
       if (data.rg !== undefined) updates.rg = data.rg;
       if (data.discord_id !== undefined) updates.discord_id = data.discord_id;
       if (data.unidade !== undefined) updates.unidade = data.unidade ?? null;
+      if (data.posto_graduacao !== undefined) updates.posto_graduacao = data.posto_graduacao || null;
     }
 
     if (Object.keys(updates).length === 0) return { ok: true };

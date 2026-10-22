@@ -32,21 +32,25 @@ export const lerContadorProtocolo = createServerFn({ method: "POST" })
       { _ano: data.ano },
     );
     if (error) throw new Error(error.message);
-    return res as { ano: number; proximo_numero: number };
+    return res as { ano: number; proximo_ipm: number; proximo_sindicancia: number; proximo_apfd: number };
   });
 
 export const definirProximoProtocolo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
     z
-      .object({ ano: z.number().int().min(2000).max(2999), proximo: z.number().int().min(1).max(999) })
+      .object({
+        tipo: z.enum(["ipm", "sindicancia", "apfd"]),
+        ano: z.number().int().min(2000).max(2999),
+        proximo: z.number().int().min(1).max(999),
+      })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
     await requireDelegadoCorregedor(context as any);
     const { data: res, error } = await (context.supabase as any).rpc(
-      "manutencao_definir_proximo_protocolo",
-      { _ano: data.ano, _proximo: data.proximo },
+      "manutencao_definir_proximo_procedimento",
+      { _tipo: data.tipo, _ano: data.ano, _proximo: data.proximo },
     );
     if (error) throw new Error(error.message);
     return res as { ano: number; proximo: string };

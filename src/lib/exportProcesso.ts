@@ -13,6 +13,7 @@ import { isPortariaDados } from "@/components/PortariaTemplate";
 import crestAsset from "@/assets/brasao-corregedoria-pmesp-transparente.png.asset.json";
 import { appendPdfElement } from "@/lib/pdf-export";
 import { ROLE_LABELS, type AppRole } from "@/lib/access-roles";
+import { gerarProcessoPdf, nomeArquivoProcesso, type PdfDenuncia, type PdfImagem } from "@/lib/pdf/processo-pdf";
 
 export interface ExportPolicial {
   id: string;
@@ -212,7 +213,7 @@ function coverPage(d: ExportDenuncia, policiais: ExportPolicial[]): string {
     ${HEADER_HTML}
     <div style="text-align:center;margin:72px 0 24px">
       <div style="font-size:22px;font-weight:bold;letter-spacing:.25em">PROCESSO ADMINISTRATIVO DISCIPLINAR</div>
-      <div style="margin-top:14px;font-size:26px;letter-spacing:.15em;font-weight:bold">Nº ${esc(d.numero_protocolo)}</div>
+      <div style="margin-top:14px;font-size:26px;letter-spacing:.15em;font-weight:bold">Nº ${esc((d as any).numero_procedimento ?? d.numero_protocolo)}</div>
     </div>
     <div style="margin-top:32px;border:1.5px solid #6b7280;border-radius:4px;padding:20px 24px;font-size:13px;line-height:1.7">
       <div style="display:grid;grid-template-columns:180px 1fr;gap:8px 16px">
@@ -281,7 +282,7 @@ function atoContentPage(
         <div><div style="font-size:17px;font-weight:bold">SECRETARIA DA SEGURANÇA PÚBLICA</div><div style="font-size:16px;font-weight:bold">POLÍCIA MILITAR DO ESTADO DE SÃO PAULO</div><div style="font-size:9px;font-weight:bold;margin-top:2px">CHAVE IDENTIFICADORA</div><svg class="portaria-barcode" data-value="${esc(p.chave)}"></svg><div style="font:12px 'Courier New',monospace">${esc(p.chave)}</div></div>
       </div>
       <div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.28;color:#111">
-        <h2 style="text-align:center;font-size:20px;margin:26px 0 14px">IPM Nº ${esc(p.ipmNumero)}</h2>
+        <h2 style="text-align:center;font-size:20px;margin:26px 0 14px">${(p as any).tipoProcedimento === "sindicancia" ? "SINDPM" : "IPM"} Nº ${esc(p.ipmNumero)}</h2>
         <p><strong>DATA DE INSTAURAÇÃO:</strong> ${esc(p.dataInstauracao)}</p><p><strong>DATA DO FATO:</strong> ${esc(p.dataFato)}</p><div style="height:14px"></div>
         <p><strong>ENCARREGADO:</strong> ${esc(p.encarregado)}</p><p><strong>MUNICÍPIO DE INSTAURAÇÃO:</strong> ${esc(p.municipioInstauracao)}</p>
         ${secao("NATUREZAS")}${lista(p.naturezas)}${secao("POLICIAIS MILITARES INDICIADOS")}${lista(p.indiciados)}${secao("LOCAL DOS FATOS")}<p>${esc(p.localFatos)}</p>${secao("PORTARIA")}
@@ -297,11 +298,11 @@ function atoContentPage(
     m.especie === "ipc"
       ? `
         <div><strong>UNIDADE:</strong> ${esc(d.unidade) || "—"}</div>
-        <div><strong>PROCESSO Nº:</strong> ${esc(d.numero_protocolo)}</div>
+        <div><strong>PROCESSO Nº:</strong> ${esc((d as any).numero_procedimento ?? d.numero_protocolo)}</div>
         <div><strong>IDENTIFICAÇÃO DO POLICIAL:</strong> ${esc(denunciado)}</div>
       `
       : `
-        <div><strong>PROCEDIMENTO:</strong> ${esc(d.numero_protocolo)}</div>
+        <div><strong>PROCEDIMENTO:</strong> ${esc((d as any).numero_procedimento ?? d.numero_protocolo)}</div><div><strong>PROTOCOLO:</strong> ${esc(d.numero_protocolo)}</div>
         <div><strong>DENUNCIADO:</strong> ${esc(denunciado)}</div>
       `;
 
@@ -394,7 +395,80 @@ async function fetchAnexoDataUrl(path: string): Promise<string | null> {
   }
 }
 
-/* ------------ export principal ------------ */
+/* ------------ export vetorial (novo) ------------ */
+
+function blobParaDataUrl(blob: Blob): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result as string);
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(blob);
+  });
+}
+
+/** Carrega a imagem, mede e, se não for PNG/JPEG, converte para JPEG. */
+async function normalizarImagem(dataUrl: string): Promise<PdfImagem | null> {
+  const el = new Image();
+  const ok = await new Promise<boolean>((resolve) => {
+    el.onload = () => resolve(true);
+    el.onerror = () => resolve(false);
+    el.src = dataUrl;
+  });
+  if (!ok || !el.naturalWidth || !el.naturalHeight) return null;
+  let url = dataUrl;
+  if (!/^data:image\/(png|jpe?g)/i.test(dataUrl)) {
+    const canvas = document.createElement("canvas");
+    canvas.width = el.naturalWidth;
+    canvas.height = el.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(el, 0, 0);
+    url = canvas.toDataURL("image/jpeg", 0.92);
+  }
+  return { dataUrl: url, width: el.naturalWidth, height: el.naturalHeight };
+}
+
+async function carregarImagemPublica(caminho: string): Promise<PdfImagem> {
+  const resp = await fetch(caminho);
+  if (!resp.ok) throw new Error("Não foi possível carregar o timbre do PDF. Tente novamente.");
+  const img = await normalizarImagem(await blobParaDataUrl(await resp.blob()));
+  if (!img) throw new Error("Não foi possível carregar o timbre do PDF. Tente novamente.");
+  return img;
+}
+
+/**
+ * Exportação do processo completo em texto vetorial (nítido e pesquisável),
+ * no padrão do modelo oficial: timbre da SSP, "DESPACHO - CORREGPM" e rodapé
+ * com IPM/SINDPM, emblema da PM e "Página X de Y". NÃO inclui observações internas.
+ */
+export async function exportProcessoCompletoV2(
+  data: Omit<ExportProcessoData, "denuncia"> & { denuncia: PdfDenuncia },
+): Promise<void> {
+  const [brasao, emblema] = await Promise.all([
+    carregarImagemPublica("/pdf/brasao-ssp.png"),
+    carregarImagemPublica("/pdf/emblema-pm.png"),
+  ]);
+  const anexos = new Map<string, PdfImagem>();
+  const caminhos = Array.from(
+    new Set(data.movimentos.flatMap((m) => (Array.isArray(m.anexos) ? m.anexos.map((a) => a.path) : []))),
+  );
+  await Promise.all(
+    caminhos.map(async (path) => {
+      const url = await fetchAnexoDataUrl(path);
+      const img = url ? await normalizarImagem(url) : null;
+      if (img) anexos.set(path, img);
+    }),
+  );
+  const pdf = await gerarProcessoPdf(
+    { denuncia: data.denuncia, policiais: data.policiais, movimentos: data.movimentos },
+    { brasao, emblema, anexos },
+  );
+  pdf.save(nomeArquivoProcesso(data.denuncia));
+}
+
+/* ------------ export principal (versão anterior, por imagem) ------------ */
 
 export async function exportProcessoCompleto(data: ExportProcessoData): Promise<void> {
   const [{ default: jsPDF }, { default: JsBarcode }] = await Promise.all([
@@ -489,7 +563,7 @@ export async function exportProcessoCompleto(data: ExportProcessoData): Promise<
       pdf.text(`Página ${i} de ${total}`, pageW / 2, pageH - 8, { align: "center" });
     }
 
-    const nomeArquivo = `PAD-${data.denuncia.numero_protocolo.replace(/[^\w-]+/g, "-")}.pdf`;
+    const nomeArquivo = `PAD-${((data.denuncia as any).numero_procedimento ?? data.denuncia.numero_protocolo).replace(/[^\w-]+/g, "-")}.pdf`;
     pdf.save(nomeArquivo);
   } finally {
     iframe.remove();

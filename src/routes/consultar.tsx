@@ -56,7 +56,7 @@ function ConsultarPage() {
         <form onSubmit={buscar} className="surface mt-8 flex gap-2 p-4">
           <input
             required
-            placeholder="001/2026"
+            placeholder="PMESP-BR-XXXXXXXX-0000"
             value={protocolo}
             onChange={(e) => setProtocolo(e.target.value)}
             className="tabular flex-1 rounded-md border border-border bg-input px-3 py-2 text-sm"

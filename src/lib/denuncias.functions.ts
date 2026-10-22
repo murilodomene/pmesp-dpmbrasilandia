@@ -20,11 +20,12 @@ const STATUS_VALUES = [
 
 const UNIDADES = OPMS;
 
-const ESPECIES = ["despacho", "decisao", "ipc", "mandado", "ata", "certidao"] as const;
+const ESPECIES = ["despacho", "decisao", "ipc", "mandado", "ata", "certidao", "nota_culpa", "termo_declaracoes", "auto_interrogatorio"] as const;
 const ESPECIES_PORTARIA = "portaria" as const;
 
 const portariaDadosSchema = z.object({
   ipmNumero: z.string().trim().min(3).max(80),
+  tipoProcedimento: z.enum(["ipm", "sindicancia", "apfd"]).optional(),
   dataInstauracao: z.string().trim().min(3).max(100),
   dataFato: z.string().trim().min(3).max(100),
   encarregado: z.string().trim().min(3).max(250),
@@ -93,13 +94,11 @@ export const consultarPublica = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) => z.object({ protocolo: z.string().trim().min(3).max(40) }).parse(data))
   .handler(async ({ data }) => {
     const sb = publicClient();
-    const { data: den } = await sb
-      .from("denuncias")
-      .select("numero_protocolo, status, obs_denunciante, created_at")
-      .eq("numero_protocolo", data.protocolo)
-      .maybeSingle();
+    const protocolo = data.protocolo.replace(/\s+/g, "").toUpperCase();
+    const { data: rows } = await (sb as any).rpc("consultar_protocolo", { _protocolo: protocolo });
+    const den = Array.isArray(rows) ? rows[0] : rows;
     if (!den) return null;
-    return den;
+    return den as { numero_protocolo: string; status: string; obs_denunciante: string | null; created_at: string };
   });
 
 // ============ INTERNAS (staff) ============
@@ -113,7 +112,7 @@ export const listDenuncias = createServerFn({ method: "GET" })
     const { data, error } = await context.supabase
       .from("denuncias")
       .select(
-        "id, numero_protocolo, status, unidade, ocorrencia_tipo, termo_inicial, acrescimos_dias, interrupcoes_count, concluido_em, certidao_gerada, created_at, denunciante_nome, denuncia_policiais(nome, unidade), denuncia_tarjas(id, cor, texto)",
+        "id, numero_protocolo, numero_procedimento, tipo_procedimento, status, unidade, ocorrencia_tipo, termo_inicial, acrescimos_dias, interrupcoes_count, concluido_em, certidao_gerada, created_at, denunciante_nome, denuncia_policiais(nome, unidade), denuncia_tarjas(id, cor, texto)",
       )
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
@@ -125,7 +124,7 @@ export const getDenuncia = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     const cols =
-      "id, numero_protocolo, denunciante_nome, denunciante_identificador, denunciante_contato, denunciante_anonimo, ocorrencia_tipo, ocorrencia_local, ocorrencia_data, ocorrencia_hora, relato, info_adicional, anexos, links, status, unidade, obs_denunciante, termo_inicial, acrescimos_dias, interrupcoes_count, concluido_em, certidao_gerada, created_at, instaurada_em, owner_id";
+      "id, numero_protocolo, numero_procedimento, tipo_procedimento, denunciante_nome, denunciante_identificador, denunciante_contato, denunciante_anonimo, ocorrencia_tipo, ocorrencia_local, ocorrencia_data, ocorrencia_hora, relato, info_adicional, anexos, links, status, unidade, obs_denunciante, termo_inicial, acrescimos_dias, interrupcoes_count, concluido_em, certidao_gerada, created_at, instaurada_em, owner_id";
     // Salvaguarda: se o prazo de 7 dias já venceu, transita antes de ler.
     await context.supabase
       .rpc("transitar_denuncia" as never, { _denuncia_id: data.id } as never)
@@ -203,6 +202,16 @@ export const lancarMovimento = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const p = await getProlator(context);
+    if (["nota_culpa", "termo_declaracoes", "auto_interrogatorio"].includes(data.especie)) {
+      const { data: d } = await context.supabase
+        .from("denuncias")
+        .select("tipo_procedimento")
+        .eq("id", data.denuncia_id)
+        .maybeSingle();
+      if ((d as { tipo_procedimento?: string } | null)?.tipo_procedimento !== "apfd") {
+        throw new Error("Este ato só pode ser lançado em procedimentos APFD.");
+      }
+    }
     const anexos = data.anexos ?? [];
     const { error } = await context.supabase.from("movimentos").insert({
       denuncia_id: data.denuncia_id,
@@ -751,6 +760,7 @@ const oficioSchema = z.object({
     .min(1, "Adicione pelo menos um envolvido.")
     .max(20),
   links: z.array(z.string().url().max(1000)).max(20).default([]),
+  tipo_procedimento: z.enum(["ipm", "sindicancia", "apfd"]).default("ipm"),
 });
 
 export const instaurarOficio = createServerFn({ method: "POST" })
@@ -808,7 +818,13 @@ export const instaurarOficio = createServerFn({ method: "POST" })
       ...p,
     });
 
-    return { id: den.id, protocolo: den.numero_protocolo };
+    const { data: numero, error: eNum } = await (context.supabase as any).rpc("instaurar_procedimento", {
+      _denuncia_id: den.id,
+      _tipo: data.tipo_procedimento,
+    });
+    if (eNum) throw new Error(eNum.message);
+
+    return { id: den.id, protocolo: (numero as string) ?? den.numero_protocolo };
   });
 
 // Envio de denúncia por Cidadão autenticado — vincula owner_id.
@@ -998,7 +1014,7 @@ export const listMeusProcessosMp = createServerFn({ method: "GET" })
     const { data, error } = await sb
       .from("denuncias")
       .select(
-        "id, numero_protocolo, status, ocorrencia_tipo, unidade, created_at, instaurada_em",
+        "id, numero_protocolo, numero_procedimento, tipo_procedimento, status, ocorrencia_tipo, unidade, created_at, instaurada_em",
       )
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
@@ -1022,12 +1038,12 @@ export const excluirDenuncia = createServerFn({ method: "POST" })
     const sb = context.supabase as unknown as ReturnType<typeof publicClient>;
     const { data: den, error: e1 } = await sb
       .from("denuncias")
-      .select("id, numero_protocolo")
+      .select("id, numero_protocolo, numero_procedimento")
       .eq("id", data.id)
       .maybeSingle();
     if (e1) throw new Error(e1.message);
     if (!den) throw new Error("Denúncia não encontrada.");
-    if (den.numero_protocolo !== data.confirmar_protocolo) {
+    if (den.numero_protocolo !== data.confirmar_protocolo && den.numero_procedimento !== data.confirmar_protocolo) {
       throw new Error("Número do procedimento não confere.");
     }
     const { error } = await sb.from("denuncias").delete().eq("id", data.id);
@@ -1244,3 +1260,18 @@ export const removerDenunciante = createServerFn({ method: "POST" })
   });
 
 
+
+// Instauração (IPM ou Sindicância): gera o número interno de forma atômica no banco.
+export const instaurarProcedimento = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ denuncia_id: z.string().uuid(), tipo: z.enum(["ipm", "sindicancia", "apfd"]) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: numero, error } = await (context.supabase as any).rpc("instaurar_procedimento", {
+      _denuncia_id: data.denuncia_id,
+      _tipo: data.tipo,
+    });
+    if (error) throw new Error(error.message);
+    return { numero: numero as string };
+  });

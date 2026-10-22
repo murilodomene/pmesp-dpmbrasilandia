@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.17"
+    PostgrestVersion: "14.18"
   }
   public: {
     Tables: {
@@ -207,6 +207,7 @@ export type Database = {
           instaurada_em: string | null
           interrupcoes_count: number
           links: Json
+          numero_procedimento: string | null
           numero_protocolo: string
           obs_denunciante: string | null
           obs_internas: string | null
@@ -218,6 +219,9 @@ export type Database = {
           relato: string
           status: Database["public"]["Enums"]["denuncia_status"]
           termo_inicial: string
+          tipo_procedimento:
+            | Database["public"]["Enums"]["tipo_procedimento"]
+            | null
           unidade: Database["public"]["Enums"]["unidade_pc"] | null
         }
         Insert: {
@@ -235,6 +239,7 @@ export type Database = {
           instaurada_em?: string | null
           interrupcoes_count?: number
           links?: Json
+          numero_procedimento?: string | null
           numero_protocolo?: string
           obs_denunciante?: string | null
           obs_internas?: string | null
@@ -246,6 +251,9 @@ export type Database = {
           relato: string
           status?: Database["public"]["Enums"]["denuncia_status"]
           termo_inicial?: string
+          tipo_procedimento?:
+            | Database["public"]["Enums"]["tipo_procedimento"]
+            | null
           unidade?: Database["public"]["Enums"]["unidade_pc"] | null
         }
         Update: {
@@ -263,6 +271,7 @@ export type Database = {
           instaurada_em?: string | null
           interrupcoes_count?: number
           links?: Json
+          numero_procedimento?: string | null
           numero_protocolo?: string
           obs_denunciante?: string | null
           obs_internas?: string | null
@@ -274,6 +283,9 @@ export type Database = {
           relato?: string
           status?: Database["public"]["Enums"]["denuncia_status"]
           termo_inicial?: string
+          tipo_procedimento?:
+            | Database["public"]["Enums"]["tipo_procedimento"]
+            | null
           unidade?: Database["public"]["Enums"]["unidade_pc"] | null
         }
         Relationships: []
@@ -720,6 +732,24 @@ export type Database = {
           },
         ]
       }
+      procedimento_contador: {
+        Row: {
+          ano: number
+          tipo: Database["public"]["Enums"]["tipo_procedimento"]
+          ultimo: number
+        }
+        Insert: {
+          ano: number
+          tipo: Database["public"]["Enums"]["tipo_procedimento"]
+          ultimo?: number
+        }
+        Update: {
+          ano?: number
+          tipo?: Database["public"]["Enums"]["tipo_procedimento"]
+          ultimo?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -728,6 +758,7 @@ export type Database = {
           id: string
           matricula: string
           nome: string
+          posto_graduacao: string | null
           rg: string | null
           status: Database["public"]["Enums"]["profile_status"]
           telefone: string | null
@@ -740,6 +771,7 @@ export type Database = {
           id: string
           matricula: string
           nome: string
+          posto_graduacao?: string | null
           rg?: string | null
           status?: Database["public"]["Enums"]["profile_status"]
           telefone?: string | null
@@ -752,6 +784,7 @@ export type Database = {
           id?: string
           matricula?: string
           nome?: string
+          posto_graduacao?: string | null
           rg?: string | null
           status?: Database["public"]["Enums"]["profile_status"]
           telefone?: string | null
@@ -824,6 +857,15 @@ export type Database = {
         Args: { _denuncia_id: string; _mp_user_id: string }
         Returns: undefined
       }
+      consultar_protocolo: {
+        Args: { _protocolo: string }
+        Returns: {
+          created_at: string
+          numero_protocolo: string
+          obs_denunciante: string
+          status: Database["public"]["Enums"]["denuncia_status"]
+        }[]
+      }
       criar_intimacao: {
         Args: { _denuncia_id: string; _destinatario_id: string; _teor: string }
         Returns: string
@@ -831,6 +873,7 @@ export type Database = {
       gerar_numero_aviso: { Args: never; Returns: string }
       gerar_numero_pdo: { Args: never; Returns: string }
       gerar_protocolo: { Args: never; Returns: string }
+      gerar_protocolo_publico: { Args: never; Returns: string }
       get_obs_internas: { Args: { _denuncia_id: string }; Returns: string }
       get_user_cargo: {
         Args: { _user_id: string }
@@ -843,6 +886,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      instaurar_procedimento: {
+        Args: {
+          _denuncia_id: string
+          _tipo: Database["public"]["Enums"]["tipo_procedimento"]
+        }
+        Returns: string
+      }
       is_active_staff: { Args: { _user_id: string }; Returns: boolean }
       is_delegado: { Args: { _user_id: string }; Returns: boolean }
       list_ipcs_publicos: {
@@ -851,13 +901,21 @@ export type Database = {
           criado_em: string
           denuncia_id: string
           movimento_id: string
-          numero_protocolo: string
+          numero_procedimento: string
           policiais: Json
           prolator_cargo: Database["public"]["Enums"]["app_role"]
           prolator_nome: string
           teor: string
           unidade: Database["public"]["Enums"]["unidade_pc"]
         }[]
+      }
+      manutencao_definir_proximo_procedimento: {
+        Args: {
+          _ano: number
+          _proximo: number
+          _tipo: Database["public"]["Enums"]["tipo_procedimento"]
+        }
+        Returns: Json
       }
       manutencao_definir_proximo_protocolo: {
         Args: { _ano: number; _proximo: number }
@@ -936,8 +994,12 @@ export type Database = {
         | "evento"
         | "mandado"
         | "ata"
+        | "nota_culpa"
+        | "termo_declaracoes"
+        | "auto_interrogatorio"
       notificacao_tipo: "auto" | "intimacao" | "aviso"
       profile_status: "pendente" | "ativo" | "inativo"
+      tipo_procedimento: "ipm" | "sindicancia" | "apfd"
       unidade_pc:
         | "CPC"
         | "CPA/M-3"
@@ -1117,9 +1179,13 @@ export const Constants = {
         "evento",
         "mandado",
         "ata",
+        "nota_culpa",
+        "termo_declaracoes",
+        "auto_interrogatorio",
       ],
       notificacao_tipo: ["auto", "intimacao", "aviso"],
       profile_status: ["pendente", "ativo", "inativo"],
+      tipo_procedimento: ["ipm", "sindicancia", "apfd"],
       unidade_pc: [
         "CPC",
         "CPA/M-3",

@@ -10,6 +10,7 @@ import { UserAvatar, useAvatarUrl } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PostoGraduacaoSelect } from "@/components/PostoGraduacaoSelect";
 import { getSessionInfo, atualizarPerfil } from "@/lib/usuarios.functions";
 
 export const Route = createFileRoute("/_authenticated/perfil")({
@@ -43,6 +44,7 @@ function PerfilPage() {
   const [nome, setNome] = useState("");
   const [rg, setRg] = useState("");
   const [discord, setDiscord] = useState("");
+  const [posto, setPosto] = useState("");
   const [telefone, setTelefone] = useState("");
   const [fotoPath, setFotoPath] = useState<string | null>(null);
   const [previewLocal, setPreviewLocal] = useState<string | null>(null);
@@ -57,6 +59,7 @@ function PerfilPage() {
     setNome((p.nome as string) ?? "");
     setRg((p.rg as string) ?? "");
     setDiscord((p.discord_id as string) ?? "");
+    setPosto((p.posto_graduacao as string) ?? "");
     setTelefone((p.telefone as string) ?? "");
     setFotoPath((p.foto_path as string) ?? null);
   }, [session?.profile]);
@@ -117,6 +120,7 @@ function PerfilPage() {
         payload.nome = nome.trim();
         payload.rg = rg.trim() || null;
         payload.discord_id = discord.trim() || null;
+        payload.posto_graduacao = posto || null;
       }
       await salvarFn({ data: payload as never });
       toast.success("Perfil atualizado com sucesso.");
@@ -199,6 +203,12 @@ function PerfilPage() {
                 onChange={setRg}
                 editable={canEditAll}
               />
+              <div>
+                <Label className="flex items-center gap-1 text-xs">
+                  Posto/Graduação {!canEditAll && <Lock className="h-3 w-3 text-muted-foreground" />}
+                </Label>
+                <PostoGraduacaoSelect value={posto} onChange={setPosto} disabled={!canEditAll} />
+              </div>
               <div>
                 <Label className="flex items-center gap-1 text-xs">
                   Cargo <Lock className="h-3 w-3 text-muted-foreground" />

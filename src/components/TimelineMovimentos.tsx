@@ -62,7 +62,10 @@ export function TimelineMovimentos({
             m.especie === "portaria" ||
             m.especie === "mandado" ||
             m.especie === "ata" ||
-            m.especie === "certidao";
+            m.especie === "certidao" ||
+            m.especie === "nota_culpa" ||
+            m.especie === "termo_declaracoes" ||
+            m.especie === "auto_interrogatorio";
           const isIpc = m.especie === "ipc";
           const isCertidao =
             m.especie === "evento" &&
@@ -100,7 +103,7 @@ export function TimelineMovimentos({
                     <span className="rounded-md border border-primary/40 bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-primary">
                       {eventoLabel}
                     </span>
-                    <span className="font-medium uppercase tracking-wider">{labelEspecie(m.especie)}</span>
+                    <span className="font-medium uppercase tracking-wider">{labelEspecie(m.especie, /^APFD/i.test(procedimento) ? "apfd" : null)}</span>
                     {canceladoBadge}
                     <span className="ml-auto text-muted-foreground tabular">
                       {new Date(m.criado_em).toLocaleString("pt-BR")}
@@ -108,7 +111,7 @@ export function TimelineMovimentos({
                   </div>
                   <div className={canceladoEm ? "line-through decoration-destructive/60" : ""}>
                     <TimelineAtoCard
-                      especie={m.especie as "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao"}
+                      especie={m.especie as "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao" | "nota_culpa" | "termo_declaracoes" | "auto_interrogatorio"}
                       teor={m.teor}
                       quando={m.criado_em}
                       prolator={m.prolator_nome}
@@ -133,7 +136,7 @@ export function TimelineMovimentos({
                     <span className="rounded-md border border-primary/40 bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-primary">
                       {eventoLabel}
                     </span>
-                    <span className="font-medium uppercase tracking-wider">{labelEspecie(m.especie)}</span>
+                    <span className="font-medium uppercase tracking-wider">{labelEspecie(m.especie, /^APFD/i.test(procedimento) ? "apfd" : null)}</span>
                     <span className="rounded-full bg-status-investigacao/25 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-status-investigacao-fg">
                       Decisão final
                     </span>
@@ -167,7 +170,7 @@ export function TimelineMovimentos({
                     <span className="rounded-md border border-primary/40 bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-primary">
                       {eventoLabel}
                     </span>
-                    <span className="font-medium uppercase tracking-wider">{labelEspecie(m.especie)}</span>
+                    <span className="font-medium uppercase tracking-wider">{labelEspecie(m.especie, /^APFD/i.test(procedimento) ? "apfd" : null)}</span>
                     {canceladoBadge}
                     <span className="ml-auto text-muted-foreground tabular">
                       {new Date(m.criado_em).toLocaleString("pt-BR")}
@@ -196,7 +199,7 @@ export function TimelineMovimentos({
                   <span className="rounded-md border border-primary/40 bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-primary">
                     {eventoLabel}
                   </span>
-                  <span className="font-medium uppercase tracking-wider">{labelEspecie(m.especie)}</span>
+                  <span className="font-medium uppercase tracking-wider">{labelEspecie(m.especie, /^APFD/i.test(procedimento) ? "apfd" : null)}</span>
                   {canceladoBadge}
                   {m.interrompe && (
                     <span className="rounded-full bg-destructive/20 px-2 py-0.5 text-destructive-foreground">
@@ -232,7 +235,12 @@ export function TimelineMovimentos({
 
 // ==================== helpers (copiados de corregedoria.tsx) ====================
 
-function labelEspecie(e: string): string {
+function labelEspecie(e: string, tipo?: string | null): string {
+  if (e === "nota_culpa") return "Nota de Culpa";
+  if (e === "termo_declaracoes") return "Termo de Declarações";
+  if (e === "auto_interrogatorio") return "Auto de Qualificação de Interrogatório";
+  if (tipo === "apfd" && e === "ipc") return "Solução";
+  if (tipo === "apfd" && e === "portaria") return "Auto de Prisão em Flagrante Delito";
   return e === "despacho"
     ? "Despacho"
     : e === "decisao"
@@ -366,29 +374,35 @@ function MovMarker({ especie }: { especie: string }) {
   );
 }
 
-const ATO_ASSUNTO: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao", string> = {
+const ATO_ASSUNTO: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao" | "nota_culpa" | "termo_declaracoes" | "auto_interrogatorio", string> = {
   despacho: "Despacho",
   decisao: "Decisão",
   portaria: "Portaria Inaugural",
   mandado: "Mandado de Citação",
   ata: "Termo de Depoimento",
   certidao: "Certidão",
+  nota_culpa: "Nota de Culpa",
+  termo_declaracoes: "Termo de Declarações",
+  auto_interrogatorio: "Auto de Qualificação de Interrogatório",
 };
 const ATO_TIPO: Record<
-  "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao",
-  "DESPACHO" | "DECISÃO" | "PORTARIA" | "MANDADO" | "TERMO DE DEPOIMENTO" | "CERTIDÃO"
-> = { despacho: "DESPACHO", decisao: "DECISÃO", portaria: "PORTARIA", mandado: "MANDADO", ata: "TERMO DE DEPOIMENTO", certidao: "CERTIDÃO" };
-const ATO_MARKER: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao", string> = {
+  "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao" | "nota_culpa" | "termo_declaracoes" | "auto_interrogatorio",
+  "DESPACHO" | "DECISÃO" | "PORTARIA" | "MANDADO" | "TERMO DE DEPOIMENTO" | "CERTIDÃO" | "NOTA DE CULPA" | "TERMO DE DECLARAÇÕES" | "AUTO DE QUALIFICAÇÃO DE INTERROGATÓRIO"
+> = { despacho: "DESPACHO", decisao: "DECISÃO", portaria: "PORTARIA", mandado: "MANDADO", ata: "TERMO DE DEPOIMENTO", certidao: "CERTIDÃO", nota_culpa: "NOTA DE CULPA", termo_declaracoes: "TERMO DE DECLARAÇÕES", auto_interrogatorio: "AUTO DE QUALIFICAÇÃO DE INTERROGATÓRIO" };
+const ATO_MARKER: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao" | "nota_culpa" | "termo_declaracoes" | "auto_interrogatorio", string> = {
   despacho: "bg-status-analise",
   decisao: "bg-destructive",
   portaria: "bg-primary",
   mandado: "bg-primary",
   ata: "bg-sky-600",
   certidao: "bg-emerald-600",
+  nota_culpa: "bg-destructive",
+  termo_declaracoes: "bg-sky-600",
+  auto_interrogatorio: "bg-sky-600",
 };
 
 function renderAtoBody(
-  _especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao",
+  _especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao" | "nota_culpa" | "termo_declaracoes" | "auto_interrogatorio",
   teor: string,
   pdf = false,
 ): React.ReactNode {
@@ -413,7 +427,7 @@ function TimelineAtoCard({
   denunciado,
   portariaDados,
 }: {
-  especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao";
+  especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao" | "nota_culpa" | "termo_declaracoes" | "auto_interrogatorio";
   teor: string;
   quando: string;
   prolator: string;

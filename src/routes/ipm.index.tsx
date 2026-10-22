@@ -62,7 +62,7 @@ function IpcPublicoIndexPage() {
         setRows([]);
         return;
       }
-      const parsed = ((data ?? []) as Array<Omit<IpcRow, "policiais"> & { policiais: unknown }>).map((r) => ({
+      const parsed = ((data ?? []) as unknown as Array<Omit<IpcRow, "policiais"> & { policiais: unknown }>).map((r) => ({
         ...r,
         policiais: (Array.isArray(r.policiais) ? r.policiais : []) as Policial[],
       }));
@@ -84,7 +84,7 @@ function IpcPublicoIndexPage() {
       } else {
         map.set(r.denuncia_id, {
           denuncia_id: r.denuncia_id,
-          numero_protocolo: r.numero_protocolo,
+          numero_protocolo: ((r as any).numero_procedimento ?? "—"),
           unidade: r.unidade,
           total: 1,
           ultimo: r.criado_em,

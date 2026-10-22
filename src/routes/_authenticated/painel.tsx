@@ -1,3 +1,4 @@
+import { NumeroProcedimento } from "@/components/NumeroProcedimento";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -95,6 +96,7 @@ function PainelInterno() {
       filtrada = filtrada.filter((d) => {
         const alvo = [
           d.numero_protocolo,
+          (d as any).numero_procedimento,
           d.denunciante_nome,
           d.unidade,
           ...(d.denuncia_policiais ?? []).map((p) => `${p.nome} ${p.unidade ?? ""}`),
@@ -220,7 +222,7 @@ function PainelInterno() {
                 className={`surface w-full p-4 text-left hover:bg-surface-2 ${prescr.prescrita ? "border-clock-danger" : ""}`}
               >
                 <div className="flex flex-wrap items-center gap-3">
-                  <span className="tabular text-xs text-muted-foreground">{d.numero_protocolo}</span>
+                  <span className="tabular text-xs text-muted-foreground"><NumeroProcedimento d={d} /></span>
                   <StatusBadge status={d.status as DenunciaStatus} />
                   {decurso ? (
                     <span className="inline-flex items-center gap-1 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs text-amber-200">
@@ -307,7 +309,7 @@ function TriagemModal({ id, onClose }: { id: string; onClose: () => void }) {
       <div className="surface max-h-[90vh] w-full max-w-2xl overflow-y-auto p-6">
         <div className="flex items-center justify-between">
           <div>
-            <div className="tabular text-xs text-muted-foreground">{d.numero_protocolo}</div>
+            <div className="tabular text-xs text-muted-foreground"><NumeroProcedimento d={d} /></div>
             <div className="mt-1 flex items-center gap-2">
               <StatusBadge status={d.status as DenunciaStatus} />
               <RelogioPrescricao
@@ -431,6 +433,7 @@ function OficioModal({ onClose }: { onClose: () => void }) {
   const [descricao, setDescricao] = useState("");
   const [dataOcorrencia, setDataOcorrencia] = useState("");
   const [unidade, setUnidade] = useState("");
+  const [tipoProc, setTipoProc] = useState<"ipm" | "sindicancia" | "apfd">("ipm");
   const [envolvidos, setEnvolvidos] = useState<Envolvido[]>([
     { nome: "", rg_funcional: "", unidade: "" },
   ]);
@@ -451,7 +454,7 @@ function OficioModal({ onClose }: { onClose: () => void }) {
   const envolvidosErr =
     submitted && envolvidos.every((e) => e.nome.trim() === "");
 
-  const numeroPreview = `AUTO • ${new Date().getFullYear()}`;
+  const numeroPreview = `${tipoProc === "ipm" ? "IPM" : tipoProc === "apfd" ? "APFD" : "SINDPM"} nº NNN/${new Date().getFullYear()}`;
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -473,6 +476,7 @@ function OficioModal({ onClose }: { onClose: () => void }) {
                 : null,
             })),
           links,
+          tipo_procedimento: tipoProc,
         },
       }),
     onSuccess: (res) => {
@@ -557,15 +561,19 @@ function OficioModal({ onClose }: { onClose: () => void }) {
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           <label className="block">
             <span className="text-xs uppercase tracking-wider text-muted-foreground">
-              Nº do procedimento
+              Tipo de procedimento
             </span>
-            <input
-              readOnly
-              value={numeroPreview}
-              className="mt-1 w-full cursor-not-allowed rounded-md border border-border bg-muted/40 px-3 py-2 text-sm tabular text-muted-foreground"
-            />
+            <select
+              value={tipoProc}
+              onChange={(e) => setTipoProc(e.target.value as "ipm" | "sindicancia" | "apfd")}
+              className="mt-1 w-full rounded-md border border-border bg-input px-3 py-2 text-sm"
+            >
+              <option value="ipm">IPM</option>
+              <option value="sindicancia">Sindicância (SINDPM)</option>
+              <option value="apfd">APFD — Auto de Prisão em Flagrante Delito</option>
+            </select>
             <span className="mt-1 block text-[10px] text-muted-foreground">
-              O protocolo definitivo é gerado ao salvar.
+              O número interno ({numeroPreview}) é gerado ao salvar.
             </span>
           </label>
 

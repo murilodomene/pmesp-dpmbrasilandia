@@ -57,19 +57,19 @@ export const listObservacoes = createServerFn({ method: "GET" })
     if (ids.length > 0) {
       const { data: links, error: lErr } = await context.supabase
         .from("observacao_pads")
-        .select("observacao_id, denuncia_id, denuncias(numero_protocolo)")
+        .select("observacao_id, denuncia_id, denuncias(numero_protocolo, numero_procedimento)")
         .in("observacao_id", ids);
       if (lErr) throw new Error(lErr.message);
       vinculos = (links ?? []).map((l) => {
         const row = l as {
           observacao_id: string;
           denuncia_id: string;
-          denuncias: { numero_protocolo: string } | null;
+          denuncias: { numero_protocolo: string; numero_procedimento: string | null } | null;
         };
         return {
           observacao_id: row.observacao_id,
           denuncia_id: row.denuncia_id,
-          numero_protocolo: row.denuncias?.numero_protocolo ?? "",
+          numero_protocolo: row.denuncias?.numero_procedimento ?? row.denuncias?.numero_protocolo ?? "",
         };
       });
     }
@@ -213,13 +213,19 @@ export const buscarPads = createServerFn({ method: "POST" })
     const t = data.termo.trim();
     let q = context.supabase
       .from("denuncias")
-      .select("id, numero_protocolo")
+      .select("id, numero_protocolo, numero_procedimento")
       .order("created_at", { ascending: false })
       .limit(20);
-    if (t) q = q.ilike("numero_protocolo", `%${t}%`);
+    if (t) {
+      const safe = t.replace(/[,()%*]/g, "");
+      q = q.or(`numero_protocolo.ilike.%${safe}%,numero_procedimento.ilike.%${safe}%`);
+    }
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
-    return (rows ?? []) as { id: string; numero_protocolo: string }[];
+    return (rows ?? []).map((r: any) => ({
+      id: r.id as string,
+      numero_protocolo: (r.numero_procedimento ?? r.numero_protocolo) as string,
+    }));
   });
 
 export const contarObservacoesPorPad = createServerFn({ method: "POST" })

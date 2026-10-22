@@ -57,9 +57,10 @@ function IpcPublicoPadPage() {
         setRows([]);
         return;
       }
-      const parsed = ((data ?? []) as Array<Omit<IpcRow, "policiais"> & { policiais: unknown }>)
+      const parsed = ((data ?? []) as unknown as Array<Omit<IpcRow, "policiais"> & { policiais: unknown }>)
         .map((r) => ({
           ...r,
+          numero_protocolo: ((r as any).numero_procedimento as string | null) ?? "—",
           policiais: (Array.isArray(r.policiais) ? r.policiais : []) as Policial[],
         }))
         .filter((r) => r.denuncia_id === id)

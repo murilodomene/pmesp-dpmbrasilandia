@@ -57,7 +57,7 @@ const CARDS: Array<{
     tipo: "processos",
     titulo: "Limpar processos administrativos",
     descricao:
-      "Remove TODAS as denúncias/PADs e o que está atrelado (movimentações, atos, oitivas, certidões, intimações, acessos do MP, provas anexadas). Reinicia a numeração para 001.",
+      "Remove TODAS as denúncias/PADs e o que está atrelado (movimentações, atos, oitivas, certidões, intimações, acessos do MP, provas anexadas). Reinicia a numeração de IPM, SINDPM e APFD para 001.",
     palavra: "PROCESSOS",
   },
   {
@@ -81,74 +81,80 @@ const CARDS: Array<{
   },
 ];
 
-function NumeracaoCard() {
+function NumeracaoLinha({
+  tipo,
+  rotulo,
+  proximo,
+  carregando,
+  onSalvo,
+}: {
+  tipo: "ipm" | "sindicancia" | "apfd";
+  rotulo: string;
+  proximo?: number;
+  carregando: boolean;
+  onSalvo: () => void;
+}) {
   const anoAtual = new Date().getFullYear();
-  const lerFn = useServerFn(lerContadorProtocolo);
   const definirFn = useServerFn(definirProximoProtocolo);
   const [valor, setValor] = useState("");
-
-  const atual = useQuery({
-    queryKey: ["contador-protocolo", anoAtual],
-    queryFn: () => lerFn({ data: { ano: anoAtual } }),
-  });
-
   const salvar = useMutation({
-    mutationFn: (proximo: number) => definirFn({ data: { ano: anoAtual, proximo } }),
+    mutationFn: (n: number) => definirFn({ data: { tipo, ano: anoAtual, proximo: n } }),
     onSuccess: (res) => {
       toast.success(`Próximo procedimento será ${res.proximo}.`);
       setValor("");
-      atual.refetch();
+      onSalvo();
     },
     onError: (e: any) => toast.error(e.message ?? "Falha ao ajustar a numeração."),
   });
-
-  const proximoAtual = atual.data?.proximo_numero;
-
+  const n = Number(valor);
   return (
-    <div className="mb-6 rounded-lg border border-border bg-surface p-5">
-      <h2 className="font-serif text-lg">Numeração dos procedimentos</h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Formato <strong>NNN/{anoAtual}</strong> (três dígitos e o ano corrente). Defina abaixo qual
-        será o número do próximo procedimento criado em {anoAtual}.
-      </p>
-      <p className="mt-2 text-sm">
-        Próximo número atual:{" "}
+    <div className="mt-4 rounded-md border border-border p-4">
+      <div className="text-sm">
+        {rotulo} — próximo número:{" "}
         <span className="tabular font-medium">
-          {atual.isPending
-            ? "carregando..."
-            : proximoAtual
-              ? `${String(proximoAtual).padStart(3, "0")}/${anoAtual}`
-              : "—"}
+          {carregando ? "carregando..." : proximo ? `${rotulo} nº ${String(proximo).padStart(3, "0")}/${anoAtual}` : "—"}
         </span>
-      </p>
-      <div className="mt-4 flex flex-wrap items-end gap-3">
+      </div>
+      <div className="mt-3 flex flex-wrap items-end gap-3">
         <div>
           <label className="block text-xs uppercase tracking-wider text-muted-foreground">
             Próximo número (1 a 999)
           </label>
-          <Input
-            className="mt-1 w-40"
-            type="number"
-            min={1}
-            max={999}
-            value={valor}
-            onChange={(e) => setValor(e.target.value)}
-            placeholder="175"
-          />
+          <Input className="mt-1 w-40" type="number" min={1} max={999} value={valor}
+            onChange={(e) => setValor(e.target.value)} placeholder="1" />
         </div>
         <Button
-          disabled={
-            salvar.isPending ||
-            !valor ||
-            Number(valor) < 1 ||
-            Number(valor) > 999 ||
-            !Number.isInteger(Number(valor))
-          }
-          onClick={() => salvar.mutate(Number(valor))}
+          disabled={salvar.isPending || !valor || n < 1 || n > 999 || !Number.isInteger(n)}
+          onClick={() => salvar.mutate(n)}
         >
-          {salvar.isPending ? "Salvando..." : "Definir numeração"}
+          {salvar.isPending ? "Salvando..." : `Definir numeração ${rotulo}`}
         </Button>
       </div>
+    </div>
+  );
+}
+
+function NumeracaoCard() {
+  const anoAtual = new Date().getFullYear();
+  const lerFn = useServerFn(lerContadorProtocolo);
+  const atual = useQuery({
+    queryKey: ["contador-procedimento", anoAtual],
+    queryFn: () => lerFn({ data: { ano: anoAtual } }),
+  });
+  return (
+    <div className="mb-6 rounded-lg border border-border bg-surface p-5">
+      <h2 className="font-serif text-lg">Numeração dos procedimentos</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        O número interno nasce na instauração, no formato <strong>IPM nº NNN/{anoAtual}</strong> ou{" "}
+        <strong>SINDPM nº NNN/{anoAtual}</strong> ou{" "}
+        <strong>APFD nº NNN/{anoAtual}</strong>, com contadores separados que reiniciam a cada ano.
+      </p>
+      <NumeracaoLinha tipo="ipm" rotulo="IPM" proximo={atual.data?.proximo_ipm}
+        carregando={atual.isPending} onSalvo={() => atual.refetch()} />
+      <NumeracaoLinha tipo="sindicancia" rotulo="SINDPM" proximo={atual.data?.proximo_sindicancia}
+        carregando={atual.isPending} onSalvo={() => atual.refetch()} />
+      <NumeracaoLinha tipo="apfd" rotulo="APFD" proximo={atual.data?.proximo_apfd}
+        carregando={atual.isPending} onSalvo={() => atual.refetch()} />
     </div>
   );
 }

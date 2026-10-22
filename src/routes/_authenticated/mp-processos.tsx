@@ -74,7 +74,7 @@ function MpProcessosPage() {
                         }`}
                       >
                         <div className="tabular text-xs text-muted-foreground">
-                          {d.numero_protocolo}
+                          {(d as any).numero_procedimento ?? d.numero_protocolo}
                         </div>
                         <div className="mt-1 line-clamp-1 text-sm">
                           {d.ocorrencia_tipo || "Sem natureza informada"}
@@ -143,7 +143,7 @@ function DetalheProcesso({ id }: { id: string }) {
   return (
     <div className="space-y-4">
       <ProcessoLetterhead
-        numeroProtocolo={d.numero_protocolo}
+        numeroProtocolo={(d as any).numero_procedimento ?? d.numero_protocolo}
         unidade={d.unidade}
         readOnly
       />
@@ -240,7 +240,7 @@ function DetalheProcesso({ id }: { id: string }) {
 
       <TimelineMovimentos
         movimentos={data.movimentos as never}
-        procedimento={d.numero_protocolo}
+        procedimento={(d as any).numero_procedimento ?? d.numero_protocolo}
         unidade={d.unidade || "—"}
         policiais={data.policiais as never}
       />

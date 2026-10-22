@@ -85,11 +85,14 @@ export const listPdos = createServerFn({ method: "GET" })
     const { data, error } = await (context.supabase as any)
       .from("pdos")
       .select(
-        "id, numero, abordagem_em, local, vtr_prefixo, vtr_placa, vtr_unidade, desfecho, procedimento_numero, abordados, created_at",
+        "id, numero, abordagem_em, local, vtr_prefixo, vtr_placa, vtr_unidade, desfecho, procedimento_numero, abordados, created_at, denuncias(numero_procedimento)",
       )
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return (data ?? []) as any[];
+    return ((data ?? []) as any[]).map((r) => ({
+      ...r,
+      procedimento_numero: r.denuncias?.numero_procedimento ?? r.procedimento_numero,
+    }));
   });
 
 export const getPdo = createServerFn({ method: "GET" })
@@ -98,11 +101,11 @@ export const getPdo = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const { data: row, error } = await (context.supabase as any)
       .from("pdos")
-      .select("*")
+      .select("*, denuncias(numero_procedimento)")
       .eq("id", data.id)
       .single();
     if (error) throw new Error(error.message);
-    return row as any;
+    return { ...row, procedimento_numero: row?.denuncias?.numero_procedimento ?? row?.procedimento_numero } as any;
   });
 
 const denunciadoSchema = z.object({

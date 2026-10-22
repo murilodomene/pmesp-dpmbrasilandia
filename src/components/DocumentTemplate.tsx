@@ -4,7 +4,7 @@ import { isHtmlAto, sanitizeAtoHtml } from "./RichTextEditor";
 import { PMESP_CREST_URL } from "@/lib/branding";
 import { exportPdfElement } from "@/lib/pdf-export";
 
-export type AtoTipo = "DESPACHO" | "DECISÃO" | "PORTARIA" | "IPM" | "CERTIDÃO" | "MANDADO" | "TERMO DE DEPOIMENTO";
+export type AtoTipo = "DESPACHO" | "DECISÃO" | "PORTARIA" | "IPM" | "CERTIDÃO" | "MANDADO" | "TERMO DE DEPOIMENTO" | "NOTA DE CULPA" | "TERMO DE DECLARAÇÕES" | "AUTO DE QUALIFICAÇÃO DE INTERROGATÓRIO";
 
 export interface DocumentTemplateCampo {
   label: string;

@@ -1,3 +1,8 @@
+import { montarNotaCulpa } from "@/lib/nota-culpa";
+import { montarAutoInterrogatorio, montarTermoDeclaracoes } from "@/lib/termos-apfd";
+import { ROLE_LABELS as ROTULOS_CARGO } from "@/lib/access-roles";
+import { NumeroProcedimento } from "@/components/NumeroProcedimento";
+import { InstaurarProcedimentoBotao, CARGOS_INSTAURACAO } from "@/components/InstaurarProcedimentoDialog";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
 import { z } from "zod";
@@ -51,7 +56,7 @@ import { getSessionInfo } from "@/lib/usuarios.functions";
 import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2, Download, ShieldCheck, Bell, MessageSquare, Copy, Mic, Plus } from "lucide-react";
 import { DocumentTemplate, exportDocumentToPdf, useDocumentRef } from "@/components/DocumentTemplate";
 import { RichTextEditor, isHtmlAto, sanitizeAtoHtml } from "@/components/RichTextEditor";
-import { exportProcessoCompleto } from "@/lib/exportProcesso";
+import { exportProcessoCompleto, exportProcessoCompletoV2 } from "@/lib/exportProcesso";
 import { AtoAnexosUploader, type AtoAnexo } from "@/components/AtoAnexosUploader";
 import { AtoAnexosLinks } from "@/components/AtoAnexosLinks";
 import { IntimarDialog } from "@/components/IntimarDialog";
@@ -104,7 +109,11 @@ const ESPECIES = [
   { v: "certidao", l: "Certidão", icon: ShieldCheck },
   { v: "ipc", l: "IPM", icon: Gavel },
   { v: "ata", l: "Ata", icon: Mic },
+  { v: "nota_culpa", l: "Nota de Culpa", icon: FileText },
+  { v: "termo_declaracoes", l: "Termo de Declarações", icon: Mic },
+  { v: "auto_interrogatorio", l: "Auto de Qualificação de Interrogatório", icon: Mic },
 ] as const;
+const ESPECIES_APFD = new Set(["nota_culpa", "termo_declaracoes", "auto_interrogatorio"]);
 
 function Corregedoria() {
   const search = Route.useSearch();
@@ -133,6 +142,7 @@ function Corregedoria() {
       if (!q) return true;
       const alvo = [
         d.numero_protocolo,
+        (d as any).numero_procedimento,
         d.denunciante_nome,
         d.unidade,
         d.ocorrencia_tipo,
@@ -327,6 +337,7 @@ function FiltroChip({ label, ativo, onClick }: { label: string; ativo: boolean; 
 interface ItemKanban {
   id: string;
   numero_protocolo: string;
+  numero_procedimento?: string | null;
   status: string;
   ocorrencia_tipo: string | null;
   unidade: string | null;
@@ -444,8 +455,7 @@ function LinhaProcesso({
     >
       <td className="relative px-3 py-2.5 tabular text-xs text-muted-foreground whitespace-nowrap">
         <TarjasStrip tarjas={(d.denuncia_tarjas ?? []) as { id: string; cor: CorTarja; texto: string }[]} />
-        {d.numero_protocolo}
-
+        <NumeroProcedimento d={d} />
       </td>
       <td className="px-3 py-2.5">
         <div className="line-clamp-1 font-medium">{d.ocorrencia_tipo || "Sem natureza"}</div>
@@ -471,6 +481,8 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     queryKey: ["denuncia", id],
     queryFn: () => getFn({ data: { id } }),
   });
+  const sessionInfoFn = useServerFn(getSessionInfo);
+  const { data: session } = useQuery({ queryKey: ["session-info"], queryFn: () => sessionInfoFn() });
 
   const podeRetificar =
     cargo === "ssp" || cargo=== "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || (cargo === "subcorregedor_geral" || cargo === "corregedor_supervisor") || (cargo === "subcorregedor_geral" || cargo === "corregedor_supervisor");
@@ -508,7 +520,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
   >(null);
 
   const lancarFn = useServerFn(lancarMovimento);
-  const [especie, setEspecie] = useState<"despacho" | "decisao" | "ipc" | "ata" | "certidao" | null>(null);
+  const [especie, setEspecie] = useState<(typeof ESPECIES)[number]["v"] | null>(null);
   const [ataDepoente, setAtaDepoente] = useState("");
   const [teor, setTeor] = useState("");
   const [ipcUnidade, setIpcUnidade] = useState<string>("");
@@ -534,7 +546,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
       if (especie === "ipc") {
         teorFinal = montarTeorIpc({
           unidade: ipcUnidade || null,
-          protocolo: data?.denuncia.numero_protocolo ?? "",
+          protocolo: data?.denuncia.numero_procedimento ?? data?.denuncia.numero_protocolo ?? "",
           identificacao: ipcIdent.trim(),
           relato: sanitizeAtoHtml(teor),
         });
@@ -546,7 +558,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
         teorFinal = sanitizeAtoHtml(teor);
       }
       const anexosPayload =
-        especie === "despacho" || especie === "decisao" || especie === "certidao" ? anexos : [];
+        especie === "despacho" || especie === "decisao" || especie === "certidao" || ESPECIES_APFD.has(especie) ? anexos : [];
       return lancarFn({
         data: { denuncia_id: id, especie, teor: teorFinal, anexos: anexosPayload },
       });
@@ -596,6 +608,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
   }
 
   const { denuncia, policiais, movimentos, oitivas } = data;
+  const isApfd = (denuncia as { tipo_procedimento?: string | null }).tipo_procedimento === "apfd";
   const status = denuncia.status as DenunciaStatus;
   const suspenso = isEncerrado(status);
   const decurso =
@@ -626,7 +639,17 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
       <div className="surface p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="tabular text-xs text-muted-foreground">{denuncia.numero_protocolo}</div>
+            <div className="tabular text-xs text-muted-foreground">
+              <NumeroProcedimento d={denuncia} />
+              {denuncia.numero_procedimento && (
+                <span className="ml-2 opacity-70">Protocolo: {denuncia.numero_protocolo}</span>
+              )}
+              {!denuncia.numero_procedimento && cargo && CARGOS_INSTAURACAO.includes(cargo) && (
+                <span className="ml-3 inline-block align-middle">
+                  <InstaurarProcedimentoBotao denunciaId={denuncia.id} />
+                </span>
+              )}
+            </div>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <StatusBadge status={status} />
               <NaturezaInline
@@ -643,7 +666,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 </span>
               )}
               {isInternoCorregedoria && (
-                <ObservacoesIndicador denunciaId={denuncia.id} numero={denuncia.numero_protocolo} />
+                <ObservacoesIndicador denunciaId={denuncia.id} numero={(denuncia.numero_procedimento ?? denuncia.numero_protocolo)} />
               )}
             </div>
             <div className="mt-2">
@@ -857,7 +880,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
             return (
               <div className="rounded-md border border-border p-3">
                 <div className="flex items-center gap-2 text-xs font-medium">
-                  <Stamp className="h-3.5 w-3.5" /> Portaria Inaugural
+                  <Stamp className="h-3.5 w-3.5" /> {isApfd ? "Auto de Prisão em Flagrante Delito" : "Portaria Inaugural"}
                 </div>
                 <div className="mt-0.5 text-[10px] text-muted-foreground">
                   {portariaMov
@@ -880,15 +903,19 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                       }
                       className="flex items-center justify-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
                     >
-                      <Eye className="h-3.5 w-3.5" /> Ver portaria
+                      <Eye className="h-3.5 w-3.5" /> {isApfd ? "Ver APFD" : "Ver portaria"}
                     </button>
                   )}
                   <button
                     onClick={() => {
+                      if (!denuncia.numero_procedimento) {
+                        toast.error(isApfd ? "Instaure o procedimento antes de lavrar o APFD." : "Instaure o procedimento (IPM, Sindicância ou APFD) antes de lavrar a Portaria.");
+                        return;
+                      }
                       if (portariaMov) {
                         if (
                           !window.confirm(
-                            "Já existe uma portaria lavrada. Lavrar outra irá interromper o prazo novamente. Deseja prosseguir?",
+                            isApfd ? "Já existe um APFD lavrado. Lavrar outro irá interromper o prazo novamente. Deseja prosseguir?" : "Já existe uma portaria lavrada. Lavrar outra irá interromper o prazo novamente. Deseja prosseguir?",
                           )
                         )
                           return;
@@ -898,7 +925,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                     disabled={suspenso}
                     className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-40"
                   >
-                    {portariaMov ? "Lavrar nova portaria" : "Lavrar portaria"}
+                    {isApfd ? (portariaMov ? "Lavrar novo APFD" : "Lavrar APFD") : portariaMov ? "Lavrar nova portaria" : "Lavrar portaria"}
                   </button>
                   <button
                     onClick={() => setDialog({ kind: "convocacao" })}
@@ -978,7 +1005,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
       <div className="surface p-5">
         <h3 className="font-serif text-lg">Lançar ato</h3>
         <div className="mt-3 flex flex-wrap gap-2">
-          {ESPECIES.map((e) => (
+          {ESPECIES.filter((e) => isApfd || !ESPECIES_APFD.has(e.v)).map((e) => (
             <button
               key={e.v}
               type="button"
@@ -991,6 +1018,38 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 } else {
                   setTeor("");
                   setAnexos([]);
+                  if (e.v === "nota_culpa") {
+                    setTeor(
+                      montarNotaCulpa({
+                        autorPosto: (session?.profile as { posto_graduacao?: string | null } | null)?.posto_graduacao ?? null,
+                        autorNome: (session?.profile as { nome?: string } | null)?.nome ?? "",
+                        autorRe:
+                          (session?.profile as { matricula?: string | null } | null)?.matricula ||
+                          (session?.profile as { rg?: string | null } | null)?.rg ||
+                          "",
+                        policiais: policiais.map((p) => ({ nome: p.nome, cargo: (p as { cargo?: string | null }).cargo ?? null, re: p.rg_funcional })),
+                        hoje: new Date(),
+                        autorCargo: cargo ? (ROTULOS_CARGO as Record<string, string>)[cargo] ?? null : null,
+                      }),
+                    );
+                  }
+                  if (e.v === "termo_declaracoes" || e.v === "auto_interrogatorio") {
+                    const perfil = session?.profile as { nome?: string; posto_graduacao?: string | null } | null;
+                    const autor = {
+                      posto: perfil?.posto_graduacao ?? null,
+                      nome: perfil?.nome ?? "",
+                      cargo: cargo ? (ROTULOS_CARGO as Record<string, string>)[cargo] ?? null : null,
+                    };
+                    setTeor(
+                      e.v === "termo_declaracoes"
+                        ? montarTermoDeclaracoes({ autor, hoje: new Date() })
+                        : montarAutoInterrogatorio({
+                            autor,
+                            policiais: policiais.map((p) => ({ nome: p.nome, cargo: (p as { cargo?: string | null }).cargo ?? null })),
+                            hoje: new Date(),
+                          }),
+                    );
+                  }
                   if (e.v === "ipc") {
                     setIpcUnidade((denuncia.unidade as string | null) ?? "");
                     setIpcIdent(
@@ -1008,7 +1067,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 especie === e.v ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-surface-2"
               }`}
             >
-              <e.icon className="h-3.5 w-3.5" /> {e.l}
+              <e.icon className="h-3.5 w-3.5" /> {e.v === "ipc" && isApfd ? "Solução" : e.l}
             </button>
           ))}
         </div>
@@ -1031,7 +1090,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                     ))}
                   </select>
                 </div>
-                <IpcCampoAuto label="1º Processo número" valor={denuncia.numero_protocolo} />
+                <IpcCampoAuto label="1º Processo número" valor={(denuncia.numero_procedimento ?? denuncia.numero_protocolo)} />
                 <div>
                   <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
                     2º Identificação do policial
@@ -1160,7 +1219,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
               motivo_cancelamento?: string | null;
             };
             const isAto =
-              m.especie === "despacho" || m.especie === "decisao" || m.especie === "portaria" || m.especie === "mandado" || m.especie === "ata" || m.especie === "certidao";
+              m.especie === "despacho" || m.especie === "decisao" || m.especie === "portaria" || m.especie === "mandado" || m.especie === "ata" || m.especie === "certidao" || m.especie === "nota_culpa" || m.especie === "termo_declaracoes" || m.especie === "auto_interrogatorio";
             const isIpc = m.especie === "ipc";
             const isCertidao =
               (m.especie === "evento" &&
@@ -1170,7 +1229,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
             const canceladoEm = m.cancelado_em ?? null;
             const podeCancelar =
               podeExcluir && !canceladoEm && m.especie !== "cancelamento";
-            const resumoMov = `${labelEspecie(m.especie as string)} de ${new Date(
+            const resumoMov = `${labelEspecie(m.especie as string, (denuncia as { tipo_procedimento?: string | null }).tipo_procedimento)} de ${new Date(
               m.criado_em,
             ).toLocaleString("pt-BR")}`;
             const canceladoBadge = canceladoEm && (
@@ -1226,7 +1285,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                   setDialog({
                     kind: "textoDiscord",
                     teor: String(m.teor ?? ""),
-                    numeroProtocolo: denuncia.numero_protocolo,
+                    numeroProtocolo: (denuncia.numero_procedimento ?? denuncia.numero_protocolo),
                     prolatorNome: m.prolator_nome,
                     prolatorCargo: cargoLabelFull(m.prolator_cargo as string),
                   })
@@ -1249,7 +1308,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                         {eventoLabel}
                       </span>
                       <span className="font-medium uppercase tracking-wider">
-                        {labelEspecie(m.especie as string)}
+                        {labelEspecie(m.especie as string, (denuncia as { tipo_procedimento?: string | null }).tipo_procedimento)}
                       </span>
 
                       {canceladoBadge}
@@ -1272,12 +1331,12 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                     </div>
                     <div className={canceladoEm ? "line-through decoration-destructive/60" : ""}>
                       <TimelineAtoCard
-                        especie={m.especie as "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao"}
+                        especie={m.especie as "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao" | "nota_culpa" | "termo_declaracoes" | "auto_interrogatorio"}
                         teor={m.teor}
                         quando={m.criado_em}
                         prolator={m.prolator_nome}
                         cargo={m.prolator_cargo as string}
-                        procedimento={denuncia.numero_protocolo}
+                        procedimento={(denuncia.numero_procedimento ?? denuncia.numero_protocolo)}
                         denunciado={
                           policiais.length
                             ? policiais
@@ -1310,7 +1369,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                         {eventoLabel}
                       </span>
                       <span className="font-medium uppercase tracking-wider">
-                        {labelEspecie(m.especie as string)}
+                        {labelEspecie(m.especie as string, (denuncia as { tipo_procedimento?: string | null }).tipo_procedimento)}
                       </span>
 
                       <span className="rounded-full bg-status-investigacao/25 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-status-investigacao-fg">
@@ -1339,7 +1398,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                         prolator={m.prolator_nome}
                         cargo={m.prolator_cargo as string}
                         unidade={denuncia.unidade || "—"}
-                        procedimento={denuncia.numero_protocolo}
+                        procedimento={(denuncia.numero_procedimento ?? denuncia.numero_protocolo)}
                         identificacao={
                           policiais.length
                             ? policiais
@@ -1364,7 +1423,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                             const msg =
                               `<:PMESP:1307085628730773534> **CORREGEDORIA DA POLÍCIA MILITAR DO ESTADO DE SÃO PAULO**\n\n` +
                               "```RESULTADO DO INQUÉRITO```\n\n" +
-                              `> Autos nº ${denuncia.numero_protocolo}\n` +
+                              `> Autos nº ${(denuncia.numero_procedimento ?? denuncia.numero_protocolo)}\n` +
                               `> Denunciado: ${denunciadosTxt}\n\n\n` +
                               `A Corregedoria da Polícia Militar do Estado de São Paulo, no uso de suas atribuições legais e regulamentares torna público o resultado do processo administrativo supramencionado:\n\n` +
                               `**LINK**: ${link}\n\n` +
@@ -1406,7 +1465,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                         {eventoLabel}
                       </span>
                       <span className="font-medium uppercase tracking-wider">
-                        {labelEspecie(m.especie as string)}
+                        {labelEspecie(m.especie as string, (denuncia as { tipo_procedimento?: string | null }).tipo_procedimento)}
                       </span>
                       {canceladoBadge}
                       <span className="ml-auto text-muted-foreground tabular">
@@ -1421,7 +1480,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                         quando={m.criado_em}
                         prolator={m.prolator_nome}
                         cargo={(m.prolator_cargo as string) ?? "corregedor_geral"}
-                        procedimento={denuncia.numero_protocolo}
+                        procedimento={(denuncia.numero_procedimento ?? denuncia.numero_protocolo)}
                         denunciado={
                           policiais.length
                             ? policiais
@@ -1445,7 +1504,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                       {eventoLabel}
                     </span>
                     <span className="font-medium uppercase tracking-wider">
-                      {labelEspecie(m.especie as string)}
+                      {labelEspecie(m.especie as string, (denuncia as { tipo_procedimento?: string | null }).tipo_procedimento)}
                     </span>
 
                     {canceladoBadge}
@@ -1549,7 +1608,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
           prolator={dialog.prolator}
           cargo={dialog.cargo}
           portariaDados={dialog.portariaDados}
-          procedimento={denuncia.numero_protocolo}
+          procedimento={(denuncia.numero_procedimento ?? denuncia.numero_protocolo)}
           denunciado={
             policiais.length
               ? policiais
@@ -1575,7 +1634,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
       )}
       {dialog?.kind === "excluir" && (
         <ExcluirDenunciaDialog
-          protocolo={denuncia.numero_protocolo}
+          protocolo={(denuncia.numero_procedimento ?? denuncia.numero_protocolo)}
           pending={mExcluir.isPending}
           erro={mExcluir.error instanceof Error ? mExcluir.error.message : null}
           onConfirm={(protocolo) => mExcluir.mutate(protocolo)}
@@ -1601,7 +1660,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
       {dialog?.kind === "convocacao" && (
         <ConvocacaoDialog
           denunciaId={id}
-          numeroProtocolo={denuncia.numero_protocolo}
+          numeroProtocolo={(denuncia.numero_procedimento ?? denuncia.numero_protocolo)}
           onClose={() => setDialog(null)}
         />
       )}
@@ -1682,7 +1741,12 @@ function extrairDepoenteAta(teor: string): { depoente: string | null; corpo: str
   return { depoente: null, corpo: teor };
 }
 
-function labelEspecie(e: string): string {
+function labelEspecie(e: string, tipo?: string | null): string {
+  if (e === "nota_culpa") return "Nota de Culpa";
+  if (e === "termo_declaracoes") return "Termo de Declarações";
+  if (e === "auto_interrogatorio") return "Auto de Qualificação de Interrogatório";
+  if (tipo === "apfd" && e === "ipc") return "Solução";
+  if (tipo === "apfd" && e === "portaria") return "Auto de Prisão em Flagrante Delito";
   return e === "despacho"
     ? "Despacho"
     : e === "decisao"
@@ -2159,6 +2223,8 @@ function PortariaDialog({
   id: string;
   denuncia: {
     numero_protocolo: string;
+    numero_procedimento?: string | null;
+    tipo_procedimento?: "ipm" | "sindicancia" | "apfd" | null;
     ocorrencia_tipo: string | null;
     ocorrencia_data: string | null;
     ocorrencia_local: string | null;
@@ -2174,7 +2240,13 @@ function PortariaDialog({
   const formatarData = (valor?: string | null) => valor
     ? new Date(`${valor.slice(0, 10)}T12:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
     : "";
-  const [ipmNumero, setIpmNumero] = useState(denuncia.numero_protocolo);
+  const tipoProcedimento: "ipm" | "sindicancia" | "apfd" =
+    denuncia.tipo_procedimento === "sindicancia" ? "sindicancia" : denuncia.tipo_procedimento === "apfd" ? "apfd" : "ipm";
+  const prefixoNumero = tipoProcedimento === "sindicancia" ? "SINDPM" : tipoProcedimento === "apfd" ? "APFD" : "IPM";
+  const isApfdDoc = tipoProcedimento === "apfd";
+  const [ipmNumero, setIpmNumero] = useState(
+    (denuncia.numero_procedimento ?? "").replace(/^(IPM|SINDPM|APFD)\s*nº\s*/i, ""),
+  );
   const [dataInstauracao, setDataInstauracao] = useState(formatarData(new Date().toISOString()));
   const [dataFato, setDataFato] = useState(formatarData(denuncia.ocorrencia_data));
   const [encarregado, setEncarregado] = useState("");
@@ -2198,7 +2270,7 @@ function PortariaDialog({
 
   const localData = `São Paulo/SP, ${new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}.`;
   const dados = {
-    ipmNumero, dataInstauracao, dataFato, encarregado, municipioInstauracao: municipio,
+    ipmNumero, tipoProcedimento, dataInstauracao, dataFato, encarregado, municipioInstauracao: municipio,
     naturezas: naturezas.map((v) => v.trim()).filter(Boolean),
     indiciados: indiciados.map((v) => v.trim()).filter(Boolean),
     localFatos, corpo: sanitizeAtoHtml(corpo), localData, signatarioNome, signatarioPosto,
@@ -2214,14 +2286,14 @@ function PortariaDialog({
   });
 
   return (
-    <Modal title="Portaria Inaugural" onClose={onClose} size="3xl">
+    <Modal title={isApfdDoc ? "Auto de Prisão em Flagrante Delito" : "Portaria Inaugural"} onClose={onClose} size="3xl">
       <div className="mb-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs">
-        Ao confirmar, a portaria é lançada na linha do tempo, a data de instauração é
+        Ao confirmar, {isApfdDoc ? "o APFD é lançado" : "a portaria é lançada"} na linha do tempo, a data de instauração é
         preenchida e a <strong>prescrição é interrompida</strong> (relógio reinicia em 15 dias).
       </div>
 
       <div className="grid gap-3 rounded-md border border-border/60 p-3 md:grid-cols-2">
-        <Field label="IPM Nº" value={ipmNumero} onChange={setIpmNumero} />
+        <Field label={`${prefixoNumero} Nº`} value={ipmNumero} onChange={setIpmNumero} />
         <Field label="Data de instauração" value={dataInstauracao} onChange={setDataInstauracao} />
         <Field label="Data do fato" value={dataFato} onChange={setDataFato} />
         <Field label="Encarregado" value={encarregado} onChange={setEncarregado} />
@@ -2260,7 +2332,7 @@ function PortariaDialog({
           disabled={corpo.replace(/<[^>]+>/g, "").trim().length < 50 || dados.naturezas.length === 0 || dados.indiciados.length === 0 || m.isPending}
           className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
-          {m.isPending ? "Lavrando..." : "Confirmar e lavrar portaria"}
+          {m.isPending ? "Lavrando..." : isApfdDoc ? "Confirmar e lavrar APFD" : "Confirmar e lavrar portaria"}
         </button>
       </div>
     </Modal>
@@ -2268,38 +2340,47 @@ function PortariaDialog({
 }
 
 
-const ATO_ASSUNTO: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao", string> = {
+const ATO_ASSUNTO: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao" | "nota_culpa" | "termo_declaracoes" | "auto_interrogatorio", string> = {
   despacho: "Despacho",
   decisao: "Decisão",
   portaria: "Portaria Inaugural",
   mandado: "Mandado de Citação",
   ata: "Termo de Depoimento",
   certidao: "Certidão",
+  nota_culpa: "Nota de Culpa",
+  termo_declaracoes: "Termo de Declarações",
+  auto_interrogatorio: "Auto de Qualificação de Interrogatório",
 };
 
-const ATO_TIPO: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao", "DESPACHO" | "DECISÃO" | "PORTARIA" | "MANDADO" | "TERMO DE DEPOIMENTO" | "CERTIDÃO"> = {
+const ATO_TIPO: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao" | "nota_culpa" | "termo_declaracoes" | "auto_interrogatorio", "DESPACHO" | "DECISÃO" | "PORTARIA" | "MANDADO" | "TERMO DE DEPOIMENTO" | "CERTIDÃO" | "NOTA DE CULPA" | "TERMO DE DECLARAÇÕES" | "AUTO DE QUALIFICAÇÃO DE INTERROGATÓRIO"> = {
   despacho: "DESPACHO",
   decisao: "DECISÃO",
   portaria: "PORTARIA",
   mandado: "MANDADO",
   ata: "TERMO DE DEPOIMENTO",
   certidao: "CERTIDÃO",
+  nota_culpa: "NOTA DE CULPA",
+  termo_declaracoes: "TERMO DE DECLARAÇÕES",
+  auto_interrogatorio: "AUTO DE QUALIFICAÇÃO DE INTERROGATÓRIO",
 };
 
-const ATO_MARKER: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao", string> = {
+const ATO_MARKER: Record<"despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao" | "nota_culpa" | "termo_declaracoes" | "auto_interrogatorio", string> = {
   despacho: "bg-status-analise",
   decisao: "bg-destructive",
   portaria: "bg-primary",
   mandado: "bg-primary",
   ata: "bg-sky-600",
   certidao: "bg-emerald-600",
+  nota_culpa: "bg-destructive",
+  termo_declaracoes: "bg-sky-600",
+  auto_interrogatorio: "bg-sky-600",
 };
 
 /**
  * Renderiza o corpo do ato: HTML sanitizado quando salvo como rich text,
  * ou texto plano (com links, se portaria) para registros legados.
  */
-function renderAtoBody(_especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao", teor: string, pdf = false): React.ReactNode {
+function renderAtoBody(_especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao" | "nota_culpa" | "termo_declaracoes" | "auto_interrogatorio", teor: string, pdf = false): React.ReactNode {
   if (isHtmlAto(teor)) {
     return (
       <div
@@ -2321,7 +2402,7 @@ function TimelineAtoCard({
   denunciado,
   portariaDados,
 }: {
-  especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao";
+  especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao" | "nota_culpa" | "termo_declaracoes" | "auto_interrogatorio";
   teor: string;
   quando: string;
   prolator: string;
@@ -3406,6 +3487,8 @@ function ExportarProcessoBtn({
 }: {
   denuncia: {
     numero_protocolo: string;
+    numero_procedimento?: string | null;
+    tipo_procedimento?: string | null;
     denunciante_nome: string | null;
     denunciante_anonimo: boolean | null;
     ocorrencia_tipo: string | null;
@@ -3434,26 +3517,38 @@ function ExportarProcessoBtn({
     portaria_dados?: unknown;
   }>;
 }) {
-  const [gerando, setGerando] = useState(false);
-  async function onClick() {
-    setGerando(true);
+  const [gerando, setGerando] = useState<"novo" | "anterior" | null>(null);
+  async function gerar(versao: "novo" | "anterior") {
+    setGerando(versao);
     try {
-      await exportProcessoCompleto({ denuncia, policiais, movimentos, oitivas: [] });
+      if (versao === "novo") await exportProcessoCompletoV2({ denuncia, policiais, movimentos, oitivas: [] });
+      else await exportProcessoCompleto({ denuncia, policiais, movimentos, oitivas: [] });
     } catch (e) {
       toast.error((e as Error)?.message || "Falha ao gerar o PDF do processo.");
     } finally {
-      setGerando(false);
+      setGerando(null);
     }
   }
   return (
-    <button
-      onClick={onClick}
-      disabled={gerando}
-      title="Exportar processo completo em PDF"
-      className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2 disabled:opacity-50"
-    >
-      <Download className="h-3.5 w-3.5" /> {gerando ? "Gerando PDF..." : "Exportar processo (PDF)"}
-    </button>
+    <span className="inline-flex items-center gap-1">
+      <button
+        onClick={() => gerar("novo")}
+        disabled={gerando !== null}
+        title="Exportar processo completo em PDF"
+        className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2 disabled:opacity-50"
+      >
+        <Download className="h-3.5 w-3.5" /> {gerando === "novo" ? "Gerando PDF..." : "Exportar processo (PDF)"}
+      </button>
+      {/* Exportador anterior mantido como reserva durante a transição. */}
+      <button
+        onClick={() => gerar("anterior")}
+        disabled={gerando !== null}
+        title="Gerar o PDF no formato anterior (por imagem)"
+        className="rounded-md px-2 py-1.5 text-[11px] text-muted-foreground underline-offset-2 hover:underline disabled:opacity-50"
+      >
+        {gerando === "anterior" ? "Gerando..." : "versão anterior"}
+      </button>
+    </span>
   );
 }
 

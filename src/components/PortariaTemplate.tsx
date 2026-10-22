@@ -6,6 +6,7 @@ import { PMESP_CREST_URL } from "@/lib/branding";
 export type PortariaDados = {
   chave: string;
   ipmNumero: string;
+  tipoProcedimento?: "ipm" | "sindicancia" | "apfd";
   dataInstauracao: string;
   dataFato: string;
   encarregado: string;
@@ -84,7 +85,7 @@ export const PortariaTemplate = forwardRef<HTMLElement, { dados: PortariaDados; 
           </header>
 
           <div className="h-px bg-border/60" />
-          <h2 className="py-4 text-center font-serif text-lg font-semibold text-foreground">IPM Nº {dados.ipmNumero}</h2>
+          <h2 className="py-4 text-center font-serif text-lg font-semibold text-foreground">{dados.tipoProcedimento === "sindicancia" ? "SINDPM" : dados.tipoProcedimento === "apfd" ? "APFD" : "IPM"} Nº {dados.ipmNumero}</h2>
           <div className="h-px bg-border/60" />
 
           <dl className="grid gap-2 py-4">
@@ -107,7 +108,7 @@ export const PortariaTemplate = forwardRef<HTMLElement, { dados: PortariaDados; 
           <SectionTitle variant="screen">LOCAL DOS FATOS</SectionTitle>
           <p className="px-2 sm:px-5">{dados.localFatos}</p>
 
-          <SectionTitle variant="screen">PORTARIA</SectionTitle>
+          <SectionTitle variant="screen">{dados.tipoProcedimento === "apfd" ? "AUTO DE PRISÃO EM FLAGRANTE DELITO" : "PORTARIA"}</SectionTitle>
           <div className="portaria-body-screen px-2 text-justify sm:px-5" dangerouslySetInnerHTML={{ __html: sanitizeAtoHtml(dados.corpo) }} />
 
           <p className="mt-8 px-2 text-justify sm:px-5">{dados.localData}</p>
@@ -145,7 +146,7 @@ export const PortariaTemplate = forwardRef<HTMLElement, { dados: PortariaDados; 
           </header>
 
           <h2 className="mb-[14px] mt-[7mm] text-center text-[20px] font-bold leading-[24px]" data-pdf-keep>
-            IPM Nº {dados.ipmNumero}
+            {dados.tipoProcedimento === "sindicancia" ? "SINDPM" : dados.tipoProcedimento === "apfd" ? "APFD" : "IPM"} Nº {dados.ipmNumero}
           </h2>
 
           <div className="space-y-0">
@@ -169,7 +170,7 @@ export const PortariaTemplate = forwardRef<HTMLElement, { dados: PortariaDados; 
           <SectionTitle variant="pdf">LOCAL DOS FATOS</SectionTitle>
           <p>{dados.localFatos}</p>
 
-          <SectionTitle variant="pdf">PORTARIA</SectionTitle>
+          <SectionTitle variant="pdf">{dados.tipoProcedimento === "apfd" ? "AUTO DE PRISÃO EM FLAGRANTE DELITO" : "PORTARIA"}</SectionTitle>
           <div
             className="portaria-body mt-[7mm] text-justify"
             dangerouslySetInnerHTML={{ __html: sanitizeAtoHtml(dados.corpo) }}

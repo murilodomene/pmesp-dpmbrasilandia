@@ -5,6 +5,8 @@ import { Header } from "@/components/Header";
 import { ProcessoLetterhead } from "@/components/ProcessoLetterhead";
 import { TimelineMovimentos } from "@/components/TimelineMovimentos";
 import { supabase } from "@/integrations/supabase/client";
+import { ExportAtoContext } from "@/components/ExportAtoContext";
+import { exportAtoPdfV2 } from "@/lib/exportProcesso";
 
 type Policial = { id: string; nome: string; rg_funcional: string | null };
 
@@ -32,8 +34,7 @@ export const Route = createFileRoute("/ipm/$id")({
       { property: "og:title", content: `IPMs do procedimento ${params.id}` },
       {
         property: "og:description",
-        content:
-          "Consulta pública dos IPMs de um processo administrativo específico.",
+        content: "Consulta pública dos IPMs de um processo administrativo específico.",
       },
       { property: "og:type", content: "article" },
       { name: "twitter:card", content: "summary" },
@@ -57,7 +58,9 @@ function IpcPublicoPadPage() {
         setRows([]);
         return;
       }
-      const parsed = ((data ?? []) as unknown as Array<Omit<IpcRow, "policiais"> & { policiais: unknown }>)
+      const parsed = (
+        (data ?? []) as unknown as Array<Omit<IpcRow, "policiais"> & { policiais: unknown }>
+      )
         .map((r) => ({
           ...r,
           numero_protocolo: ((r as any).numero_procedimento as string | null) ?? "—",
@@ -88,12 +91,14 @@ function IpcPublicoPadPage() {
 
         <div className="mt-4 eyebrow">Transparência</div>
         <h1 className="mt-2 font-serif text-3xl">
-          {cabecalho ? `IPMs do procedimento ${cabecalho.numero_protocolo}` : "IPMs do procedimento"}
+          {cabecalho
+            ? `IPMs do procedimento ${cabecalho.numero_protocolo}`
+            : "IPMs do procedimento"}
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
           Todos os Inquéritos Policiais Militares (IPM) deste processo administrativo tornados
-          públicos pela Corregedoria da Polícia Militar do Estado de São Paulo. Os demais atos permanecem sob sigilo
-          funcional.
+          públicos pela Corregedoria da Polícia Militar do Estado de São Paulo. Os demais atos
+          permanecem sob sigilo funcional.
         </p>
 
         {rows === null && (
@@ -119,23 +124,72 @@ function IpcPublicoPadPage() {
               unidade={rows[0].unidade}
               readOnly
             />
-            <TimelineMovimentos
-              movimentos={rows.map((r) => ({
-                id: r.movimento_id,
-                especie: "ipc",
-                teor: r.teor,
-                criado_em: r.criado_em,
-                prolator_nome: r.prolator_nome,
-                prolator_cargo: r.prolator_cargo,
-                ipc_publicado: true,
-              }))}
-              procedimento={rows[0].numero_protocolo}
-              unidade={rows[0].unidade ?? "—"}
-              policiais={rows[0].policiais}
-            />
+            <ExportAtoContext.Provider
+              value={(movimentoId) => exportarSolucaoPublica(rows, movimentoId)}
+            >
+              <TimelineMovimentos
+                movimentos={rows.map((r) => ({
+                  id: r.movimento_id,
+                  especie: "ipc",
+                  teor: r.teor,
+                  criado_em: r.criado_em,
+                  prolator_nome: r.prolator_nome,
+                  prolator_cargo: r.prolator_cargo,
+                  ipc_publicado: true,
+                }))}
+                procedimento={rows[0].numero_protocolo}
+                unidade={rows[0].unidade ?? "—"}
+                policiais={rows[0].policiais}
+              />
+            </ExportAtoContext.Provider>
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * PDF de uma Solução pública, no mesmo modelo vetorial da Corregedoria.
+ * A página pública não conhece os demais eventos do processo, por isso
+ * a referência "Evento nº" é omitida.
+ */
+function exportarSolucaoPublica(rows: IpcRow[], movimentoId: string): Promise<void> {
+  const r = rows.find((x) => x.movimento_id === movimentoId) ?? rows[0];
+  const numero = r.numero_protocolo !== "—" ? r.numero_protocolo : null;
+  const tipo =
+    numero && /^APFD/i.test(numero)
+      ? "apfd"
+      : numero && /^SIND/i.test(numero)
+        ? "sindicancia"
+        : "ipm";
+  return exportAtoPdfV2(
+    {
+      denuncia: {
+        numero_protocolo: numero ?? "—",
+        numero_procedimento: numero,
+        tipo_procedimento: tipo,
+        denunciante_nome: null,
+        denunciante_anonimo: null,
+        ocorrencia_tipo: null,
+        unidade: r.unidade,
+        status: "",
+        termo_inicial: r.criado_em,
+        acrescimos_dias: 0,
+        instaurada_em: null,
+        created_at: r.criado_em,
+      },
+      policiais: r.policiais.map((p) => ({ ...p, unidade: null })),
+      movimentos: rows.map((x) => ({
+        id: x.movimento_id,
+        especie: "ipc",
+        teor: x.teor,
+        prolator_nome: x.prolator_nome,
+        prolator_cargo: x.prolator_cargo,
+        criado_em: x.criado_em,
+      })),
+    },
+    movimentoId,
+    { numeroEvento: null },
   );
 }

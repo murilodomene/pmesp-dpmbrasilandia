@@ -311,7 +311,7 @@ class ProcessoPdf {
   }
 
   /** PROCEDIMENTO / DENUNCIADO + referência do evento à direita. */
-  identificacaoAto(evento?: { numero: number; quando: string }, usarSigla = false): void {
+  identificacaoAto(evento?: { numero: number | null; quando: string }, usarSigla = false): void {
     const { w } = this;
     w.y = Math.max(w.y, 54.5);
     const topo = w.y;
@@ -327,7 +327,10 @@ class ProcessoPdf {
       lineHeight: 1,
     });
     if (evento) {
-      const ref = `Evento nº ${String(evento.numero).padStart(2, "0")} · ${evento.quando}`;
+      const ref =
+        evento.numero != null
+          ? `Evento nº ${String(evento.numero).padStart(2, "0")} · ${evento.quando}`
+          : evento.quando;
       w.textoEm(ref, PAGE_W - 20, topo + 0.6, { size: 8, color: CINZA, align: "right" });
     }
   }
@@ -493,7 +496,7 @@ class ProcessoPdf {
   private async cabecalhoChave(
     chave: string,
     m: PdfMovimento,
-    numeroEvento: number,
+    numeroEvento: number | null,
   ): Promise<void> {
     const { w, a } = this;
     const bw = 22.7;
@@ -505,7 +508,9 @@ class ProcessoPdf {
     await this.codigoDeBarras(chave, 64.6, 41.3, 74.2, 12.7);
     w.textoEm(chave, 62.3, 55.7, { size: 8.5 });
     w.textoEm(
-      `Evento nº ${String(numeroEvento).padStart(2, "0")} · ${dataHora(m.criado_em)}`,
+      numeroEvento != null
+        ? `Evento nº ${String(numeroEvento).padStart(2, "0")} · ${dataHora(m.criado_em)}`
+        : dataHora(m.criado_em),
       PAGE_W - 20,
       15,
       { size: 8, color: CINZA, align: "right" },
@@ -602,7 +607,7 @@ class ProcessoPdf {
     if (cargo) w.texto(cargo.toUpperCase(), { size: 11, align: "center" });
   }
 
-  async portaria(m: PdfMovimento, p: PortariaDadosPdf, numeroEvento: number): Promise<void> {
+  async portaria(m: PdfMovimento, p: PortariaDadosPdf, numeroEvento: number | null): Promise<void> {
     const { w } = this;
     await this.cabecalhoChave(p.chave, m, numeroEvento);
     const tipo = p.tipoProcedimento || this.d.denuncia.tipo_procedimento || "ipm";
@@ -638,7 +643,7 @@ class ProcessoPdf {
   }
 
   /** Solução do IPM/Sindicância (ato final), no modelo SOLUÇÃO. */
-  async solucao(m: PdfMovimento, numeroEvento: number): Promise<void> {
+  async solucao(m: PdfMovimento, numeroEvento: number | null): Promise<void> {
     const { w, d } = this;
     const den = d.denuncia;
     const portaria = this.portariaAnterior(m);
@@ -745,7 +750,7 @@ class ProcessoPdf {
 
   /* ---------- atos ---------- */
 
-  ato(m: PdfMovimento, numeroEvento: number): void {
+  ato(m: PdfMovimento, numeroEvento: number | null): void {
     const { w, d } = this;
     this.timbreAto();
     const atoApfd = ATOS_TITULO_SUBLINHADO.has(m.especie);
@@ -782,14 +787,14 @@ class ProcessoPdf {
   /** Indica que o último elemento desenhado foi uma imagem (dá mais respiro). */
   aposImagem = false;
 
-  provas(m: PdfMovimento, numeroEvento: number): void {
+  provas(m: PdfMovimento, numeroEvento: number | null): void {
     const lista = Array.isArray(m.anexos) ? m.anexos : [];
     if (!lista.length) return;
     const { w, a } = this;
     for (const anexo of lista) {
       const img = a.anexos?.get(anexo.path);
       this.contadorProvas += 1;
-      const legenda = `${(anexo.nome || `Prova ${String(this.contadorProvas).padStart(2, "0")}`).toUpperCase()} — juntada no Evento nº ${String(numeroEvento).padStart(2, "0")}`;
+      const legenda = `${(anexo.nome || `Prova ${String(this.contadorProvas).padStart(2, "0")}`).toUpperCase()}${numeroEvento != null ? ` — juntada no Evento nº ${String(numeroEvento).padStart(2, "0")}` : ""}`;
       if (!img) {
         w.pular(4);
         w.texto(`${legenda} (imagem indisponível para exportação)`, {
@@ -924,6 +929,80 @@ export async function gerarProcessoPdf(data: PdfProcessoData, assets: PdfAssets)
 
   doc.rodapes();
   return pdf;
+}
+
+/** Dados para exportar um único ato (sem capa nem demais eventos). */
+export interface PdfAtoData extends PdfProcessoData {
+  /** Movimento a exportar (precisa estar em `movimentos`). */
+  movimentoId: string;
+  /**
+   * Número do evento no processo. Se omitido, é calculado pela posição do
+   * movimento na linha do tempo; `null` omite a referência ao evento.
+   */
+  numeroEvento?: number | null;
+}
+
+function numeroDoEvento(data: PdfAtoData, m: PdfMovimento): number | null {
+  if (data.numeroEvento !== undefined) return data.numeroEvento;
+  const movs = [...data.movimentos].sort(
+    (x, y) => new Date(x.criado_em).getTime() - new Date(y.criado_em).getTime(),
+  );
+  const i = movs.findIndex((x) => x.id === m.id);
+  return i >= 0 ? i + 1 : null;
+}
+
+/**
+ * Exporta somente um ato (despacho, decisão, portaria, solução, certidão…)
+ * no mesmo modelo usado no processo completo: timbre, título, corpo,
+ * assinatura, provas anexadas e rodapé com o número do procedimento.
+ */
+export async function gerarAtoPdf(data: PdfAtoData, assets: PdfAssets): Promise<jsPDF> {
+  const m = data.movimentos.find((x) => x.id === data.movimentoId);
+  if (!m) throw new Error("Ato não encontrado para exportação.");
+  const { jsPDF } = await import("jspdf");
+  const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
+  const ident = identificacaoProcedimento(data.denuncia);
+  pdf.setProperties({
+    title: `${tituloAto(m.especie, data.denuncia)} - ${ident.rodape}`,
+    subject: "Corregedoria da Polícia Militar do Estado de São Paulo",
+    creator: "Corregedoria PMESP",
+  });
+  const w = new PdfWriter(pdf);
+  const doc = new ProcessoPdf(w, data, assets);
+  const n = numeroDoEvento(data, m);
+
+  if (m.especie === "portaria" && isPortaria(m.portaria_dados)) {
+    await doc.portaria(m, m.portaria_dados, n);
+    doc.provas(m, n);
+  } else if (m.especie === "ipc") {
+    await doc.solucao(m, n);
+  } else {
+    doc.ato(m, n);
+  }
+
+  doc.rodapes();
+  return pdf;
+}
+
+export function nomeArquivoAto(especie: string, d: PdfDenuncia, portariaDados?: unknown): string {
+  const titulo =
+    especie === "portaria"
+      ? (isPortaria(portariaDados) ? portariaDados.tipoProcedimento : d.tipo_procedimento) ===
+        "apfd"
+        ? "APFD"
+        : "PORTARIA"
+      : especie === "ipc"
+        ? "SOLUCAO"
+        : tituloAto(especie, d);
+  const limpar = (t: string) =>
+    t
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^\w-]+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
+  const id = limpar(identificacaoProcedimento(d).rodape);
+  return `${limpar(titulo) || "Ato"}-${id || "sem-numero"}.pdf`;
 }
 
 export function nomeArquivoProcesso(d: PdfDenuncia): string {

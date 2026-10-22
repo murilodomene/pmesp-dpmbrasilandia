@@ -4,6 +4,8 @@ import { DocumentTemplate, exportDocumentToPdf, useDocumentRef } from "@/compone
 import { isHtmlAto, sanitizeAtoHtml } from "@/components/RichTextEditor";
 import { AtoAnexosLinks } from "@/components/AtoAnexosLinks";
 import { PortariaTemplate, exportPortariaToPdf, isPortariaDados } from "@/components/PortariaTemplate";
+import { useExportarAto } from "@/components/ExportAtoContext";
+import { toast } from "sonner";
 
 /**
  * Componente compartilhado de renderização da linha do tempo dos processos —
@@ -111,6 +113,7 @@ export function TimelineMovimentos({
                   </div>
                   <div className={canceladoEm ? "line-through decoration-destructive/60" : ""}>
                     <TimelineAtoCard
+                      movimentoId={m.id}
                       especie={m.especie as "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao" | "nota_culpa" | "termo_declaracoes" | "auto_interrogatorio"}
                       teor={m.teor}
                       quando={m.criado_em}
@@ -147,6 +150,7 @@ export function TimelineMovimentos({
                   </div>
                   <div className={canceladoEm ? "line-through decoration-destructive/60" : ""}>
                     <TimelineIpcCard
+                      movimentoId={m.id}
                       teor={m.teor}
                       quando={m.criado_em}
                       prolator={m.prolator_nome}
@@ -178,6 +182,7 @@ export function TimelineMovimentos({
                   </div>
                   <div className={canceladoEm ? "line-through decoration-destructive/60" : ""}>
                     <TimelineCertidaoCard
+                      movimentoId={m.id}
                       teor={m.teor}
                       quando={m.criado_em}
                       prolator={m.prolator_nome}
@@ -418,6 +423,7 @@ function renderAtoBody(
 }
 
 function TimelineAtoCard({
+  movimentoId,
   especie,
   teor,
   quando,
@@ -427,6 +433,7 @@ function TimelineAtoCard({
   denunciado,
   portariaDados,
 }: {
+  movimentoId?: string;
   especie: "despacho" | "decisao" | "portaria" | "mandado" | "ata" | "certidao" | "nota_culpa" | "termo_declaracoes" | "auto_interrogatorio";
   teor: string;
   quando: string;
@@ -441,7 +448,20 @@ function TimelineAtoCard({
   const assunto = ATO_ASSUNTO[especie];
   const portariaEstruturada = especie === "portaria" && isPortariaDados(portariaDados) ? portariaDados : null;
 
+  const exportarAto = useExportarAto();
+
   async function exportarPdf() {
+    if (exportarAto && movimentoId) {
+      setGerando(true);
+      try {
+        await exportarAto(movimentoId);
+      } catch (e) {
+        toast.error((e as Error)?.message || "Falha ao gerar o PDF.");
+      } finally {
+        setGerando(false);
+      }
+      return;
+    }
     if (!pdfRef.current) return;
     setGerando(true);
     try {
@@ -509,6 +529,7 @@ function TimelineAtoCard({
 }
 
 function TimelineCertidaoCard({
+  movimentoId,
   teor,
   quando,
   prolator,
@@ -516,6 +537,7 @@ function TimelineCertidaoCard({
   procedimento,
   denunciado,
 }: {
+  movimentoId?: string;
   teor: string;
   quando: string;
   prolator: string;
@@ -526,7 +548,20 @@ function TimelineCertidaoCard({
   const pdfRef = useDocumentRef();
   const [gerando, setGerando] = useState(false);
 
+  const exportarAto = useExportarAto();
+
   async function exportarPdf() {
+    if (exportarAto && movimentoId) {
+      setGerando(true);
+      try {
+        await exportarAto(movimentoId);
+      } catch (e) {
+        toast.error((e as Error)?.message || "Falha ao gerar o PDF.");
+      } finally {
+        setGerando(false);
+      }
+      return;
+    }
     if (!pdfRef.current) return;
     setGerando(true);
     try {
@@ -590,6 +625,7 @@ function extrairRelatoIpc(teor: string): string {
 }
 
 function TimelineIpcCard({
+  movimentoId,
   teor,
   quando,
   prolator,
@@ -598,6 +634,7 @@ function TimelineIpcCard({
   procedimento,
   identificacao,
 }: {
+  movimentoId?: string;
   teor: string;
   quando: string;
   prolator: string;
@@ -646,7 +683,20 @@ function TimelineIpcCard({
     { label: "Identificação do policial", valor: identificacao },
   ];
 
+  const exportarAto = useExportarAto();
+
   async function exportarPdf() {
+    if (exportarAto && movimentoId) {
+      setGerando(true);
+      try {
+        await exportarAto(movimentoId);
+      } catch (e) {
+        toast.error((e as Error)?.message || "Falha ao gerar o PDF.");
+      } finally {
+        setGerando(false);
+      }
+      return;
+    }
     if (!pdfRef.current) return;
     setGerando(true);
     try {

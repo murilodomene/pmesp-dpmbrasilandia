@@ -2,7 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ShieldCheck, X, Trash2, Pencil, Plus, Search, User, Link2 } from "lucide-react";
+import { ShieldCheck, X, Trash2, Pencil, Plus, Search, Link2, Download, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { Header } from "@/components/Header";
+import { getSessionInfo } from "@/lib/usuarios.functions";
+import { exportFichaFuncionalPdf } from "@/lib/exportProcesso";
+import { rotuloDesfechoPdo } from "@/lib/pdo-rotulos";
+import { ROLE_LABELS } from "@/lib/access-roles";
 import {
   listObservacoes,
   criarObservacao,
@@ -10,9 +16,8 @@ import {
   excluirObservacao,
   buscarPoliciais,
   buscarPads,
+  listRegistrosAutomaticos,
 } from "@/lib/observacoes.functions";
-import { supabase } from "@/integrations/supabase/client";
-import { useSession } from "@/hooks/useSession";
 import { RichTextEditor, sanitizeAtoHtml, isHtmlAto } from "@/components/RichTextEditor";
 import { AtoAnexosUploader, type AtoAnexo } from "@/components/AtoAnexosUploader";
 import { AtoAnexosLinks } from "@/components/AtoAnexosLinks";
@@ -57,36 +62,156 @@ type Observacao = {
 };
 
 function cargoLabel(c: string) {
-  if (c === "ssp") return "SSP";
-  if (c === "corregedor_geral") return "Corregedor-Geral";
-  if (c === "corregedor_supervisor") return "Corregedor Supervisor";
-  if ((c === "subcorregedor_geral" || c === "corregedor_supervisor")) return "Subcorregedor-Geral";
-  if (c === "corregedor") return "Corregedor";
-  return c;
+  return (ROLE_LABELS as Record<string, string>)[c] ?? c;
+}
+
+const STATUS_PROC: Record<string, string> = {
+  recebida: "Recebida",
+  em_analise: "Em análise",
+  em_investigacao: "Em investigação",
+  concluso: "Concluso",
+  ag_decurso_prazo: "Aguardando decurso de prazo",
+  em_recurso: "Em recurso",
+  transito_julgado: "Trânsito em julgado",
+  arquivada: "Arquivada",
+};
+
+type ProcAuto = {
+  denuncia_id: string;
+  numero: string;
+  tipo: string | null;
+  natureza: string | null;
+  instaurada_em: string | null;
+  status: string;
+  nome: string;
+  re: string | null;
+  cargo: string | null;
+  unidade: string | null;
+};
+type FiscAuto = {
+  pdo_id: string;
+  numero: string;
+  data: string;
+  local: string;
+  desfecho: string;
+  nome: string;
+  re: string | null;
+  cargo: string | null;
+};
+type Ficha = {
+  chave: string;
+  nome: string;
+  re: string | null;
+  posto: string | null;
+  opm: string | null;
+  observacoes: Observacao[];
+  procedimentos: ProcAuto[];
+  pdos: FiscAuto[];
+  ultima: number;
+};
+
+const semAcento = (t: string) =>
+  t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+const textoDe = (html: string) =>
+  html
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<\/p>/gi, " ")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+
+/**
+ * Junta observações, procedimentos (como denunciado) e PDOs (como fiscalizado)
+ * por policial: pelo RE e, quando não houver RE, pelo nome.
+ */
+function montarFichas(obs: Observacao[], procs: ProcAuto[], fiscs: FiscAuto[]): Ficha[] {
+  type Pessoa = { nome: string; re: string | null; posto: string | null; opm: string | null; data: number; add: (f: Ficha) => void };
+  const pessoas: Pessoa[] = [
+    ...obs
+      .filter((o) => o.policial_nome || o.policial_matricula)
+      .map((o) => ({
+        nome: o.policial_nome ?? "",
+        re: o.policial_matricula,
+        posto: o.policial_cargo,
+        opm: o.policial_unidade,
+        data: new Date(o.created_at).getTime(),
+        add: (f: Ficha) => f.observacoes.push(o),
+      })),
+    ...procs.map((p) => ({
+      nome: p.nome,
+      re: p.re,
+      posto: p.cargo,
+      opm: p.unidade,
+      data: p.instaurada_em ? new Date(p.instaurada_em).getTime() : 0,
+      add: (f: Ficha) => {
+        if (!f.procedimentos.some((x) => x.denuncia_id === p.denuncia_id)) f.procedimentos.push(p);
+      },
+    })),
+    ...fiscs.map((x) => ({
+      nome: x.nome,
+      re: x.re,
+      posto: x.cargo,
+      opm: null,
+      data: new Date(x.data).getTime(),
+      add: (f: Ficha) => {
+        if (!f.pdos.some((y) => y.pdo_id === x.pdo_id)) f.pdos.push(x);
+      },
+    })),
+  ];
+  // Quem tem RE primeiro: assim um registro só com nome cai na ficha certa.
+  pessoas.sort((a, b) => Number(!!b.re?.trim()) - Number(!!a.re?.trim()));
+  const fichas = new Map<string, Ficha>();
+  const porNome = new Map<string, string>();
+  for (const p of pessoas) {
+    const re = (p.re ?? "").replace(/\W/g, "").toUpperCase();
+    const nome = semAcento(p.nome);
+    if (!re && !nome) continue;
+    const chave = re ? `re:${re}` : porNome.get(nome) ?? `nome:${nome}`;
+    let f = fichas.get(chave);
+    if (!f) {
+      f = { chave, nome: p.nome.trim(), re: p.re?.trim() || null, posto: null, opm: null, observacoes: [], procedimentos: [], pdos: [], ultima: 0 };
+      fichas.set(chave, f);
+    }
+    if (nome && !porNome.has(nome)) porNome.set(nome, chave);
+    if (!f.nome && p.nome) f.nome = p.nome.trim();
+    if (!f.posto && p.posto) f.posto = p.posto;
+    if (!f.opm && p.opm) f.opm = p.opm;
+    f.ultima = Math.max(f.ultima, p.data || 0);
+    p.add(f);
+  }
+  for (const f of fichas.values()) {
+    f.observacoes.sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
+    f.procedimentos.sort((a, b) => +new Date(b.instaurada_em ?? 0) - +new Date(a.instaurada_em ?? 0));
+    f.pdos.sort((a, b) => +new Date(b.data) - +new Date(a.data));
+  }
+  return Array.from(fichas.values()).sort((a, b) => b.ultima - a.ultima);
 }
 
 function ObservacoesPage() {
-  const { session } = useSession();
   const search = Route.useSearch();
-  const [cargo, setCargo] = useState<string | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
-  const [tab, setTab] = useState<"policial" | "geral">(search.q ? "geral" : "policial");
+  const sessionFn = useServerFn(getSessionInfo);
+  const { data: session, isLoading: carregandoSessao } = useQuery({
+    queryKey: ["session-info"],
+    queryFn: () => sessionFn(),
+  });
+  const [tab, setTab] = useState<"policial" | "geral">("policial");
   const [busca, setBusca] = useState(search.q ?? "");
+  const [selecionada, setSelecionada] = useState<string | null>(null);
   const [aberto, setAberto] = useState<Observacao | null>(null);
   const [editando, setEditando] = useState<Observacao | null>(null);
-  const [criando, setCriando] = useState(false);
-  const [expandido, setExpandido] = useState<string | null>(null);
+  const [criando, setCriando] = useState<Partial<Observacao> | null>(null);
+  const [gerandoPdf, setGerandoPdf] = useState(false);
 
-  useEffect(() => {
-    if (!session) return;
-    supabase.from("user_roles").select("role").eq("user_id", session.user.id).maybeSingle()
-      .then(({ data }) => setCargo((data as { role: string } | null)?.role ?? null));
-    supabase.from("profiles").select("status").eq("id", session.user.id).maybeSingle()
-      .then(({ data }) => setStatus((data as { status: string } | null)?.status ?? null));
-  }, [session]);
-
-  const ativo = status === "ativo";
-  const podeVer = ativo && (cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || (cargo === "subcorregedor_geral" || cargo === "corregedor_supervisor"));
+  const perfil = session?.profile as { nome?: string; status?: string; posto_graduacao?: string | null } | null | undefined;
+  const cargo = session?.cargo ?? null;
+  const podeVer =
+    perfil?.status === "ativo" &&
+    !!cargo &&
+    ["ssp", "cmtg", "corregedor_geral", "corregedor", "subcorregedor_geral", "corregedor_supervisor"].includes(cargo);
 
   const listFn = useServerFn(listObservacoes);
   const { data: obs = [], isLoading } = useQuery({
@@ -94,148 +219,240 @@ function ObservacoesPage() {
     queryFn: () => listFn() as Promise<Observacao[]>,
     enabled: podeVer,
   });
+  const autoFn = useServerFn(listRegistrosAutomaticos);
+  const { data: auto } = useQuery({
+    queryKey: ["observacoes-automaticas"],
+    queryFn: () => autoFn(),
+    enabled: podeVer,
+  });
 
-  const filtrados = useMemo(() => {
-    const t = busca.trim().toLowerCase();
-    if (!t) return obs;
-    return obs.filter((o) => {
-      const hay = [
-        o.policial_nome,
-        o.policial_matricula,
-        o.policial_unidade,
-        o.policial_cargo,
-        ...o.pads.map((p) => p.numero_protocolo),
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      return hay.includes(t);
-    });
-  }, [obs, busca]);
+  const fichas = useMemo(
+    () => montarFichas(obs, (auto?.procedimentos ?? []) as ProcAuto[], (auto?.fiscalizacoes ?? []) as FiscAuto[]),
+    [obs, auto],
+  );
+  const termo = semAcento(busca);
+  const fichasFiltradas = useMemo(() => {
+    if (!termo) return fichas;
+    return fichas.filter((f) =>
+      semAcento(
+        [
+          f.nome,
+          f.re,
+          f.posto,
+          f.opm,
+          ...f.procedimentos.map((p) => `${p.numero} ${p.natureza ?? ""}`),
+          ...f.pdos.map((p) => p.numero),
+          ...f.observacoes.map((o) => `${o.autor_nome} ${textoDe(o.corpo)} ${o.pads.map((x) => x.numero_protocolo).join(" ")}`),
+        ]
+          .filter(Boolean)
+          .join(" "),
+      ).includes(termo),
+    );
+  }, [fichas, termo]);
+  const obsFiltradas = useMemo(() => {
+    if (!termo) return obs;
+    return obs.filter((o) =>
+      semAcento(
+        [
+          o.policial_nome,
+          o.policial_matricula,
+          o.policial_unidade,
+          o.policial_cargo,
+          o.autor_nome,
+          textoDe(o.corpo),
+          ...o.pads.map((p) => p.numero_protocolo),
+        ]
+          .filter(Boolean)
+          .join(" "),
+      ).includes(termo),
+    );
+  }, [obs, termo]);
+  const ficha =
+    fichasFiltradas.find((f) => f.chave === selecionada) ?? fichasFiltradas[0] ?? null;
 
-  const porPolicial = useMemo(() => {
-    const map = new Map<string, { chave: string; nome: string; matricula: string | null; cargo: string | null; unidade: string | null; observacoes: Observacao[] }>();
-    for (const o of filtrados) {
-      if (!o.policial_nome && !o.policial_matricula) continue; // observações gerais só aparecem na "Lista geral"
-      const chave = (o.policial_matricula || o.policial_nome || "").toLowerCase();
-      const cur = map.get(chave);
-      if (cur) cur.observacoes.push(o);
-      else
-        map.set(chave, {
-          chave,
-          nome: o.policial_nome ?? "—",
-          matricula: o.policial_matricula,
-          cargo: o.policial_cargo,
-          unidade: o.policial_unidade,
-          observacoes: [o],
-        });
+  async function exportarFicha(f: Ficha) {
+    setGerandoPdf(true);
+    try {
+      await exportFichaFuncionalPdf({
+        policial: { nome: f.nome, posto: f.posto, re: f.re, opm: f.opm },
+        emitidaPor: {
+          nome: [perfil?.posto_graduacao, perfil?.nome].filter(Boolean).join(" ") || "—",
+          cargo,
+        },
+        emitidaEm: new Date().toISOString(),
+        procedimentos: f.procedimentos.map((p) => ({
+          numero: p.numero,
+          natureza: p.natureza,
+          instaurado_em: p.instaurada_em,
+          status: p.status,
+        })),
+        pdos: f.pdos.map((p) => ({ numero: p.numero, data: p.data, local: p.local, desfecho: p.desfecho, papel: "fiscalizado" as const })),
+        observacoes: f.observacoes.map((o) => ({
+          data: o.created_at,
+          autor: `${o.autor_nome} — ${cargoLabel(o.autor_cargo)}`,
+          corpo: o.corpo,
+          processos: o.pads.map((p) => p.numero_protocolo),
+        })),
+      });
+    } catch (e) {
+      toast.error((e as Error)?.message || "Falha ao gerar a ficha funcional.");
+    } finally {
+      setGerandoPdf(false);
     }
-    return Array.from(map.values()).sort((a, b) => a.nome.localeCompare(b.nome));
-  }, [filtrados]);
-
-  if (session === null) {
-    return <div className="mx-auto max-w-4xl p-6 text-sm">Faça login para acessar.</div>;
   }
-  if (session && !podeVer) {
+
+  if (carregandoSessao) {
     return (
-      <div className="mx-auto max-w-4xl p-6">
-        <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm">
-          Acesso restrito à Corregedoria (SSP, Corregedor-Geral ou Corregedor).
+      <div className="min-h-screen">
+        <Header />
+        <div className="mx-auto max-w-4xl p-6 text-sm text-muted-foreground">Carregando...</div>
+      </div>
+    );
+  }
+  if (!podeVer) {
+    return (
+      <div className="min-h-screen">
+        <Header />
+        <div className="mx-auto max-w-4xl p-6">
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm">
+            Acesso restrito aos usuários internos da Corregedoria.
+          </div>
         </div>
       </div>
     );
   }
 
+  const aba = (ativa: boolean) =>
+    `flex-1 rounded-md border px-3 py-1.5 text-xs transition ${
+      ativa ? "border-primary/55 bg-primary/10 font-semibold text-primary" : "border-border hover:bg-surface-2"
+    }`;
+
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6">
-      <header className="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <h1 className="font-serif text-2xl">Observações</h1>
-          <p className="text-xs text-muted-foreground">
-            Controle interno da Corregedoria — apartado dos autos formais dos PADs.
-          </p>
-        </div>
-        <button
-          onClick={() => setCriando(true)}
-          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-        >
-          <Plus className="h-4 w-4" /> Nova observação
-        </button>
-      </header>
+    <div className="min-h-screen">
+      <Header />
+      <div className="mx-auto max-w-7xl space-y-4 p-4 sm:p-6">
+        <header className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Controle interno · restrito à Corregedoria
+            </div>
+            <h1 className="font-serif text-2xl">Observações</h1>
+          </div>
+          <button
+            onClick={() => setCriando({})}
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" /> Nova observação
+          </button>
+        </header>
 
-      <div className="mb-3 flex items-center gap-2 border-b border-border">
-        <button
-          onClick={() => setTab("policial")}
-          className={`border-b-2 px-3 py-2 text-sm ${tab === "policial" ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}
-        >
-          Por policial
-        </button>
-        <button
-          onClick={() => setTab("geral")}
-          className={`border-b-2 px-3 py-2 text-sm ${tab === "geral" ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}
-        >
-          Lista geral
-        </button>
-      </div>
-
-      <label className="mb-3 flex items-center gap-2 rounded-md border border-border bg-input px-2 py-1.5 text-sm">
-        <Search className="h-3.5 w-3.5 text-muted-foreground" />
-        <input
-          className="flex-1 bg-transparent focus:outline-none"
-          placeholder="Buscar por nome, matrícula, unidade ou nº de PAD"
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-        />
-      </label>
-
-      {isLoading ? (
-        <div className="text-sm text-muted-foreground">Carregando...</div>
-      ) : filtrados.length === 0 ? (
-        <div className="rounded-md border border-border p-6 text-center text-sm text-muted-foreground">
-          Nenhuma observação registrada.
-        </div>
-      ) : tab === "policial" ? (
-        <ul className="grid gap-2">
-          {porPolicial.map((p) => (
-            <li key={p.chave} className="surface p-3">
-              <button
-                onClick={() => setExpandido(expandido === p.chave ? null : p.chave)}
-                className="flex w-full items-center justify-between gap-3 text-left"
-              >
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-primary" />
-                    <span className="font-medium">{p.nome}</span>
+        <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
+          <aside className="surface flex max-h-[calc(100vh-160px)] min-h-[320px] flex-col overflow-hidden">
+            <div className="space-y-2 border-b border-border p-3">
+              <label className="flex items-center gap-2 rounded-md border border-border bg-input px-3 py-2">
+                <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                <input
+                  type="search"
+                  className="w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                  placeholder="Policial, RE, OPM, processo ou texto…"
+                  aria-label="Buscar"
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                />
+              </label>
+              <div className="flex gap-1.5">
+                <button type="button" onClick={() => setTab("policial")} className={aba(tab === "policial")}>
+                  Por policial ({fichasFiltradas.length})
+                </button>
+                <button type="button" onClick={() => setTab("geral")} className={aba(tab === "geral")}>
+                  Lista geral ({obsFiltradas.length})
+                </button>
+              </div>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              {isLoading ? (
+                <div className="p-4 text-sm text-muted-foreground">Carregando...</div>
+              ) : tab === "policial" ? (
+                fichasFiltradas.length === 0 ? (
+                  <div className="p-4 text-sm text-muted-foreground">
+                    {fichas.length ? "Nenhum policial encontrado com essa busca." : "Nenhum policial com registros ainda."}
                   </div>
-                  <div className="mt-0.5 text-[11px] text-muted-foreground">
-                    {[p.matricula && `Mat. ${p.matricula}`, p.cargo, p.unidade].filter(Boolean).join(" · ") || "—"}
-                  </div>
+                ) : (
+                  <ul className="divide-y divide-border">
+                    {fichasFiltradas.map((f) => {
+                      const ativa = ficha?.chave === f.chave;
+                      const total = f.observacoes.length + f.procedimentos.length + f.pdos.length;
+                      return (
+                        <li key={f.chave}>
+                          <button
+                            type="button"
+                            onClick={() => setSelecionada(f.chave)}
+                            aria-current={ativa ? "true" : undefined}
+                            className={`grid w-full grid-cols-[minmax(0,1fr)_auto] gap-x-2 gap-y-0.5 px-4 py-2.5 text-left transition ${
+                              ativa ? "bg-primary/10" : "hover:bg-surface-2"
+                            }`}
+                          >
+                            <span className={`truncate text-sm ${ativa ? "font-semibold text-primary" : "font-medium"}`}>
+                              {[f.posto, f.nome].filter(Boolean).join(" ") || "—"}
+                            </span>
+                            <span
+                              className={`rounded-full px-2 py-px text-[11px] ${ativa ? "bg-primary text-primary-foreground" : "border border-border"}`}
+                              title="Total de registros"
+                            >
+                              {total}
+                            </span>
+                            <span className="truncate text-xs text-muted-foreground">
+                              {[f.re && `RE ${f.re}`, f.opm].filter(Boolean).join(" · ") || "Sem RE"}
+                            </span>
+                            <span className="text-[11px] text-muted-foreground">
+                              {f.procedimentos.length > 0 && `${f.procedimentos.length} proc.`}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )
+              ) : obsFiltradas.length === 0 ? (
+                <div className="p-4 text-sm text-muted-foreground">
+                  {obs.length ? "Nenhuma observação encontrada com essa busca." : "Nenhuma observação registrada."}
                 </div>
-                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] text-primary">
-                  {p.observacoes.length} observaç{p.observacoes.length === 1 ? "ão" : "ões"}
-                </span>
-              </button>
-              {expandido === p.chave && (
-                <ul className="mt-3 grid gap-2 border-t border-border/60 pt-3">
-                  {p.observacoes.map((o) => (
+              ) : (
+                <ul className="grid gap-2 p-3">
+                  {obsFiltradas.map((o) => (
                     <li key={o.id}>
-                      <ObservacaoCard obs={o} onOpen={() => setAberto(o)} />
+                      <ObservacaoCard obs={o} onOpen={() => setAberto(o)} showPolicial />
                     </li>
                   ))}
                 </ul>
               )}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <ul className="grid gap-2">
-          {filtrados.map((o) => (
-            <li key={o.id}>
-              <ObservacaoCard obs={o} onOpen={() => setAberto(o)} showPolicial />
-            </li>
-          ))}
-        </ul>
-      )}
+            </div>
+          </aside>
+
+          <section className="surface min-w-0 overflow-hidden">
+            {!ficha ? (
+              <div className="grid min-h-[320px] place-items-center p-6 text-center text-sm text-muted-foreground">
+                Selecione um policial para ver a ficha.
+              </div>
+            ) : (
+              <FichaPolicial
+                ficha={ficha}
+                gerandoPdf={gerandoPdf}
+                onExportar={() => exportarFicha(ficha)}
+                onNova={() =>
+                  setCriando({
+                    policial_nome: ficha.nome,
+                    policial_matricula: ficha.re,
+                    policial_cargo: ficha.posto,
+                    policial_unidade: ficha.opm,
+                  })
+                }
+                onAbrir={(o) => setAberto(o)}
+              />
+            )}
+          </section>
+        </div>
+      </div>
 
       {aberto && (
         <ObservacaoViewer
@@ -247,8 +464,139 @@ function ObservacoesPage() {
           }}
         />
       )}
-      {criando && <ObservacaoDialog onClose={() => setCriando(false)} />}
+      {criando && <ObservacaoDialog inicial={criando} onClose={() => setCriando(null)} />}
       {editando && <ObservacaoDialog obs={editando} onClose={() => setEditando(null)} />}
+    </div>
+  );
+}
+
+function FichaPolicial({
+  ficha,
+  gerandoPdf,
+  onExportar,
+  onNova,
+  onAbrir,
+}: {
+  ficha: Ficha;
+  gerandoPdf: boolean;
+  onExportar: () => void;
+  onNova: () => void;
+  onAbrir: (o: Observacao) => void;
+}) {
+  const fmt = (d: string | null) =>
+    d ? new Date(d).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—";
+  const titulo = "text-[11px] font-semibold uppercase tracking-wider text-muted-foreground";
+  return (
+    <div>
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-5 py-4">
+        <div className="min-w-0">
+          <div className={titulo}>Ficha do policial</div>
+          <h2 className="font-serif text-xl">{[ficha.posto, ficha.nome].filter(Boolean).join(" ")}</h2>
+          <div className="text-sm text-muted-foreground">
+            {[ficha.re ? `RE ${ficha.re}` : "Sem RE cadastrado", ficha.opm].filter(Boolean).join(" · ")}
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={onExportar}
+            disabled={gerandoPdf}
+            className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2 disabled:opacity-50"
+          >
+            {gerandoPdf ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+            Exportar ficha (PDF)
+          </button>
+          <button
+            type="button"
+            onClick={onNova}
+            className="inline-flex items-center gap-1.5 rounded-md border border-primary/55 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20"
+          >
+            <Plus className="h-3.5 w-3.5" /> Observação para este policial
+          </button>
+        </div>
+      </div>
+
+      <dl className="grid grid-cols-2 border-b border-border sm:grid-cols-4">
+        {[
+          { k: "Procedimentos", v: ficha.procedimentos.length },
+          { k: "PDOs fiscalizado", v: ficha.pdos.length },
+          { k: "Observações", v: ficha.observacoes.length },
+          { k: "Último registro", v: ficha.ultima ? new Date(ficha.ultima).toLocaleDateString("pt-BR") : "—" },
+        ].map((c, i) => (
+          <div key={c.k} className={`px-5 py-3 ${i ? "sm:border-l sm:border-border" : ""}`}>
+            <dt className={titulo}>{c.k}</dt>
+            <dd className="tabular text-lg font-semibold">{c.v}</dd>
+          </div>
+        ))}
+      </dl>
+
+      <div className="space-y-5 p-5">
+        <div>
+          <div className={`${titulo} mb-2`}>Procedimentos disciplinares (registro automático)</div>
+          {ficha.procedimentos.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhum procedimento instaurado contra este policial.</p>
+          ) : (
+            <div className="overflow-x-auto rounded-md border border-border">
+              <table className="w-full min-w-[520px] text-sm">
+                <thead>
+                  <tr className="bg-background/40 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
+                    <th className="px-3 py-2">Procedimento</th>
+                    <th className="px-3 py-2">Natureza</th>
+                    <th className="px-3 py-2">Instauração</th>
+                    <th className="px-3 py-2">Situação</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {ficha.procedimentos.map((p) => (
+                    <tr key={p.denuncia_id}>
+                      <td className="whitespace-nowrap px-3 py-2">
+                        <a href={`/corregedoria?id=${p.denuncia_id}`} className="font-medium text-primary hover:underline">
+                          {p.numero}
+                        </a>
+                      </td>
+                      <td className="px-3 py-2">{p.natureza || "—"}</td>
+                      <td className="tabular whitespace-nowrap px-3 py-2 text-muted-foreground">{fmt(p.instaurada_em)}</td>
+                      <td className="whitespace-nowrap px-3 py-2">{STATUS_PROC[p.status] ?? p.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {ficha.pdos.length > 0 && (
+          <div>
+            <div className={`${titulo} mb-2`}>PDOs em que foi fiscalizado (registro automático)</div>
+            <ul className="divide-y divide-border rounded-md border border-border text-sm">
+              {ficha.pdos.map((p) => (
+                <li key={p.pdo_id} className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-3 py-2">
+                  <span className="font-mono text-xs font-semibold text-primary">{p.numero}</span>
+                  <span className="tabular text-muted-foreground">{fmt(p.data)}</span>
+                  <span className="min-w-0 flex-1 truncate">{p.local}</span>
+                  <span className="text-xs text-muted-foreground">{rotuloDesfechoPdo(p.desfecho)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div>
+          <div className={`${titulo} mb-2`}>Observações da Corregedoria</div>
+          {ficha.observacoes.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhuma observação escrita para este policial.</p>
+          ) : (
+            <ol className="space-y-3">
+              {ficha.observacoes.map((o) => (
+                <li key={o.id} className="grid gap-x-4 sm:grid-cols-[96px_minmax(0,1fr)]">
+                  <span className="tabular pt-2 text-xs text-muted-foreground">{fmt(o.created_at)}</span>
+                  <ObservacaoCard obs={o} onOpen={() => onAbrir(o)} />
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -262,40 +610,45 @@ function ObservacaoCard({
   onOpen: () => void;
   showPolicial?: boolean;
 }) {
+  const previa = textoDe(obs.corpo);
   return (
-    <button
-      onClick={onOpen}
-      className="surface flex w-full flex-col items-start gap-1 p-3 text-left transition hover:border-primary/60"
-    >
-      {showPolicial && (
-        <div className="text-xs">
-          {obs.policial_nome ? (
-            <>
-              <span className="font-medium">{obs.policial_nome}</span>
-              <span className="text-muted-foreground">
-                {" · "}
-                {[obs.policial_matricula, obs.policial_cargo, obs.policial_unidade].filter(Boolean).join(" · ") || "—"}
-              </span>
-            </>
-          ) : (
-            <span className="font-medium italic text-muted-foreground">Observação geral</span>
-          )}
-        </div>
-      )}
-      <div className="text-[11px] text-muted-foreground">
-        {obs.autor_nome} — {cargoLabel(obs.autor_cargo)} · {new Date(obs.created_at).toLocaleString("pt-BR")}
-      </div>
+    <div className="surface flex w-full flex-col items-start gap-1 p-3 text-left transition hover:border-primary/60">
+      <button type="button" onClick={onOpen} className="flex w-full flex-col items-start gap-1 text-left">
+        {showPolicial && (
+          <span className="text-xs">
+            {obs.policial_nome ? (
+              <>
+                <span className="font-medium">{obs.policial_nome}</span>
+                <span className="text-muted-foreground">
+                  {" · "}
+                  {[obs.policial_matricula, obs.policial_cargo, obs.policial_unidade].filter(Boolean).join(" · ") || "—"}
+                </span>
+              </>
+            ) : (
+              <span className="font-medium italic text-muted-foreground">Observação geral</span>
+            )}
+          </span>
+        )}
+        <span className="text-[11px] text-muted-foreground">
+          {obs.autor_nome} — {cargoLabel(obs.autor_cargo)} · {new Date(obs.created_at).toLocaleString("pt-BR")}
+        </span>
+        {previa && <span className="line-clamp-2 text-sm text-foreground/90">{previa}</span>}
+      </button>
       {obs.pads.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1 pt-1 text-[11px]">
-          <Link2 className="h-3 w-3 text-primary" />
+        <span className="flex flex-wrap items-center gap-1 pt-1 text-[11px]">
+          <Link2 className="h-3 w-3 text-primary" aria-hidden />
           {obs.pads.map((p) => (
-            <span key={p.denuncia_id} className="rounded-md border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-primary">
+            <a
+              key={p.denuncia_id}
+              href={`/corregedoria?id=${p.denuncia_id}`}
+              className="rounded-md border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-primary hover:bg-primary/20"
+            >
               {p.numero_protocolo}
-            </span>
+            </a>
           ))}
-        </div>
+        </span>
       )}
-    </button>
+    </div>
   );
 }
 
@@ -315,8 +668,11 @@ function ObservacaoViewer({
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["observacoes"] });
       qc.invalidateQueries({ queryKey: ["obs-pad-count"] });
+      qc.invalidateQueries({ queryKey: ["obs-policial-count"] });
+      toast.success("Observação excluída.");
       onClose();
     },
+    onError: (e) => toast.error((e as Error)?.message || "Não foi possível excluir."),
   });
 
   const dataFmt = new Date(obs.created_at).toLocaleDateString("pt-BR", {
@@ -395,9 +751,13 @@ function ObservacaoViewer({
                   <dt className="font-semibold uppercase tracking-wider text-primary">PADs vinculados:</dt>
                   <dd className="flex flex-wrap gap-1">
                     {obs.pads.map((p) => (
-                      <span key={p.denuncia_id} className="rounded-md border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[11px] text-primary">
+                      <a
+                        key={p.denuncia_id}
+                        href={`/corregedoria?id=${p.denuncia_id}`}
+                        className="rounded-md border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[11px] text-primary hover:bg-primary/20"
+                      >
                         {p.numero_protocolo}
-                      </span>
+                      </a>
                     ))}
                   </dd>
                 </div>
@@ -426,12 +786,22 @@ function ObservacaoViewer({
   );
 }
 
-function ObservacaoDialog({ obs, onClose }: { obs?: Observacao; onClose: () => void }) {
+function ObservacaoDialog({
+  obs,
+  inicial,
+  onClose,
+}: {
+  obs?: Observacao;
+  /** Dados do policial já preenchidos (botão "Observação para este policial"). */
+  inicial?: Partial<Observacao>;
+  onClose: () => void;
+}) {
   const editing = !!obs;
-  const [nome, setNome] = useState(obs?.policial_nome ?? "");
-  const [matricula, setMatricula] = useState(obs?.policial_matricula ?? "");
-  const [cargoPol, setCargoPol] = useState(obs?.policial_cargo ?? "");
-  const [unidade, setUnidade] = useState(obs?.policial_unidade ?? "");
+  const base = obs ?? inicial;
+  const [nome, setNome] = useState(base?.policial_nome ?? "");
+  const [matricula, setMatricula] = useState(base?.policial_matricula ?? "");
+  const [cargoPol, setCargoPol] = useState(base?.policial_cargo ?? "");
+  const [unidade, setUnidade] = useState(base?.policial_unidade ?? "");
   const [corpo, setCorpo] = useState(obs?.corpo ?? "");
   const [anexos, setAnexos] = useState<AtoAnexo[]>(obs?.anexos ?? []);
   const [pads, setPads] = useState<{ id: string; numero_protocolo: string }[]>(
@@ -448,12 +818,18 @@ function ObservacaoDialog({ obs, onClose }: { obs?: Observacao; onClose: () => v
   const buscarPolFn = useServerFn(buscarPoliciais);
   const buscarPadFn = useServerFn(buscarPads);
 
+  // Sugestões de policiais: busca pelo RE quando houver, senão pelo nome.
+  const termoPolicial = matricula.trim() || nome.trim();
   useEffect(() => {
+    if (termoPolicial.length < 2) {
+      setPolSug([]);
+      return;
+    }
     const t = setTimeout(() => {
-      buscarPolFn({ data: { termo: nome + " " + matricula } }).then((r) => setPolSug(r)).catch(() => {});
+      buscarPolFn({ data: { termo: termoPolicial } }).then((r) => setPolSug(r)).catch(() => {});
     }, 250);
     return () => clearTimeout(t);
-  }, [nome, matricula, buscarPolFn]);
+  }, [termoPolicial, buscarPolFn]);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -480,6 +856,8 @@ function ObservacaoDialog({ obs, onClose }: { obs?: Observacao; onClose: () => v
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["observacoes"] });
       qc.invalidateQueries({ queryKey: ["obs-pad-count"] });
+      qc.invalidateQueries({ queryKey: ["obs-policial-count"] });
+      toast.success(editing ? "Observação atualizada." : "Observação registrada.");
       onClose();
     },
   });

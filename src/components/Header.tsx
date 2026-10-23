@@ -14,6 +14,7 @@ import { NotificacoesBell } from "@/components/NotificacoesBell";
 import { UserAvatar } from "@/components/UserAvatar";
 import { PMESP_CREST_URL } from "@/lib/branding";
 import { ROLE_LABELS, isAdminRole, isInternalRole } from "@/lib/access-roles";
+import { useDentroAreaInterna } from "@/components/AreaInternaMenu";
 
 interface Profile {
   nome: string;
@@ -24,6 +25,8 @@ interface Profile {
 export function Header() {
   const { session, loading } = useSession();
   const router = useRouter();
+  // Dentro da área interna o menu lateral substitui o menu "Área interna".
+  const dentroAreaInterna = useDentroAreaInterna();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [cargo, setCargo] = useState<string | null>(null);
 
@@ -101,7 +104,7 @@ export function Header() {
           {isMp && <NavLink to="/mp-processos">Meus processos</NavLink>}
 
           {/* Internal links always collapsed into a dropdown to avoid overflow */}
-          {internalLinks.length > 0 && (
+          {internalLinks.length > 0 && !dentroAreaInterna && (
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center gap-1 whitespace-nowrap rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground">
                 Área interna

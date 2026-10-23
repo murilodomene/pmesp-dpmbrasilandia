@@ -5,7 +5,7 @@ interface Props {
   acrescimos_dias: number;
   status: DenunciaStatus;
   interrupcoes_count?: number;
-  variant?: "chip" | "block";
+  variant?: "chip" | "block" | "compact";
 }
 
 const NIVEL_CLASS: Record<string, string> = {
@@ -33,6 +33,29 @@ export function RelogioPrescricao({
       >
         {formatarDiasRestantes(p)}
       </span>
+    );
+  }
+
+  if (variant === "compact") {
+    // Quadro pequeno do cabeçalho do processo.
+    return (
+      <div
+        className={`flex min-w-[170px] flex-col gap-0.5 rounded-lg border px-3.5 py-2.5 ${cls}`}
+        title={`Termo inicial: ${new Date(termo_inicial).toLocaleDateString("pt-BR")}`}
+      >
+        <span className="text-[10.5px] font-semibold uppercase tracking-wider opacity-80">Prescrição</span>
+        <span className="text-xl font-semibold leading-tight">
+          <span className="tabular">{p.suspenso ? "Suspensa" : p.prescrita ? "Consumada" : p.diasRestantes}</span>
+          {!p.suspenso && !p.prescrita && (
+            <span className="ml-1.5 text-[13px] font-normal opacity-80">
+              {p.diasRestantes === 1 ? "dia restante" : "dias restantes"}
+            </span>
+          )}
+        </span>
+        <span className="text-[11px] opacity-70">
+          prazo 15 + {acrescimos_dias} · {interrupcoes_count} {interrupcoes_count === 1 ? "interrupção" : "interrupções"}
+        </span>
+      </div>
     );
   }
 

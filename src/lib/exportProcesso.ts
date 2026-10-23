@@ -633,42 +633,41 @@ export async function exportProcessoCompleto(data: ExportProcessoData): Promise<
   }
 }
 
+/** PDF de pré-visualização pronto para exibir na própria página. */
+export interface PreviaAtoPdf {
+  /** Endereço local (blob:) para o <iframe>; revogar ao fechar. */
+  url: string;
+  nome: string;
+  baixar: () => void;
+}
+
 /**
  * Pré-visualização do ato ANTES de lançar: gera o PDF no modelo oficial
- * com o texto do formulário e abre em nova aba. Nada é gravado.
+ * com o texto do formulário. Nada é gravado. O PDF é exibido numa janela
+ * dentro da página (abrir em nova aba é bloqueado por alguns navegadores
+ * e extensões: ERR_BLOCKED_BY_CLIENT).
  */
 export async function previsualizarAtoPdf(
   data: ExportAtoData,
   movimento: PdfMovimento,
   numeroEvento: number,
-): Promise<void> {
-  // A aba é aberta já no clique (antes do await) para não ser bloqueada.
-  const janela = typeof window !== "undefined" ? window.open("", "_blank") : null;
-  if (janela) {
-    janela.document.title = "Gerando pré-visualização…";
-    janela.document.body.style.cssText = "font-family:system-ui,sans-serif;padding:24px;color:#333";
-    janela.document.body.textContent = "Gerando pré-visualização do PDF…";
-  }
-  try {
-    const assets = await carregarAssetsPdf([movimento]);
-    const pdf = await gerarAtoPdf(
-      {
-        ...data,
-        movimentos: [...data.movimentos.filter((m) => m.id !== movimento.id), movimento],
-        movimentoId: movimento.id,
-        numeroEvento,
-      },
-      assets,
-    );
-    const nome = nomeArquivoAto(movimento.especie, data.denuncia, movimento.portaria_dados);
-    pdf.setProperties({ title: `Prévia — ${nome.replace(/\.pdf$/, "")}` });
-    if (janela && !janela.closed) {
-      janela.location.href = String(pdf.output("bloburl"));
-    } else {
-      pdf.save(nome.replace(/\.pdf$/, "-previa.pdf"));
-    }
-  } catch (e) {
-    janela?.close();
-    throw e;
-  }
+): Promise<PreviaAtoPdf> {
+  const assets = await carregarAssetsPdf([movimento]);
+  const pdf = await gerarAtoPdf(
+    {
+      ...data,
+      movimentos: [...data.movimentos.filter((m) => m.id !== movimento.id), movimento],
+      movimentoId: movimento.id,
+      numeroEvento,
+    },
+    assets,
+  );
+  const nome = nomeArquivoAto(movimento.especie, data.denuncia, movimento.portaria_dados).replace(
+    /\.pdf$/,
+    "-previa.pdf",
+  );
+  pdf.setProperties({ title: `Prévia — ${nome.replace(/\.pdf$/, "")}` });
+  const blob = pdf.output("blob") as Blob;
+  const url = URL.createObjectURL(blob);
+  return { url, nome, baixar: () => pdf.save(nome) };
 }

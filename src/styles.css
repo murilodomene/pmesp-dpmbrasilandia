@@ -186,7 +186,11 @@
 /* Editor rich text (TipTap) */
 .prose-tiptap p { margin: 0 0 0.5rem 0; min-height: 1.25rem; }
 .prose-tiptap p:last-child { margin-bottom: 0; }
-.prose-tiptap.ato-editor-spacing p { margin: 0; min-height: 1.15em; line-height: 1.15; }
+/* Atos: mesma métrica do PDF — pequeno respiro após cada parágrafo (≈1,4 mm),
+   linha em branco = parágrafo vazio, espaços preservados, recuo por text-indent. */
+.prose-tiptap.ato-editor-spacing p { margin: 0 0 0.33em; min-height: 1.15em; line-height: 1.15; white-space: pre-wrap; }
+.prose-tiptap.ato-editor-spacing p:last-child,
+.prose-tiptap.ato-editor-spacing p:has(> br.ProseMirror-trailingBreak:only-child) { margin-bottom: 0; }
 .prose-tiptap.ato-editor-spacing p:empty::before { content: "\00a0"; }
 .prose-tiptap strong, .prose-tiptap b { font-weight: 700; }
 .prose-tiptap em, .prose-tiptap i { font-style: italic; }
@@ -202,7 +206,8 @@
 }
 
 /* Conteúdo renderizado de atos (dark, integrado ao tema). */
-.ato-body p { margin: 0; min-height: 1.15em; line-height: 1.15; }
+.ato-body p { margin: 0 0 0.33em; min-height: 1.15em; line-height: 1.15; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ato-body p:empty, .ato-body p:last-child { margin-bottom: 0; }
 .ato-body p:empty::before { content: "\00a0"; }
 .ato-body strong, .ato-body b { font-weight: 700; }
 .ato-body em, .ato-body i { font-style: italic; }
@@ -210,7 +215,8 @@
 .ato-body a { color: var(--color-primary); text-decoration: underline; }
 
 /* Conteúdo do ato no PDF (fundo branco), com a mesma métrica do editor. */
-.ato-body-pdf p { margin: 0; min-height: 1.15em; line-height: 1.15; }
+.ato-body-pdf p { margin: 0 0 0.33em; min-height: 1.15em; line-height: 1.15; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ato-body-pdf p:empty, .ato-body-pdf p:last-child { margin-bottom: 0; }
 .ato-body-pdf p:empty::before { content: "\00a0"; }
 .ato-body-pdf strong, .ato-body-pdf b { font-weight: 700; }
 .ato-body-pdf em, .ato-body-pdf i { font-style: italic; }

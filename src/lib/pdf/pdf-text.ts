@@ -20,6 +20,8 @@ export interface Paragraph {
   align: Align;
   /** Fator de entrelinha do editor (CSS line-height). */
   lineHeight: number;
+  /** Recuo da primeira linha, em mm (CSS text-indent). */
+  textIndent?: number;
   runs: Run[];
 }
 
@@ -89,6 +91,23 @@ function entrelinha(el: Element | null, padrao: number): number {
   return Number.isFinite(v) && v >= 0.8 && v <= 3 ? v : padrao;
 }
 
+/** text-indent do parágrafo em mm (cm, mm, pt, px, in, em); 0 se ausente. */
+function recuo(el: Element | null): number {
+  const st = el?.getAttribute("style") ?? "";
+  const m = st.match(/text-indent\s*:\s*([\d.]+)\s*(cm|mm|pt|px|in|em)?/i);
+  if (!m) return 0;
+  const fator: Record<string, number> = {
+    cm: 10,
+    mm: 1,
+    pt: 25.4 / 72,
+    px: 25.4 / 96,
+    in: 25.4,
+    em: 4.2,
+  };
+  const mm = Number(m[1]) * (fator[(m[2] ?? "px").toLowerCase()] ?? 0);
+  return Number.isFinite(mm) && mm > 0 ? Math.min(mm, 50) : 0;
+}
+
 type Estilo = Omit<Run, "text">;
 
 export function htmlParaParagrafos(
@@ -106,6 +125,7 @@ export function htmlParaParagrafos(
     atual = {
       align: alinhamento(el, padrao.align),
       lineHeight: entrelinha(el, padrao.lineHeight),
+      textIndent: recuo(el),
       runs: [],
     };
     paragrafos.push(atual);
@@ -114,8 +134,12 @@ export function htmlParaParagrafos(
 
   const visitar = (no: Node, estilo: Estilo) => {
     if (no.nodeType === 3) {
-      const texto = (no.textContent ?? "").replace(/[ \t\r\n\f]+/g, " ");
+      // Espaços digitados são preservados (o editor e a tela também os mostram);
+      // quebras do código-fonte HTML viram um espaço.
+      const texto = (no.textContent ?? "").replace(/[\r\n\f]+/g, " ");
       if (!texto) return;
+      // Espaço solto entre parágrafos (formatação do HTML) não é conteúdo.
+      if (!atual && !texto.trim()) return;
       (atual ?? abrir(null)).runs.push({ text: texto, ...estilo });
       return;
     }
@@ -149,12 +173,19 @@ export function htmlParaParagrafos(
 
   doc.body.childNodes.forEach((filho) => visitar(filho, {}));
 
-  // Remove espaços nas pontas de cada parágrafo (o HTML costuma trazê-los).
   for (const p of paragrafos) {
-    while (p.runs.length && !p.runs[0].text.trim() && p.runs[0].text !== "\n") p.runs.shift();
-    if (p.runs.length) p.runs[0] = { ...p.runs[0], text: p.runs[0].text.replace(/^ +/, "") };
-    const ult = p.runs.length - 1;
-    if (ult >= 0) p.runs[ult] = { ...p.runs[ult], text: p.runs[ult].text.replace(/ +$/, "") };
+    // Um <br> no fim do parágrafo não cria linha nova no navegador; no PDF também não.
+    let ult = p.runs.length - 1;
+    while (ult >= 0 && !p.runs[ult].text.replace(/[ \u00a0]/g, "")) ult -= 1;
+    if (ult >= 0 && p.runs[ult].text === "\n") p.runs.splice(ult, 1);
+    // Espaços no fim do parágrafo não aparecem; os do início (recuo) ficam.
+    ult = p.runs.length - 1;
+    while (ult >= 0 && !p.runs[ult].text.trim() && p.runs[ult].text !== "\n") {
+      p.runs.pop();
+      ult -= 1;
+    }
+    if (ult >= 0)
+      p.runs[ult] = { ...p.runs[ult], text: p.runs[ult].text.replace(/[ \u00a0]+$/, "") };
   }
   return paragrafos;
 }

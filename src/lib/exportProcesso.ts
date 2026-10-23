@@ -632,3 +632,43 @@ export async function exportProcessoCompleto(data: ExportProcessoData): Promise<
     iframe.remove();
   }
 }
+
+/**
+ * Pré-visualização do ato ANTES de lançar: gera o PDF no modelo oficial
+ * com o texto do formulário e abre em nova aba. Nada é gravado.
+ */
+export async function previsualizarAtoPdf(
+  data: ExportAtoData,
+  movimento: PdfMovimento,
+  numeroEvento: number,
+): Promise<void> {
+  // A aba é aberta já no clique (antes do await) para não ser bloqueada.
+  const janela = typeof window !== "undefined" ? window.open("", "_blank") : null;
+  if (janela) {
+    janela.document.title = "Gerando pré-visualização…";
+    janela.document.body.style.cssText = "font-family:system-ui,sans-serif;padding:24px;color:#333";
+    janela.document.body.textContent = "Gerando pré-visualização do PDF…";
+  }
+  try {
+    const assets = await carregarAssetsPdf([movimento]);
+    const pdf = await gerarAtoPdf(
+      {
+        ...data,
+        movimentos: [...data.movimentos.filter((m) => m.id !== movimento.id), movimento],
+        movimentoId: movimento.id,
+        numeroEvento,
+      },
+      assets,
+    );
+    const nome = nomeArquivoAto(movimento.especie, data.denuncia, movimento.portaria_dados);
+    pdf.setProperties({ title: `Prévia — ${nome.replace(/\.pdf$/, "")}` });
+    if (janela && !janela.closed) {
+      janela.location.href = String(pdf.output("bloburl"));
+    } else {
+      pdf.save(nome.replace(/\.pdf$/, "-previa.pdf"));
+    }
+  } catch (e) {
+    janela?.close();
+    throw e;
+  }
+}

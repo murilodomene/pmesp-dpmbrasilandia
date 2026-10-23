@@ -52,6 +52,8 @@ interface Palavra {
   /** Largura do espaço que precede a palavra (no estilo do trecho). */
   espaco: number;
   quebraForcada?: boolean;
+  /** Bloco em branco de espaços digitados no início da linha. */
+  recuo?: boolean;
 }
 
 export function estiloFonte(r: { bold?: boolean; italic?: boolean }): string {
@@ -159,12 +161,22 @@ export class PdfWriter {
         if (/^ +$/.test(parte)) {
           if (atual) lista.push(atual);
           atual = null;
-          espacoPendente = this.largura(" ", run, size);
+          const w = this.largura(parte, run, size);
+          const inicioDeLinha = !lista.length || lista[lista.length - 1].quebraForcada;
+          if (inicioDeLinha) {
+            // Espaços no início da linha = recuo digitado: viram um bloco em branco.
+            lista.push({ pecas: [{ ...run, text: "", w }], w, espaco: 0, recuo: true });
+            espacoPendente = 0;
+          } else {
+            espacoPendente = w; // dois espaços seguidos continuam dois espaços
+          }
           continue;
         }
         const w = this.largura(parte, run, size);
         const peca: Peca = { ...run, text: parte, w };
-        if (!atual) atual = { pecas: [], w: 0, espaco: lista.length ? espacoPendente : 0 };
+        const aposRecuo = lista.length > 0 && !!lista[lista.length - 1].recuo;
+        if (!atual)
+          atual = { pecas: [], w: 0, espaco: lista.length && !aposRecuo ? espacoPendente : 0 };
         atual.pecas.push(peca);
         atual.w += w;
         espacoPendente = 0;
@@ -210,17 +222,22 @@ export class PdfWriter {
   }
 
   private montarLinhas(p: Paragraph, o: OpcoesTexto): { palavras: Palavra[]; ultima: boolean }[] {
-    const max = o.width ?? LARGURA_UTIL - (o.indent ?? 0);
+    const maxBase = o.width ?? LARGURA_UTIL - (o.indent ?? 0);
+    const recuo1 = Math.min(p.textIndent ?? 0, maxBase / 2);
     const linhas: { palavras: Palavra[]; ultima: boolean }[] = [];
     let linha: Palavra[] = [];
     let w = 0;
+    let max = maxBase - recuo1; // a 1ª linha começa depois do recuo
     const fechar = (ultima: boolean) => {
       linhas.push({ palavras: linha, ultima });
       linha = [];
       w = 0;
+      max = maxBase;
     };
     let fila = this.palavras(p, o.size);
-    fila = fila.flatMap((pal) => (pal.w > max ? this.fatiar(pal, max, o.size) : [pal]));
+    fila = fila.flatMap((pal) =>
+      pal.w > maxBase - recuo1 ? this.fatiar(pal, maxBase - recuo1, o.size) : [pal],
+    );
     for (const pal of fila) {
       if (pal.quebraForcada) {
         fechar(true);
@@ -237,8 +254,6 @@ export class PdfWriter {
 
   paragrafo(p: Paragraph, o: OpcoesTexto): void {
     const passo = this.passoLinha(o.size, p.lineHeight);
-    const x0 = MARGEM_ESQ + (o.indent ?? 0);
-    const max = o.width ?? LARGURA_UTIL - (o.indent ?? 0);
     const cor = o.color ?? PRETO;
     const vazio = !p.runs.some((r) => r.text.trim());
     if (vazio) {
@@ -247,24 +262,28 @@ export class PdfWriter {
       return;
     }
     const linhas = this.montarLinhas(p, o);
-    for (const { palavras, ultima } of linhas) {
+    const recuo1 = Math.min(p.textIndent ?? 0, (o.width ?? LARGURA_UTIL - (o.indent ?? 0)) / 2);
+    linhas.forEach(({ palavras, ultima }, nLinha) => {
       this.garantir(passo);
       const base = this.y + o.size * PT * ASCENDENTE + (passo - o.size * PT) / 2.4;
       const natural = palavras.reduce((s, pal, i) => s + pal.w + (i ? pal.espaco : 0), 0);
       const align = p.align === "justify" && ultima ? "left" : p.align;
+      const recuoLinha = nLinha === 0 ? recuo1 : 0;
+      const x0 = MARGEM_ESQ + (o.indent ?? 0) + recuoLinha;
+      const max = (o.width ?? LARGURA_UTIL - (o.indent ?? 0)) - recuoLinha;
       let x = x0;
       let extra = 0;
       if (align === "center") x = x0 + (max - natural) / 2;
       else if (align === "right") x = x0 + max - natural;
-      else if (align === "justify" && palavras.length > 1) {
-        extra = (max - natural) / (palavras.length - 1);
+      else if (align === "justify" && palavras.filter((pal) => !pal.recuo).length > 1) {
+        extra = (max - natural) / (palavras.filter((pal) => !pal.recuo).length - 1);
         // Linha "esgarçada" (ex.: antes de um link enorme): melhor alinhar à esquerda.
         if (extra > 4) extra = 0;
       }
       // Fim do último trecho sublinhado da linha, para ligar o sublinhado por cima dos espaços.
       let fimSublinhado: number | null = null;
       palavras.forEach((pal, i) => {
-        if (i) x += pal.espaco + extra;
+        if (i) x += pal.espaco + (palavras[i - 1].recuo ? 0 : extra);
         const primeira = pal.pecas[0];
         if (
           fimSublinhado !== null &&
@@ -300,7 +319,7 @@ export class PdfWriter {
         }
       });
       this.y += passo;
-    }
+    });
     if (o.after) this.y += o.after;
   }
 

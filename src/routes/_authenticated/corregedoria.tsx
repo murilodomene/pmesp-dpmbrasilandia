@@ -53,10 +53,11 @@ import { OPMS } from "@/lib/personnel-options";
 
 
 import { getSessionInfo } from "@/lib/usuarios.functions";
-import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2, Download, ShieldCheck, Bell, MessageSquare, Copy, Mic, Plus } from "lucide-react";
+import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2, Download, ShieldCheck, Bell, MessageSquare, Copy, Mic, Plus, Search, Lock, ScrollText } from "lucide-react";
+import { aplicarModelo, modelosDe } from "@/lib/modelos-ato";
 import { DocumentTemplate, exportDocumentToPdf, useDocumentRef } from "@/components/DocumentTemplate";
 import { RichTextEditor, isHtmlAto, sanitizeAtoHtml } from "@/components/RichTextEditor";
-import { exportAtoPdfV2, exportProcessoCompleto, exportProcessoCompletoV2 } from "@/lib/exportProcesso";
+import { exportAtoPdfV2, exportProcessoCompleto, exportProcessoCompletoV2, previsualizarAtoPdf } from "@/lib/exportProcesso";
 import { ExportAtoContext, useExportarAto } from "@/components/ExportAtoContext";
 import { AtoAnexosUploader, type AtoAnexo } from "@/components/AtoAnexosUploader";
 import { AtoAnexosLinks } from "@/components/AtoAnexosLinks";
@@ -115,6 +116,28 @@ const ESPECIES = [
   { v: "auto_interrogatorio", l: "Auto de Qualificação de Interrogatório", icon: Mic },
 ] as const;
 const ESPECIES_APFD = new Set(["nota_culpa", "termo_declaracoes", "auto_interrogatorio"]);
+type EspecieAto = (typeof ESPECIES)[number]["v"];
+
+/** Painel "Lançar ato" (estilo eproc): grupo, sigla e descrição de cada tipo de ato. */
+const ATO_INFO: Record<EspecieAto, { grupo: "expediente" | "instrucao" | "final"; sigla: string; desc: string }> = {
+  despacho: { grupo: "expediente", sigla: "DESP", desc: "Ordena providências de andamento: juntadas, intimações e diligências." },
+  decisao: { grupo: "expediente", sigla: "DEC", desc: "Resolve questão do procedimento, com fundamentação." },
+  certidao: { grupo: "expediente", sigla: "CERT", desc: "Atesta fato ocorrido no processo: prazo, intimação, juntada." },
+  ata: { grupo: "instrucao", sigla: "ATA", desc: "Registra a oitiva de testemunha, denunciante ou denunciado." },
+  nota_culpa: { grupo: "instrucao", sigla: "NC", desc: "Comunica ao preso o motivo da prisão, o condutor e as testemunhas." },
+  termo_declaracoes: { grupo: "instrucao", sigla: "TD", desc: "Registra as declarações prestadas no APFD." },
+  auto_interrogatorio: { grupo: "instrucao", sigla: "AQI", desc: "Qualifica e interroga o conduzido no APFD." },
+  ipc: { grupo: "final", sigla: "SOL", desc: "Ato final: encerra a apuração e gera a SOLUÇÃO no modelo oficial." },
+};
+const GRUPOS_ATO = [
+  { id: "expediente", titulo: "Expediente" },
+  { id: "instrucao", titulo: "Instrução" },
+  { id: "final", titulo: "Ato final" },
+] as const;
+
+function semAcento(t: string): string {
+  return t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
 
 function Corregedoria() {
   const search = Route.useSearch();
@@ -528,6 +551,9 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
   const [ipcUnidade, setIpcUnidade] = useState<string>("");
   const [ipcIdent, setIpcIdent] = useState<string>("");
   const [anexos, setAnexos] = useState<AtoAnexo[]>([]);
+  const [buscaAto, setBuscaAto] = useState("");
+  const [modeloId, setModeloId] = useState("");
+  const [gerandoPrevia, setGerandoPrevia] = useState(false);
 
   const obsFn = useServerFn(atualizarObservacoes);
   const [obsPub, setObsPub] = useState<string | null>(null);
@@ -541,34 +567,43 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
 
   
 
+  /** Teor como será gravado (o mesmo usado na pré-visualização do PDF). */
+  function montarTeorFinal(): string {
+    if (!especie) throw new Error("Selecione uma espécie.");
+    if (especie === "ipc") {
+      return montarTeorIpc({
+        unidade: ipcUnidade || null,
+        protocolo: data?.denuncia.numero_procedimento ?? data?.denuncia.numero_protocolo ?? "",
+        identificacao: ipcIdent.trim(),
+        relato: sanitizeAtoHtml(teor),
+      });
+    }
+    if (especie === "ata") {
+      const depoente = ataDepoente.trim();
+      if (!depoente) throw new Error("Informe quem prestou o depoimento.");
+      return montarTeorAta({ depoente, relato: sanitizeAtoHtml(teor) });
+    }
+    return sanitizeAtoHtml(teor);
+  }
+  function anexosDoAto(): AtoAnexo[] {
+    return especie === "despacho" || especie === "decisao" || especie === "certidao" || (especie && ESPECIES_APFD.has(especie))
+      ? anexos
+      : [];
+  }
+
   const mLancar = useMutation({
     mutationFn: () => {
       if (!especie) throw new Error("Selecione uma espécie.");
-      let teorFinal: string;
-      if (especie === "ipc") {
-        teorFinal = montarTeorIpc({
-          unidade: ipcUnidade || null,
-          protocolo: data?.denuncia.numero_procedimento ?? data?.denuncia.numero_protocolo ?? "",
-          identificacao: ipcIdent.trim(),
-          relato: sanitizeAtoHtml(teor),
-        });
-      } else if (especie === "ata") {
-        const depoente = ataDepoente.trim();
-        if (!depoente) throw new Error("Informe quem prestou o depoimento.");
-        teorFinal = montarTeorAta({ depoente, relato: sanitizeAtoHtml(teor) });
-      } else {
-        teorFinal = sanitizeAtoHtml(teor);
-      }
-      const anexosPayload =
-        especie === "despacho" || especie === "decisao" || especie === "certidao" || ESPECIES_APFD.has(especie) ? anexos : [];
+      const teorFinal = montarTeorFinal();
       return lancarFn({
-        data: { denuncia_id: id, especie, teor: teorFinal, anexos: anexosPayload },
+        data: { denuncia_id: id, especie, teor: teorFinal, anexos: anexosDoAto() },
       });
     },
     onSuccess: () => {
       setTeor("");
       setAnexos([]);
       setAtaDepoente("");
+      setModeloId("");
       setEspecie(null);
       qc.invalidateQueries({ queryKey: ["denuncia", id] });
       qc.invalidateQueries({ queryKey: ["denuncias"] });
@@ -638,6 +673,130 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
   // Botões "Exportar PDF" de cada ato: mesmo modelo vetorial do processo completo.
   const exportarAto = (movimentoId: string) =>
     exportAtoPdfV2({ denuncia, policiais, movimentos: movimentos as never }, movimentoId);
+
+  // ---------- Painel "Lançar ato" ----------
+  const perfil = session?.profile as {
+    nome?: string;
+    posto_graduacao?: string | null;
+    matricula?: string | null;
+    rg?: string | null;
+  } | null;
+  const cargoRotulo = cargo ? ((ROTULOS_CARGO as Record<string, string>)[cargo] ?? null) : null;
+  const policiaisModelo = policiais.map((p) => ({
+    nome: p.nome,
+    cargo: (p as { cargo?: string | null }).cargo ?? null,
+    re: p.rg_funcional,
+  }));
+  const procedimentoAtual = denuncia.numero_procedimento ?? denuncia.numero_protocolo;
+  const tipoProc = (denuncia as { tipo_procedimento?: string | null }).tipo_procedimento;
+  const proximoEvento = movimentos.length + 1;
+  const proximoEventoLabel = String(proximoEvento).padStart(2, "0");
+  const rotuloAto = (v: EspecieAto, l: string) =>
+    v === "ipc" ? (isApfd ? "APFD — Solução" : tipoProc === "sindicancia" ? "SINDPM — Solução" : "IPM — Solução") : l;
+  const especiesVisiveis = ESPECIES.filter((e) => isApfd || !ESPECIES_APFD.has(e.v));
+  const termoBusca = semAcento(buscaAto.trim());
+  const especiesFiltradas = especiesVisiveis.filter(
+    (e) => !termoBusca || semAcento(`${rotuloAto(e.v, e.l)} ${ATO_INFO[e.v].sigla}`).includes(termoBusca),
+  );
+  const especieAtual = especie ? ESPECIES.find((e) => e.v === especie) ?? null : null;
+  const modelosDisponiveis = especie ? modelosDe(especie, { apfd: isApfd }) : [];
+  const temModeloOficial = especie !== null && ESPECIES_APFD.has(especie);
+
+  /** Texto pré-preenchido dos atos do APFD (Nota de Culpa, Termo, Auto). */
+  function textoPreenchido(v: EspecieAto): string | null {
+    const autor = { posto: perfil?.posto_graduacao ?? null, nome: perfil?.nome ?? "", cargo: cargoRotulo };
+    if (v === "nota_culpa") {
+      return montarNotaCulpa({
+        autorPosto: autor.posto,
+        autorNome: autor.nome,
+        autorRe: perfil?.matricula || perfil?.rg || "",
+        policiais: policiaisModelo.map((p) => ({ nome: p.nome, cargo: p.cargo, re: p.re })),
+        hoje: new Date(),
+        autorCargo: cargoRotulo,
+      });
+    }
+    if (v === "termo_declaracoes") return montarTermoDeclaracoes({ autor, hoje: new Date() });
+    if (v === "auto_interrogatorio") {
+      return montarAutoInterrogatorio({
+        autor,
+        policiais: policiaisModelo.map((p) => ({ nome: p.nome, cargo: p.cargo })),
+        hoje: new Date(),
+      });
+    }
+    return null;
+  }
+
+  function limparFormularioAto() {
+    setEspecie(null);
+    setTeor("");
+    setAnexos([]);
+    setAtaDepoente("");
+    setModeloId("");
+  }
+
+  function selecionarEspecie(v: EspecieAto) {
+    if (especie === v) {
+      // Recolher ao clicar na espécie ativa
+      limparFormularioAto();
+      return;
+    }
+    setAnexos([]);
+    const pre = textoPreenchido(v);
+    setTeor(pre ?? "");
+    setModeloId(pre ? "oficial" : "");
+    if (v === "ipc") {
+      setIpcUnidade((denuncia.unidade as string | null) ?? "");
+      setIpcIdent(
+        policiais.length
+          ? policiais.map((p) => `${p.nome}${p.rg_funcional ? ` — ${p.rg_funcional}` : ""}`).join("; ")
+          : "",
+      );
+    }
+    setEspecie(v);
+  }
+
+  function escolherModelo(idModelo: string) {
+    if (!especie) return;
+    let novo: string | null;
+    if (idModelo === "") novo = "";
+    else if (idModelo === "oficial") novo = textoPreenchido(especie);
+    else {
+      const m = modelosDisponiveis.find((x) => x.id === idModelo);
+      novo = m ? aplicarModelo(m, { procedimento: procedimentoAtual, policiais: policiaisModelo }) : null;
+    }
+    if (novo === null) return;
+    const textoAtual = teor.replace(/<[^>]+>/g, "").trim();
+    if (textoAtual && !window.confirm("Substituir o texto atual pelo modelo selecionado?")) return;
+    setModeloId(idModelo);
+    setTeor(novo);
+  }
+
+  function previsualizarAto() {
+    if (!especie) return;
+    let teorFinal: string;
+    try {
+      teorFinal = montarTeorFinal();
+    } catch (e) {
+      toast.error((e as Error).message);
+      return;
+    }
+    setGerandoPrevia(true);
+    previsualizarAtoPdf(
+      { denuncia, policiais, movimentos: movimentos as never },
+      {
+        id: "previa",
+        especie,
+        teor: teorFinal,
+        prolator_nome: perfil?.nome ?? "",
+        prolator_cargo: cargo ?? "",
+        criado_em: new Date().toISOString(),
+        anexos: anexosDoAto(),
+      },
+      proximoEvento,
+    )
+      .catch((e) => toast.error((e as Error)?.message || "Falha ao gerar a pré-visualização."))
+      .finally(() => setGerandoPrevia(false));
+  }
 
   return (
     <ExportAtoContext.Provider value={exportarAto}>
@@ -1009,200 +1168,288 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
         </ul>
       </div>
 
-      {/* Formulário de ato */}
-      <div className="surface p-5">
-        <h3 className="font-serif text-lg">Lançar ato</h3>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {ESPECIES.filter((e) => isApfd || !ESPECIES_APFD.has(e.v)).map((e) => (
-            <button
-              key={e.v}
-              type="button"
-              onClick={() => {
-                if (especie === e.v) {
-                  // Recolher ao clicar na espécie ativa
-                  setEspecie(null);
-                  setTeor("");
-                  setAnexos([]);
-                } else {
-                  setTeor("");
-                  setAnexos([]);
-                  if (e.v === "nota_culpa") {
-                    setTeor(
-                      montarNotaCulpa({
-                        autorPosto: (session?.profile as { posto_graduacao?: string | null } | null)?.posto_graduacao ?? null,
-                        autorNome: (session?.profile as { nome?: string } | null)?.nome ?? "",
-                        autorRe:
-                          (session?.profile as { matricula?: string | null } | null)?.matricula ||
-                          (session?.profile as { rg?: string | null } | null)?.rg ||
-                          "",
-                        policiais: policiais.map((p) => ({ nome: p.nome, cargo: (p as { cargo?: string | null }).cargo ?? null, re: p.rg_funcional })),
-                        hoje: new Date(),
-                        autorCargo: cargo ? (ROTULOS_CARGO as Record<string, string>)[cargo] ?? null : null,
-                      }),
-                    );
-                  }
-                  if (e.v === "termo_declaracoes" || e.v === "auto_interrogatorio") {
-                    const perfil = session?.profile as { nome?: string; posto_graduacao?: string | null } | null;
-                    const autor = {
-                      posto: perfil?.posto_graduacao ?? null,
-                      nome: perfil?.nome ?? "",
-                      cargo: cargo ? (ROTULOS_CARGO as Record<string, string>)[cargo] ?? null : null,
-                    };
-                    setTeor(
-                      e.v === "termo_declaracoes"
-                        ? montarTermoDeclaracoes({ autor, hoje: new Date() })
-                        : montarAutoInterrogatorio({
-                            autor,
-                            policiais: policiais.map((p) => ({ nome: p.nome, cargo: (p as { cargo?: string | null }).cargo ?? null })),
-                            hoje: new Date(),
-                          }),
-                    );
-                  }
-                  if (e.v === "ipc") {
-                    setIpcUnidade((denuncia.unidade as string | null) ?? "");
-                    setIpcIdent(
-                      policiais.length
-                        ? policiais
-                            .map((p) => `${p.nome}${p.rg_funcional ? ` — ${p.rg_funcional}` : ""}`)
-                            .join("; ")
-                        : "",
-                    );
-                  }
-                  setEspecie(e.v);
-                }
-              }}
-              className={`flex items-center gap-1 rounded-md border px-3 py-1.5 text-xs transition ${
-                especie === e.v ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-surface-2"
-              }`}
-            >
-              <e.icon className="h-3.5 w-3.5" /> {e.v === "ipc" && isApfd ? "Solução" : e.l}
-            </button>
-          ))}
+      {/* Formulário de ato — painel "Movimentar processo" (estilo eproc) */}
+      <div className="surface overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
+          <div>
+            <h3 className="font-serif text-lg">Lançar ato</h3>
+            <p className="text-xs text-muted-foreground">
+              Movimentar processo · escolha o tipo de evento e redija o teor
+            </p>
+          </div>
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-muted-foreground">Próximo evento</span>
+            <span className="rounded-md border border-primary/40 bg-primary/10 px-2 py-0.5 font-mono font-semibold text-primary">
+              EVENTO Nº {proximoEventoLabel}
+            </span>
+          </div>
         </div>
-        {especie !== null && (
-          <>
-            {especie === "ipc" ? (
-              <div className="mt-3 space-y-2">
-                <div>
-                  <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                    Unidade
-                  </span>
-                  <select
-                    value={ipcUnidade}
-                    onChange={(ev) => setIpcUnidade(ev.target.value)}
-                    className="mt-1 w-full rounded-md border border-border bg-surface-2 px-2 py-1.5 text-sm"
-                  >
-                    <option value="">— selecione —</option>
-                    {UNIDADES.map((u) => (
-                      <option key={u} value={u}>{u}</option>
-                    ))}
-                  </select>
-                </div>
-                <IpcCampoAuto label="1º Processo número" valor={(denuncia.numero_procedimento ?? denuncia.numero_protocolo)} />
-                <div>
-                  <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                    2º Identificação do policial
-                  </span>
-                  <textarea
-                    value={ipcIdent}
-                    onChange={(ev) => setIpcIdent(ev.target.value)}
-                    rows={2}
-                    placeholder="Nome — RG; Nome — RG"
-                    className="mt-1 w-full rounded-md border border-border bg-surface-2 px-2 py-1.5 text-sm"
-                  />
-                </div>
-                <div>
-                  <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                    3º Relato do fato
-                  </span>
-                  <div className="mt-1">
-                    <RichTextEditor
-                      value={teor}
-                      onChange={setTeor}
-                      placeholder="Descreva o fato. Use a barra acima para formatação."
-                      minHeight={160}
-                      enableLineHeight
-                    />
+
+        <div className="grid md:grid-cols-[280px_minmax(0,1fr)]">
+          <aside className="space-y-4 border-b border-border bg-background/40 p-3 md:border-b-0 md:border-r">
+            <label className="flex items-center gap-2 rounded-md border border-border bg-surface-2 px-2.5 py-2">
+              <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+              <input
+                type="search"
+                value={buscaAto}
+                onChange={(ev) => setBuscaAto(ev.target.value)}
+                placeholder="Buscar tipo de ato…"
+                aria-label="Buscar tipo de ato"
+                className="w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              />
+            </label>
+            {GRUPOS_ATO.map((g) => {
+              const itens = especiesFiltradas.filter((e) => ATO_INFO[e.v].grupo === g.id);
+              if (!itens.length) return null;
+              return (
+                <div key={g.id}>
+                  <div className="px-2 pb-1.5 text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    {g.titulo}
+                  </div>
+                  <div className="space-y-0.5">
+                    {itens.map((e) => {
+                      const ativo = especie === e.v;
+                      return (
+                        <button
+                          key={e.v}
+                          type="button"
+                          aria-pressed={ativo}
+                          onClick={() => selecionarEspecie(e.v)}
+                          className={`flex w-full items-center gap-2.5 rounded-md border px-2.5 py-2 text-left text-sm transition ${
+                            ativo
+                              ? "border-primary/50 bg-primary/10 font-semibold text-primary"
+                              : "border-transparent hover:bg-surface-2"
+                          }`}
+                        >
+                          <e.icon className="h-4 w-4 shrink-0" aria-hidden />
+                          <span className="flex-1">{rotuloAto(e.v, e.l)}</span>
+                          <span className="font-mono text-[10px] font-normal text-muted-foreground">
+                            {ATO_INFO[e.v].sigla}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-              </div>
-            ) : especie === "ata" ? (
-              <div className="mt-3 space-y-3">
-                <div>
-                  <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                    Depoente (quem prestou o depoimento)
-                  </span>
-                  <input
-                    value={ataDepoente}
-                    onChange={(ev) => setAtaDepoente(ev.target.value)}
-                    placeholder="Nome — qualificação (RG, cargo, unidade)"
-                    className="mt-1 w-full rounded-md border border-border bg-surface-2 px-2 py-1.5 text-sm"
-                  />
-                </div>
-                <div>
-                  <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                    Termo de depoimento
-                  </span>
-                  <div className="mt-1">
-                    <RichTextEditor
-                      value={teor}
-                      onChange={setTeor}
-                      placeholder="Transcreva a ata / termo de depoimento."
-                      minHeight={200}
-                      enableLineHeight
-                    />
-                  </div>
+              );
+            })}
+            {especiesFiltradas.length === 0 && (
+              <p className="px-2 text-xs text-muted-foreground">Nenhum tipo de ato encontrado.</p>
+            )}
+            <p className="px-2 text-[11px] leading-relaxed text-muted-foreground">
+              {isApfd ? "APFD" : "Portaria"}, convocação e prorrogação continuam no quadro ao lado dos dados do
+              processo.
+            </p>
+          </aside>
+
+          <div className="min-w-0 space-y-4 p-5">
+            {especie === null || !especieAtual ? (
+              <div className="grid h-full min-h-[220px] place-items-center rounded-md border border-dashed border-border p-6 text-center">
+                <div className="space-y-2">
+                  <ScrollText className="mx-auto h-8 w-8 text-muted-foreground" aria-hidden />
+                  <div className="text-sm font-medium">Selecione o tipo de ato</div>
+                  <p className="max-w-sm text-xs text-muted-foreground">
+                    Escolha à esquerda o ato que será lançado como Evento nº {proximoEventoLabel}. Você poderá partir
+                    de um modelo de texto e conferir o PDF antes de lançar.
+                  </p>
                 </div>
               </div>
             ) : (
-              <div className="mt-3 space-y-3">
-                <RichTextEditor
-                  value={teor}
-                  onChange={setTeor}
-                  placeholder="Redija o teor do ato. Use a barra acima para formatação."
-                  minHeight={160}
-                  enableLineHeight
-                />
-                <div>
-                  <div className="mb-1 text-[11px] uppercase tracking-wider text-muted-foreground">
-                    Provas (imagens)
+              <>
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-sm font-semibold uppercase tracking-wider">
+                        {rotuloAto(especieAtual.v, especieAtual.l)}
+                      </h4>
+                      <span className="rounded border border-border px-1.5 py-px font-mono text-[10px] text-muted-foreground">
+                        {ATO_INFO[especieAtual.v].sigla}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{ATO_INFO[especieAtual.v].desc}</p>
                   </div>
-                  <AtoAnexosUploader
-                    denunciaId={id}
-                    value={anexos}
-                    onChange={setAnexos}
-                    disabled={mLancar.isPending}
-                  />
+                  {(modelosDisponiveis.length > 0 || temModeloOficial) && (
+                    <label className="flex min-w-[240px] flex-col gap-1">
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Modelo de texto
+                      </span>
+                      <select
+                        value={modeloId}
+                        onChange={(ev) => escolherModelo(ev.target.value)}
+                        className="rounded-md border border-border bg-surface-2 px-2 py-1.5 text-sm"
+                      >
+                        <option value="">{modeloId ? "Em branco" : "— Escolha um modelo —"}</option>
+                        {temModeloOficial && <option value="oficial">Modelo oficial (pré-preenchido)</option>}
+                        {modelosDisponiveis.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.nome}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
                 </div>
-              </div>
+
+                <dl className="grid overflow-hidden rounded-md border border-border sm:grid-cols-2 xl:grid-cols-4">
+                  {[
+                    { k: "Procedimento", v: procedimentoAtual },
+                    {
+                      k: policiais.length > 1 ? "Denunciados" : "Denunciado",
+                      v: policiais.length
+                        ? policiais
+                            .map((p) => `${(p as { cargo?: string | null }).cargo ? `${(p as { cargo?: string | null }).cargo} ` : ""}${p.nome}`)
+                            .join("; ")
+                        : "Não identificado",
+                    },
+                    {
+                      k: "Assinante",
+                      v: `${perfil?.posto_graduacao ? `${perfil.posto_graduacao} ` : ""}${perfil?.nome ?? "—"}${cargoRotulo ? ` · ${cargoRotulo}` : ""}`,
+                    },
+                    { k: "Data", v: "Automática ao lançar" },
+                  ].map((c) => (
+                    <div key={c.k} className="border-b border-border bg-background/40 px-3 py-2 last:border-b-0 sm:[&:nth-child(odd)]:border-r xl:border-b-0 xl:border-r xl:last:border-r-0">
+                      <dt className="text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">{c.k}</dt>
+                      <dd className="mt-0.5 truncate text-sm font-medium" title={c.v}>
+                        {c.v}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+
+                  {especie === "ipc" ? (
+                    <div className="space-y-3">
+                      <div>
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          Unidade
+                        </span>
+                        <select
+                          value={ipcUnidade}
+                          onChange={(ev) => setIpcUnidade(ev.target.value)}
+                          className="mt-1 w-full rounded-md border border-border bg-surface-2 px-2 py-1.5 text-sm"
+                        >
+                          <option value="">— selecione —</option>
+                          {UNIDADES.map((u) => (
+                            <option key={u} value={u}>{u}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <IpcCampoAuto label="1º Processo número" valor={(denuncia.numero_procedimento ?? denuncia.numero_protocolo)} />
+                      <div>
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          2º Identificação do policial
+                        </span>
+                        <textarea
+                          value={ipcIdent}
+                          onChange={(ev) => setIpcIdent(ev.target.value)}
+                          rows={2}
+                          placeholder="Nome — RG; Nome — RG"
+                          className="mt-1 w-full rounded-md border border-border bg-surface-2 px-2 py-1.5 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          3º Relato do fato
+                        </span>
+                        <div className="mt-1">
+                          <RichTextEditor
+                            value={teor}
+                            onChange={setTeor}
+                            placeholder="Descreva o fato. Use a barra acima para formatação."
+                            minHeight={160}
+                            enableLineHeight
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : especie === "ata" ? (
+                    <div className="space-y-3">
+                      <div>
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          Depoente (quem prestou o depoimento)
+                        </span>
+                        <input
+                          value={ataDepoente}
+                          onChange={(ev) => setAtaDepoente(ev.target.value)}
+                          placeholder="Nome — qualificação (RG, cargo, unidade)"
+                          className="mt-1 w-full rounded-md border border-border bg-surface-2 px-2 py-1.5 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          Termo de depoimento
+                        </span>
+                        <div className="mt-1">
+                          <RichTextEditor
+                            value={teor}
+                            onChange={setTeor}
+                            placeholder="Transcreva a ata / termo de depoimento."
+                            minHeight={200}
+                            enableLineHeight
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <RichTextEditor
+                        value={teor}
+                        onChange={setTeor}
+                        placeholder="Redija o teor do ato. Use a barra acima para formatação."
+                        minHeight={160}
+                        enableLineHeight
+                      />
+                      <div>
+                        <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          Provas (imagens)
+                        </div>
+                        <AtoAnexosUploader
+                          denunciaId={id}
+                          value={anexos}
+                          onChange={setAnexos}
+                          disabled={mLancar.isPending}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+                  <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Lock className="h-3.5 w-3.5" aria-hidden /> Assinatura e data são registradas automaticamente no
+                    lançamento.
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={limparFormularioAto}
+                      className="rounded-md border border-border px-3 py-2 text-sm hover:bg-surface-2"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={previsualizarAto}
+                      disabled={gerandoPrevia || teor.replace(/<[^>]+>/g, "").trim().length < 3}
+                      className="inline-flex items-center gap-1.5 rounded-md border border-primary/50 bg-primary/10 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
+                    >
+                      <Eye className="h-4 w-4" aria-hidden /> {gerandoPrevia ? "Gerando..." : "Pré-visualizar PDF"}
+                    </button>
+                    <button
+                      onClick={() => mLancar.mutate()}
+                      disabled={
+                        teor.replace(/<[^>]+>/g, "").trim().length < 3 ||
+                        (especie === "ata" && ataDepoente.trim().length < 2) ||
+                        mLancar.isPending
+                      }
+                      className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+                    >
+                      {mLancar.isPending ? "Lançando..." : `Lançar evento nº ${proximoEventoLabel}`}
+                    </button>
+                  </div>
+                </div>
+              </>
             )}
-            <div className="mt-3 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setEspecie(null);
-                  setTeor("");
-                  setAnexos([]);
-                  setAtaDepoente("");
-                }}
-                className="rounded-md border border-border px-3 py-2 text-sm hover:bg-surface-2"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => mLancar.mutate()}
-                disabled={
-                  teor.replace(/<[^>]+>/g, "").trim().length < 3 ||
-                  (especie === "ata" && ataDepoente.trim().length < 2) ||
-                  mLancar.isPending
-                }
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
-              >
-                {mLancar.isPending ? "Lançando..." : "Lançar"}
-              </button>
-            </div>
-          </>
-        )}
+          </div>
+        </div>
       </div>
 
 

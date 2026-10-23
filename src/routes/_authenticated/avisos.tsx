@@ -2,15 +2,19 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ShieldCheck, X, Trash2, Pencil, Plus } from "lucide-react";
+import { ShieldCheck, X, Trash2, Pencil, Plus, Search, Download, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { Header } from "@/components/Header";
+import { getSessionInfo } from "@/lib/usuarios.functions";
+import { exportAvisoPdf } from "@/lib/exportProcesso";
+import { aoMudarAvisosVistos, avisosNaoVistos, marcarAvisoVisto } from "@/lib/avisos-vistos";
+import { ROLE_LABELS, isAdminRole } from "@/lib/access-roles";
 import {
   listAvisos,
   criarAviso,
   atualizarAviso,
   excluirAviso,
 } from "@/lib/avisos.functions";
-import { supabase } from "@/integrations/supabase/client";
-import { useSession } from "@/hooks/useSession";
 import { RichTextEditor, sanitizeAtoHtml, isHtmlAto } from "@/components/RichTextEditor";
 import { PMESP_CREST_URL } from "@/lib/branding";
 
@@ -39,25 +43,38 @@ type Aviso = {
   created_at: string;
 };
 
+const textoDe = (html: string) =>
+  html
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<\/p>/gi, " ")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+const semAcento = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
 function AvisosPage() {
-  const { session } = useSession();
-  const [cargo, setCargo] = useState<string | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
+  const sessionFn = useServerFn(getSessionInfo);
+  const { data: session, isLoading: carregandoSessao } = useQuery({
+    queryKey: ["session-info"],
+    queryFn: () => sessionFn(),
+  });
   const [aberto, setAberto] = useState<Aviso | null>(null);
   const [criando, setCriando] = useState(false);
   const [editando, setEditando] = useState<Aviso | null>(null);
+  const [busca, setBusca] = useState("");
+  const [soNovos, setSoNovos] = useState(false);
+  const [novos, setNovos] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    if (!session) return;
-    supabase.from("user_roles").select("role").eq("user_id", session.user.id).maybeSingle()
-      .then(({ data }) => setCargo((data as { role: string } | null)?.role ?? null));
-    supabase.from("profiles").select("status").eq("id", session.user.id).maybeSingle()
-      .then(({ data }) => setStatus((data as { status: string } | null)?.status ?? null));
-  }, [session]);
-
-  const ativo = status === "ativo";
+  const cargo = session?.cargo ?? null;
+  const ativo = (session?.profile as { status?: string } | null | undefined)?.status === "ativo";
+  const meuId = session?.userId ?? null;
   const podeVer = ativo && (cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || (cargo === "subcorregedor_geral" || cargo === "corregedor_supervisor"));
   const podePublicar = ativo && (cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || (cargo === "subcorregedor_geral" || cargo === "corregedor_supervisor"));
+  const podeEditar = (a: Aviso) => podePublicar && (a.autor_id === meuId || isAdminRole(cargo));
 
   const listFn = useServerFn(listAvisos);
   const { data: avisos = [], isLoading } = useQuery({
@@ -66,84 +83,147 @@ function AvisosPage() {
     enabled: podeVer,
   });
 
-  if (session === null) {
-    return <div className="mx-auto max-w-4xl p-6 text-sm">Faça login para acessar.</div>;
+  useEffect(() => {
+    const atualizar = () => setNovos(avisosNaoVistos(avisos.map((a) => a.id)));
+    atualizar();
+    return aoMudarAvisosVistos(atualizar);
+  }, [avisos]);
+
+  const filtrados = useMemo(() => {
+    const t = semAcento(busca.trim());
+    return avisos.filter(
+      (a) =>
+        (!soNovos || novos.has(a.id)) &&
+        (!t || semAcento(`${a.numero} ${a.titulo} ${a.autor_nome} ${textoDe(a.corpo)}`).includes(t)),
+    );
+  }, [avisos, busca, soNovos, novos]);
+
+  function abrir(a: Aviso) {
+    marcarAvisoVisto(a.id);
+    setAberto(a);
   }
-  if (session && !podeVer) {
+
+  if (carregandoSessao) {
     return (
-      <div className="mx-auto max-w-4xl p-6">
-        <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm">
-          Acesso restrito aos usuários internos da Corregedoria.
+      <div className="min-h-screen">
+        <Header />
+        <div className="mx-auto max-w-4xl p-6 text-sm text-muted-foreground">Carregando...</div>
+      </div>
+    );
+  }
+  if (!podeVer) {
+    return (
+      <div className="min-h-screen">
+        <Header />
+        <div className="mx-auto max-w-4xl p-6">
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm">
+            Acesso restrito aos usuários internos da Corregedoria.
+          </div>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="mx-auto max-w-5xl px-4 py-6">
-      <header className="mb-4 flex items-center justify-between gap-3">
-        <div>
-          <h1 className="font-serif text-2xl">Avisos</h1>
-          <p className="text-xs text-muted-foreground">
-            Comunicados da chefia da Corregedoria — do mais recente ao mais antigo.
-          </p>
-        </div>
-        {podePublicar && (
-          <button
-            onClick={() => setCriando(true)}
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-          >
-            <Plus className="h-4 w-4" /> Publicar aviso
-          </button>
-        )}
-      </header>
+  const chip = (ativoChip: boolean) =>
+    `rounded-full border px-3 py-1.5 text-xs transition ${
+      ativoChip ? "border-primary/55 bg-primary/10 font-semibold text-primary" : "border-border hover:bg-surface-2"
+    }`;
 
-      {isLoading ? (
-        <div className="text-sm text-muted-foreground">Carregando...</div>
-      ) : avisos.length === 0 ? (
-        <div className="rounded-md border border-border p-6 text-center text-sm text-muted-foreground">
-          Nenhum aviso publicado.
-        </div>
-      ) : (
-        <ul className="grid gap-3">
-          {avisos.map((a) => (
-            <li
-              key={a.id}
-              className="surface cursor-pointer p-4 transition hover:border-primary/60"
-              onClick={() => setAberto(a)}
+  return (
+    <div className="min-h-screen">
+      <Header />
+      <div className="mx-auto max-w-6xl space-y-4 p-4 sm:p-6">
+        <header className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Comunicação interna</div>
+            <h1 className="font-serif text-2xl">Avisos</h1>
+          </div>
+          {podePublicar && (
+            <button
+              onClick={() => setCriando(true)}
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="text-[10px] uppercase tracking-widest text-primary">
-                    {a.numero}
-                  </div>
-                  <div className="mt-0.5 truncate font-serif text-base">{a.titulo}</div>
-                  <div className="mt-1 text-[11px] text-muted-foreground">
-                    {a.autor_nome} · {new Date(a.created_at).toLocaleString("pt-BR")}
-                  </div>
-                </div>
-                {podePublicar && session?.user.id === a.autor_id && (
-                  <div className="flex shrink-0 gap-1">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setEditando(a); }}
-                      className="rounded-md border border-border p-1.5 hover:bg-surface-2"
-                      aria-label="Editar"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+              <Plus className="h-4 w-4" /> Publicar aviso
+            </button>
+          )}
+        </header>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="flex min-w-[240px] flex-1 items-center gap-2 rounded-md border border-border bg-input px-3 py-2">
+            <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+            <input
+              type="search"
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar no número, título, autor ou texto…"
+              aria-label="Buscar aviso"
+              className="w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            />
+          </label>
+          <button type="button" onClick={() => setSoNovos(false)} className={chip(!soNovos)}>
+            Todos ({avisos.length})
+          </button>
+          <button type="button" onClick={() => setSoNovos(true)} className={chip(soNovos)}>
+            Não lidos ({novos.size})
+          </button>
+        </div>
+
+        {isLoading ? (
+          <div className="text-sm text-muted-foreground">Carregando...</div>
+        ) : filtrados.length === 0 ? (
+          <div className="rounded-md border border-border p-6 text-center text-sm text-muted-foreground">
+            {avisos.length === 0 ? "Nenhum aviso publicado." : soNovos ? "Nenhum aviso não lido." : "Nenhum aviso encontrado com essa busca."}
+          </div>
+        ) : (
+          <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {filtrados.map((a) => {
+              const novo = novos.has(a.id);
+              const previa = textoDe(a.corpo);
+              return (
+                <li key={a.id} className={`surface flex flex-col transition hover:border-primary/60 ${novo ? "border-primary/40" : ""}`}>
+                  <button type="button" onClick={() => abrir(a)} className="flex flex-1 flex-col gap-1.5 p-4 text-left">
+                    <span className="flex items-center gap-2">
+                      <span className="font-mono text-[11px] text-muted-foreground">{a.numero}</span>
+                      {novo && (
+                        <span className="ml-auto rounded-full bg-primary px-2 py-px text-[10px] font-semibold text-primary-foreground">
+                          NOVO
+                        </span>
+                      )}
+                    </span>
+                    <span className="font-serif text-base leading-snug">{a.titulo}</span>
+                    {previa && <span className="line-clamp-3 text-sm text-muted-foreground">{previa}</span>}
+                    <span className="mt-auto pt-1 text-[11px] text-muted-foreground">
+                      {a.autor_nome} · {new Date(a.created_at).toLocaleDateString("pt-BR")}
+                    </span>
+                  </button>
+                  {podeEditar(a) && (
+                    <div className="flex justify-end border-t border-border/60 px-3 py-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setEditando(a)}
+                        className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+                      >
+                        <Pencil className="h-3.5 w-3.5" /> Editar
+                      </button>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
 
       {aberto && (
         <AvisoViewer
           aviso={aberto}
           onClose={() => setAberto(null)}
           podeExcluir={podePublicar}
+          podeEditar={podeEditar(aberto)}
+          onEdit={() => {
+            setEditando(aberto);
+            setAberto(null);
+          }}
           onDeleted={() => setAberto(null)}
         />
       )}
@@ -154,30 +234,39 @@ function AvisosPage() {
 }
 
 function AvisoViewer({
-  aviso, onClose, podeExcluir, onDeleted,
-}: { aviso: Aviso; onClose: () => void; podeExcluir: boolean; onDeleted: () => void }) {
+  aviso, onClose, podeExcluir, podeEditar, onEdit, onDeleted,
+}: {
+  aviso: Aviso;
+  onClose: () => void;
+  podeExcluir: boolean;
+  podeEditar: boolean;
+  onEdit: () => void;
+  onDeleted: () => void;
+}) {
   const qc = useQueryClient();
   const fn = useServerFn(excluirAviso);
+  const [gerando, setGerando] = useState(false);
   const m = useMutation({
     mutationFn: () => fn({ data: { id: aviso.id } }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["avisos"] });
+      toast.success("Aviso excluído.");
       onDeleted();
     },
+    onError: (e) => toast.error((e as Error)?.message || "Não foi possível excluir."),
   });
+  useEffect(() => {
+    const aoTeclar = (ev: KeyboardEvent) => {
+      if (ev.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", aoTeclar);
+    return () => window.removeEventListener("keydown", aoTeclar);
+  }, [onClose]);
 
   const dataFmt = new Date(aviso.created_at).toLocaleDateString("pt-BR", {
     day: "2-digit", month: "long", year: "numeric",
   });
-  const cargoLabel =
-    aviso.autor_cargo === "ssp"
-      ? "SSP"
-      : aviso.autor_cargo === "corregedor_geral"
-        ? "Corregedor-Geral"
-        : aviso.autor_cargo === "corregedor_supervisor"
-        ? "Corregedor Supervisor": (aviso.autor_cargo === "subcorregedor_geral" || aviso.autor_cargo === "corregedor_supervisor")
-        ? "Subcorregedor-Geral"
-        : "Corregedor";
+  const cargoLabel = (ROLE_LABELS as Record<string, string>)[aviso.autor_cargo] ?? aviso.autor_cargo;
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4">
@@ -185,6 +274,28 @@ function AvisoViewer({
         <div className="mb-3 flex shrink-0 items-center justify-between">
           <h3 className="font-serif text-lg">Aviso</h3>
           <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={async () => {
+                setGerando(true);
+                try {
+                  await exportAvisoPdf(aviso);
+                } catch (e) {
+                  toast.error((e as Error)?.message || "Falha ao gerar o PDF.");
+                } finally {
+                  setGerando(false);
+                }
+              }}
+              disabled={gerando}
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-xs hover:bg-surface-2 disabled:opacity-50"
+            >
+              {gerando ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />} PDF
+            </button>
+            {podeEditar && (
+              <button onClick={onEdit} className="rounded-md border border-border p-1.5 hover:bg-surface-2" aria-label="Editar">
+                <Pencil className="h-4 w-4" />
+              </button>
+            )}
             {podeExcluir && (
               <button
                 onClick={() => {
@@ -196,7 +307,7 @@ function AvisoViewer({
                 <Trash2 className="h-4 w-4" />
               </button>
             )}
-            <button onClick={onClose} className="rounded-md p-1 hover:bg-surface-2">
+            <button onClick={onClose} className="rounded-md p-1 hover:bg-surface-2" aria-label="Fechar">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -260,6 +371,7 @@ function AvisoDialog({ aviso, onClose }: { aviso?: Aviso; onClose: () => void })
 
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["avisos"] });
+      toast.success(editing ? "Aviso atualizado." : "Aviso publicado.");
       qc.invalidateQueries({ queryKey: ["notif-count"] });
       qc.invalidateQueries({ queryKey: ["notif-list"] });
       onClose();

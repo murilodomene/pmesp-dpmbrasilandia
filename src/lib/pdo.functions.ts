@@ -79,20 +79,29 @@ export const createPdo = createServerFn({ method: "POST" })
     return inserted as { id: string; numero: string };
   });
 
+/**
+ * Número do procedimento gerado pelo PDO. Nunca devolve o protocolo público
+ * (a "chave" do cidadão): antes da instauração vem null e
+ * procedimento_aguardando = true.
+ */
+function numeroProcedimentoSeguro<T extends { procedimento_id?: string | null; denuncias?: { numero_procedimento?: string | null } | null }>(
+  r: T,
+): T & { procedimento_numero: string | null; procedimento_aguardando: boolean } {
+  const numero = r?.denuncias?.numero_procedimento ?? null;
+  return { ...r, procedimento_numero: numero, procedimento_aguardando: !!r?.procedimento_id && !numero };
+}
+
 export const listPdos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { data, error } = await (context.supabase as any)
       .from("pdos")
       .select(
-        "id, numero, abordagem_em, local, vtr_prefixo, vtr_placa, vtr_unidade, desfecho, procedimento_numero, abordados, created_at, denuncias(numero_procedimento)",
+        "id, numero, abordagem_em, local, vtr_prefixo, vtr_placa, vtr_unidade, desfecho, procedimento_id, procedimento_numero, abordados, equipe, created_at, denuncias(numero_procedimento)",
       )
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return ((data ?? []) as any[]).map((r) => ({
-      ...r,
-      procedimento_numero: r.denuncias?.numero_procedimento ?? r.procedimento_numero,
-    }));
+    return ((data ?? []) as any[]).map(numeroProcedimentoSeguro);
   });
 
 export const getPdo = createServerFn({ method: "GET" })
@@ -105,7 +114,7 @@ export const getPdo = createServerFn({ method: "GET" })
       .eq("id", data.id)
       .single();
     if (error) throw new Error(error.message);
-    return { ...row, procedimento_numero: row?.denuncias?.numero_procedimento ?? row?.procedimento_numero } as any;
+    return numeroProcedimentoSeguro(row) as any;
   });
 
 const denunciadoSchema = z.object({
@@ -159,6 +168,7 @@ export const gerarProcedimentoDoPdo = createServerFn({ method: "POST" })
       denuncia_id: den.id,
       nome: p.nome,
       rg_funcional: p.matricula || null,
+      cargo: p.cargo || null,
       unidade: pdo.vtr_unidade || null,
     }));
     const { error: e4 } = await sb.from("denuncia_policiais").insert(rows);
@@ -179,7 +189,7 @@ export const excluirPdo = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const me = await requireStaff(context as any);
     if (me.cargo !== "corregedor_geral" && (me.cargo !== "subcorregedor_geral" && me.cargo !== "corregedor_supervisor")) {
-      throw new Error("Apenas o Corregedor-Geral pode excluir PDOs.");
+      throw new Error("Apenas Corregedor-Geral, Subcorregedor-Geral ou Corregedor Supervisor podem excluir PDOs.");
     }
     const { error } = await (context.supabase as any).from("pdos").delete().eq("id", data.id);
     if (error) throw new Error(error.message);

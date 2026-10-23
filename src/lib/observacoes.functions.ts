@@ -69,7 +69,8 @@ export const listObservacoes = createServerFn({ method: "GET" })
         return {
           observacao_id: row.observacao_id,
           denuncia_id: row.denuncia_id,
-          numero_protocolo: row.denuncias?.numero_procedimento ?? row.denuncias?.numero_protocolo ?? "",
+          // Nunca o protocolo público (chave do cidadão): antes da instauração, aviso.
+          numero_protocolo: row.denuncias?.numero_procedimento ?? "Aguardando instauração",
         };
       });
     }
@@ -171,7 +172,8 @@ export const buscarPoliciais = createServerFn({ method: "POST" })
       .select("nome, rg_funcional, unidade, cargo")
       .limit(50);
     if (t) {
-      q = q.or(`nome.ilike.%${t}%,rg_funcional.ilike.%${t}%`);
+      const safe = t.replace(/[,()%*]/g, "");
+      if (safe) q = q.or(`nome.ilike.%${safe}%,rg_funcional.ilike.%${safe}%`);
     }
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
@@ -271,4 +273,55 @@ export const contarObservacoesPorPolicial = createServerFn({ method: "POST" })
     const { count, error } = await q;
     if (error) return { count: 0 };
     return { count: count ?? 0 };
+  });
+
+/**
+ * Registros automáticos da ficha do policial: procedimentos instaurados
+ * (IPM, SINDPM, APFD) em que ele é denunciado e PDOs em que foi fiscalizado.
+ * Apenas leitura — nada é gravado; a ficha fica sempre atualizada.
+ */
+export const listRegistrosAutomaticos = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertInterno(context);
+    const sb = context.supabase as any;
+    const [{ data: denunciados, error: e1 }, { data: pdos, error: e2 }] = await Promise.all([
+      sb
+        .from("denuncia_policiais")
+        .select(
+          "nome, rg_funcional, cargo, unidade, denuncia_id, denuncias!inner(id, numero_procedimento, tipo_procedimento, ocorrencia_tipo, instaurada_em, status, created_at)",
+        ),
+      sb.from("pdos").select("id, numero, abordagem_em, local, desfecho, abordados"),
+    ]);
+    if (e1) throw new Error(e1.message);
+    if (e2) throw new Error(e2.message);
+    const procedimentos = ((denunciados ?? []) as any[])
+      .filter((r) => r.denuncias?.numero_procedimento)
+      .map((r) => ({
+        denuncia_id: r.denuncia_id as string,
+        numero: r.denuncias.numero_procedimento as string,
+        tipo: (r.denuncias.tipo_procedimento ?? null) as string | null,
+        natureza: (r.denuncias.ocorrencia_tipo ?? null) as string | null,
+        instaurada_em: (r.denuncias.instaurada_em ?? r.denuncias.created_at ?? null) as string | null,
+        status: String(r.denuncias.status ?? ""),
+        nome: String(r.nome ?? ""),
+        re: (r.rg_funcional ?? null) as string | null,
+        cargo: (r.cargo ?? null) as string | null,
+        unidade: (r.unidade ?? null) as string | null,
+      }));
+    const fiscalizacoes = ((pdos ?? []) as any[]).flatMap((p) =>
+      (Array.isArray(p.abordados) ? p.abordados : [])
+        .filter((a: any) => a?.nome && String(a.nome).trim())
+        .map((a: any) => ({
+          pdo_id: p.id as string,
+          numero: String(p.numero ?? ""),
+          data: String(p.abordagem_em ?? ""),
+          local: String(p.local ?? ""),
+          desfecho: String(p.desfecho ?? ""),
+          nome: String(a.nome),
+          re: (a.matricula ? String(a.matricula) : null) as string | null,
+          cargo: (a.cargo ? String(a.cargo) : null) as string | null,
+        })),
+    );
+    return { procedimentos, fiscalizacoes };
   });

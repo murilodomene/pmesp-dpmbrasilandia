@@ -20,6 +20,7 @@ import {
   type Cor,
 } from "@/lib/pdf/pdf-writer";
 import { teorParaParagrafos, textoPuro, type Paragraph } from "@/lib/pdf/pdf-text";
+import { rotuloDesfechoPdo, rotuloEstadoPdo, rotuloItemPdo } from "@/lib/pdo-rotulos";
 
 /* ------------ tipos ------------ */
 
@@ -275,6 +276,75 @@ function alinharLocalData(paragrafos: Paragraph[]): Paragraph[] {
 
 const CINZA_BARRA: Cor = [199, 199, 199];
 const CORREGPM = "CORREGPM";
+
+/** Chave "xxx-xxxxxxxxxxxxx" estável, derivada de um id (UUID) ou de um texto. */
+function chaveIdentificadora(id: string, semente = ""): string {
+  let hex = id.replace(/[^0-9a-f]/gi, "").toLowerCase();
+  if (hex.length < 16) {
+    // Ids fora do padrão UUID: deriva uma chave estável a partir do texto.
+    let h1 = 0x811c9dc5;
+    let h2 = 0x01000193;
+    for (const ch of `${id}|${semente}`) {
+      h1 = Math.imul(h1 ^ ch.charCodeAt(0), 16777619) >>> 0;
+      h2 = Math.imul(h2 ^ ch.charCodeAt(0), 2246822519) >>> 0;
+    }
+    hex = (h1.toString(16).padStart(8, "0") + h2.toString(16).padStart(8, "0")).slice(0, 16);
+  }
+  return `${hex.slice(0, 3)}-${hex.slice(3, 16)}`;
+}
+
+/* ------------ PDO e Ficha funcional: tipos ------------ */
+
+export interface PdfPdo {
+  id: string;
+  numero: string;
+  abordagem_em: string;
+  local: string;
+  vtr_prefixo?: string | null;
+  vtr_placa?: string | null;
+  vtr_unidade?: string | null;
+  desfecho: string;
+  relato?: string | null;
+  equipe: Array<{ cargo?: string | null; nome?: string | null; matricula?: string | null }>;
+  abordados: Array<{ nome?: string | null; matricula?: string | null; cargo?: string | null }>;
+  itens: Array<{ chave: string; estado: string; observacao?: string | null }>;
+  lavrado_por_nome: string;
+  lavrado_por_cargo: string;
+  assinado_em: string;
+  /** Número do procedimento gerado (ex.: "IPM nº 176/2026"), quando houver. */
+  procedimento_numero?: string | null;
+}
+
+export interface PdfFichaFuncional {
+  policial: { nome: string; posto?: string | null; re?: string | null; opm?: string | null };
+  emitidaPor: { nome: string; cargo?: string | null };
+  emitidaEm: string;
+  procedimentos: Array<{
+    numero: string;
+    natureza?: string | null;
+    instaurado_em?: string | null;
+    status: string;
+  }>;
+  pdos: Array<{ numero: string; data: string; local: string; desfecho: string; papel: "fiscalizado" | "equipe" }>;
+  observacoes: Array<{ data: string; autor: string; corpo: string; processos?: string[] }>;
+}
+
+export interface PdfAviso {
+  id: string;
+  numero: string;
+  titulo: string;
+  corpo: string;
+  autor_nome: string;
+  autor_cargo: string;
+  created_at: string;
+}
+
+interface ColunaTabela {
+  titulo: string;
+  /** Largura em mm (a soma deve dar a largura útil). */
+  largura: number;
+  align?: "left" | "center" | "right";
+}
 
 class ProcessoPdf {
   w: PdfWriter;
@@ -649,18 +719,7 @@ class ProcessoPdf {
     const portaria = this.portariaAnterior(m);
 
     // Chave identificadora própria do ato, derivada do id do movimento.
-    let hex = m.id.replace(/[^0-9a-f]/gi, "").toLowerCase();
-    if (hex.length < 16) {
-      // Ids fora do padrão UUID: deriva uma chave estável a partir do texto.
-      let h1 = 0x811c9dc5;
-      let h2 = 0x01000193;
-      for (const ch of `${m.id}|${m.criado_em}`) {
-        h1 = Math.imul(h1 ^ ch.charCodeAt(0), 16777619) >>> 0;
-        h2 = Math.imul(h2 ^ ch.charCodeAt(0), 2246822519) >>> 0;
-      }
-      hex = (h1.toString(16).padStart(8, "0") + h2.toString(16).padStart(8, "0")).slice(0, 16);
-    }
-    const chave = `${hex.slice(0, 3)}-${hex.slice(3, 16)}`;
+    const chave = chaveIdentificadora(m.id, m.criado_em);
     await this.cabecalhoChave(chave, m, numeroEvento);
 
     const sigla = this.ident.sigla || (den.tipo_procedimento === "sindicancia" ? "SINDPM" : "IPM");
@@ -864,6 +923,188 @@ class ProcessoPdf {
     }
   }
 
+  /* ---------- tabela simples (cabeçalho cinza, linhas com fio) ---------- */
+
+  private tabela(colunas: ColunaTabela[], linhas: string[][], vazio = "Nada consta."): void {
+    const { w } = this;
+    const size = 9.5;
+    const pad = 1.8;
+    const desenharLinha = (celulas: string[], cabecalho: boolean) => {
+      const paras = celulas.map((t, i) => ({
+        align: (colunas[i].align ?? "left") as "left" | "center" | "right",
+        lineHeight: 1.1,
+        runs: [{ text: t || "—", bold: cabecalho }],
+      }));
+      const alturas = paras.map((pp, i) =>
+        w.alturaParagrafo(pp, { size, width: colunas[i].largura - pad * 2 }),
+      );
+      const h = Math.max(...alturas) + pad * 2;
+      w.garantir(h);
+      const topo = w.y;
+      if (cabecalho) w.retangulo(MARGEM_ESQ, topo, LARGURA_UTIL, h, { fill: [235, 235, 235] });
+      let x = 0;
+      paras.forEach((pp, i) => {
+        w.y = topo + pad;
+        w.paragrafo(pp, { size, indent: x + pad, width: colunas[i].largura - pad * 2 });
+        x += colunas[i].largura;
+      });
+      w.y = topo + h;
+      w.linhaHorizontal(w.y, [190, 190, 190], 0.2, MARGEM_ESQ, MARGEM_ESQ + LARGURA_UTIL);
+    };
+    w.pular(3);
+    desenharLinha(
+      colunas.map((c) => c.titulo.toUpperCase()),
+      true,
+    );
+    if (!linhas.length) {
+      desenharLinha([vazio, ...colunas.slice(1).map(() => "")], false);
+      return;
+    }
+    for (const l of linhas) desenharLinha(l, false);
+  }
+
+  /* ---------- PDO (Patrulhamento Disciplinar Ostensivo) ---------- */
+
+  async pdo(p: PdfPdo): Promise<void> {
+    const { w } = this;
+    const fake = { id: p.id, criado_em: p.assinado_em } as PdfMovimento;
+    await this.cabecalhoChave(chaveIdentificadora(p.id, p.numero), fake, null);
+    const numero = p.numero.replace(/^\s*PDO\s*(n[ºo°.]*)?\s*/i, "");
+    this.titulosChave(`PDO Nº ${numero}`, "PATRULHAMENTO DISCIPLINAR OSTENSIVO");
+    this.campo("DATA/HORA DA ABORDAGEM:", dataHora(p.abordagem_em));
+    this.campo("LOCAL:", p.local);
+    const vtr = [p.vtr_prefixo, p.vtr_placa, p.vtr_unidade].filter((x) => x && String(x).trim()).join(" · ");
+    this.campo("VTR:", vtr || "—");
+    this.campo("DESFECHO:", rotuloDesfechoPdo(p.desfecho).toUpperCase());
+    if (p.procedimento_numero) this.campo("PROCEDIMENTO GERADO:", p.procedimento_numero);
+
+    const pessoa = (x: { cargo?: string | null; nome?: string | null; matricula?: string | null }) =>
+      [x.cargo?.trim().toUpperCase(), x.nome?.trim().toUpperCase()].filter(Boolean).join(" ") +
+      (x.matricula ? `, RE ${x.matricula}` : "");
+
+    this.faixa("EQUIPE CORREGEDORA", 5.2);
+    this.itensFaixa(p.equipe.filter((x) => x.nome?.trim()).map(pessoa));
+    this.faixa("POLICIAIS FISCALIZADOS", 4.2);
+    this.itensFaixa(p.abordados.filter((x) => x.nome?.trim()).map((x, i) => `P${i + 1} — ${pessoa(x)}`));
+
+    this.faixa("ITENS VERIFICADOS", 4.2);
+    this.tabela(
+      [
+        { titulo: "Item", largura: 62 },
+        { titulo: "Situação", largura: 32, align: "center" },
+        { titulo: "Observação", largura: LARGURA_UTIL - 94 },
+      ],
+      p.itens.map((it) => [rotuloItemPdo(it.chave), rotuloEstadoPdo(it.estado).toUpperCase(), it.observacao?.trim() || "—"]),
+    );
+
+    this.faixa("RELATO", 6);
+    w.pular(4.2);
+    this.corpoChave(p.relato?.trim() ? p.relato : "Sem alteração.");
+    w.pular(4);
+    this.fechoChave(`São Paulo/SP, ${dataExtenso(p.assinado_em)}.`, p.lavrado_por_nome, cargoLabel(p.lavrado_por_cargo));
+  }
+
+  /* ---------- Aviso interno ---------- */
+
+  aviso(a: PdfAviso): void {
+    const { w } = this;
+    this.timbreAto();
+    w.y = Math.max(w.y, 54.5);
+    w.textoEm(dataHora(a.created_at), PAGE_W - 20, w.y + 0.6, { size: 8, color: CINZA, align: "right" });
+    this.titulo(`AVISO Nº ${a.numero.replace(/^\s*AVISO\s*(n[ºo°.]*)?\s*/i, "")}`);
+    w.texto(a.titulo, { size: 12, bold: true, align: "center", after: 3 });
+    this.corpo(a.corpo);
+    const puro = textoPuro(a.corpo);
+    if (!/S[ãa]o Paulo\s*\/\s*SP\s*,/i.test(puro)) {
+      this.assinatura({
+        id: a.id,
+        especie: "aviso",
+        teor: "",
+        prolator_nome: a.autor_nome,
+        prolator_cargo: a.autor_cargo,
+        criado_em: a.created_at,
+      });
+    }
+  }
+
+  /* ---------- Ficha funcional do policial ---------- */
+
+  async fichaFuncional(f: PdfFichaFuncional): Promise<void> {
+    const { w } = this;
+    const id = `${f.policial.re ?? ""}|${f.policial.nome}`;
+    const fake = { id, criado_em: f.emitidaEm } as PdfMovimento;
+    await this.cabecalhoChave(chaveIdentificadora(id, f.emitidaEm), fake, null);
+    this.titulosChave("FICHA FUNCIONAL", null);
+    const nome = [f.policial.posto?.trim().toUpperCase(), f.policial.nome.trim().toUpperCase()].filter(Boolean).join(" ");
+    this.campo("POLICIAL MILITAR:", nome);
+    this.campo("RE:", f.policial.re || "—");
+    this.campo("OPM:", f.policial.opm || "—");
+    w.pular(5.2);
+    this.campo("EMITIDA EM:", dataHora(f.emitidaEm));
+    this.campo("EMITIDA POR:", `${f.emitidaPor.nome}${f.emitidaPor.cargo ? ` — ${cargoLabel(f.emitidaPor.cargo)}` : ""}`);
+
+    const emAndamento = f.procedimentos.filter((x) => !["arquivada", "transito_julgado"].includes(x.status)).length;
+    this.faixa("RESUMO", 5.2);
+    this.itensFaixa([
+      `Procedimentos disciplinares como denunciado: ${f.procedimentos.length}${f.procedimentos.length ? ` (${emAndamento} em andamento)` : ""}`,
+      `PDOs como policial fiscalizado: ${f.pdos.filter((x) => x.papel === "fiscalizado").length}`,
+      `Observações registradas pela Corregedoria: ${f.observacoes.length}`,
+    ]);
+
+    this.faixa("PROCEDIMENTOS DISCIPLINARES", 4.2);
+    this.tabela(
+      [
+        { titulo: "Procedimento", largura: 38 },
+        { titulo: "Natureza", largura: 58 },
+        { titulo: "Instauração", largura: 33, align: "center" },
+        { titulo: "Situação", largura: LARGURA_UTIL - 129 },
+      ],
+      f.procedimentos.map((x) => [
+        x.numero,
+        x.natureza || "—",
+        x.instaurado_em ? new Date(x.instaurado_em).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—",
+        statusLabel(x.status),
+      ]),
+    );
+
+    this.faixa("PDO — PATRULHAMENTO DISCIPLINAR OSTENSIVO", 6);
+    this.tabela(
+      [
+        { titulo: "PDO", largura: 28 },
+        { titulo: "Data", largura: 26, align: "center" },
+        { titulo: "Local", largura: 62 },
+        { titulo: "Desfecho", largura: LARGURA_UTIL - 116 },
+      ],
+      f.pdos.map((x) => [
+        x.numero,
+        new Date(x.data).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }),
+        x.local,
+        `${rotuloDesfechoPdo(x.desfecho)}${x.papel === "equipe" ? " (integrou a equipe)" : ""}`,
+      ]),
+    );
+
+    this.faixa("OBSERVAÇÕES DA CORREGEDORIA", 6);
+    if (!f.observacoes.length) this.itensFaixa(["Nada consta."]);
+    f.observacoes.forEach((o, i) => {
+      w.pular(i ? 3 : 4.2);
+      const cab = `${new Date(o.data).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })} — ${o.autor}${o.processos?.length ? ` · ${o.processos.join(", ")}` : ""}`;
+      w.garantir(14);
+      w.texto(cab, { size: 10, bold: true, lineHeight: 1.1, after: 1.2 });
+      const paras = teorParaParagrafos(o.corpo, { align: "justify", lineHeight: 1.15 });
+      for (const pp of paras) w.paragrafo(pp, { size: 10.5, after: pp.runs.some((r) => r.text.trim()) ? 1.4 : 0 });
+    });
+
+    w.pular(8);
+    this.fechoChave(`São Paulo/SP, ${dataExtenso(f.emitidaEm)}.`, f.emitidaPor.nome, cargoLabel(f.emitidaPor.cargo));
+    w.pular(6);
+    w.texto("Documento de uso interno da Corregedoria da Polícia Militar — reservado.", {
+      size: 8.5,
+      italic: true,
+      align: "center",
+      color: CINZA,
+    });
+  }
+
   /* ---------- rodapé ---------- */
 
   rodapes(): void {
@@ -1011,4 +1252,88 @@ export function nomeArquivoProcesso(d: PdfDenuncia): string {
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
   return `Processo-${id || "sem-numero"}.pdf`;
+}
+
+/* ------------ PDO e Ficha funcional ------------ */
+
+async function novoDocumento(titulo: string): Promise<{ pdf: jsPDF; w: PdfWriter }> {
+  const { jsPDF } = await import("jspdf");
+  const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
+  pdf.setProperties({
+    title: titulo,
+    subject: "Corregedoria da Polícia Militar do Estado de São Paulo",
+    creator: "Corregedoria PMESP",
+  });
+  return { pdf, w: new PdfWriter(pdf) };
+}
+
+function documentoAvulso(w: PdfWriter, assets: PdfAssets, rodape: string): ProcessoPdf {
+  const vazio: PdfProcessoData = {
+    denuncia: {
+      numero_protocolo: rodape,
+      numero_procedimento: null,
+      denunciante_nome: null,
+      denunciante_anonimo: null,
+      ocorrencia_tipo: null,
+      unidade: null,
+      status: "",
+      termo_inicial: new Date().toISOString(),
+      acrescimos_dias: 0,
+      instaurada_em: null,
+      created_at: new Date().toISOString(),
+    },
+    policiais: [],
+    movimentos: [],
+  };
+  const doc = new ProcessoPdf(w, vazio, assets);
+  doc.ident = { sigla: "", numero: rodape, rodape, temNumero: true };
+  return doc;
+}
+
+/** PDF do PDO no modelo do sistema (cabeçalho com chave identificadora). */
+export async function gerarPdoPdf(p: PdfPdo, assets: PdfAssets): Promise<jsPDF> {
+  const numero = p.numero.replace(/^\s*PDO\s*(n[ºo°.]*)?\s*/i, "");
+  const { pdf, w } = await novoDocumento(`PDO nº ${numero}`);
+  const doc = documentoAvulso(w, assets, `PDO/${numero}`);
+  await doc.pdo(p);
+  doc.rodapes();
+  return pdf;
+}
+
+/** Ficha funcional do policial: procedimentos, PDOs e observações. */
+export async function gerarFichaFuncionalPdf(f: PdfFichaFuncional, assets: PdfAssets): Promise<jsPDF> {
+  const { pdf, w } = await novoDocumento(`Ficha funcional — ${f.policial.nome}`);
+  const doc = documentoAvulso(w, assets, `FICHA FUNCIONAL${f.policial.re ? ` · RE ${f.policial.re}` : ""}`);
+  await doc.fichaFuncional(f);
+  doc.rodapes();
+  return pdf;
+}
+
+export function nomeArquivoPdo(numero: string): string {
+  const n = numero.replace(/^\s*PDO\s*(n[ºo°.]*)?\s*/i, "").replace(/[^\w-]+/g, "-");
+  return `PDO-${n || "sem-numero"}.pdf`;
+}
+
+export function nomeArquivoFicha(policial: { nome: string; re?: string | null }): string {
+  const base = `${policial.nome}${policial.re ? `-RE-${policial.re}` : ""}`
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w-]+/g, "-")
+    .replace(/-+/g, "-");
+  return `Ficha-funcional-${base}.pdf`;
+}
+
+/** Aviso interno no modelo dos atos (timbre, título, texto e assinatura). */
+export async function gerarAvisoPdf(a: PdfAviso, assets: PdfAssets): Promise<jsPDF> {
+  const numero = a.numero.replace(/^\s*AVISO\s*(n[ºo°.]*)?\s*/i, "");
+  const { pdf, w } = await novoDocumento(`Aviso nº ${numero}`);
+  const doc = documentoAvulso(w, assets, `AVISO/${numero}`);
+  doc.aviso(a);
+  doc.rodapes();
+  return pdf;
+}
+
+export function nomeArquivoAviso(numero: string): string {
+  const n = numero.replace(/^\s*AVISO\s*(n[ºo°.]*)?\s*/i, "").replace(/[^\w-]+/g, "-");
+  return `Aviso-${n || "sem-numero"}.pdf`;
 }

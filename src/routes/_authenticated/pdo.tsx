@@ -13,31 +13,17 @@ import {
   excluirPdo,
   listCorregedoresPdo,
 } from "@/lib/pdo.functions";
-import { Plus, ArrowRight, X, Trash2, Loader2, Search } from "lucide-react";
+import { Plus, ArrowRight, X, Trash2, Loader2, Search, Download } from "lucide-react";
+import { ITENS_PDO, ESTADOS_PDO, DESFECHOS_PDO } from "@/lib/pdo-rotulos";
+import { exportPdoPdf } from "@/lib/exportProcesso";
 
 export const Route = createFileRoute("/_authenticated/pdo")({
   component: PdoPage,
 });
 
-const ITENS = [
-  { chave: "documentacao", label: "Documentação funcional" },
-  { chave: "armamento", label: "Armamento" },
-  { chave: "colete", label: "Colete balístico" },
-  { chave: "fardamento", label: "Fardamento / uniforme" },
-  { chave: "viatura", label: "Estado geral da viatura" },
-] as const;
-
-const ESTADOS = [
-  { v: "conforme", l: "Conforme" },
-  { v: "nao_conforme", l: "Não conforme" },
-  { v: "nao_aplicavel", l: "N/A" },
-] as const;
-
-const DESFECHOS = [
-  { v: "regular", l: "Regular — nada a apontar" },
-  { v: "sanada", l: "Irregularidade sanada no local" },
-  { v: "gera_procedimento", l: "Irregularidade que origina procedimento" },
-] as const;
+const ITENS = ITENS_PDO;
+const ESTADOS = ESTADOS_PDO;
+const DESFECHOS = DESFECHOS_PDO;
 
 const CARGO_LABEL: Record<string, string> = {
   ssp: "SSP",
@@ -108,7 +94,25 @@ function PdoPage() {
   const [aberto, setAberto] = useState<string | null>(null);
   const [novo, setNovo] = useState(false);
   const [busca, setBusca] = useState("");
+  const [filtroDesfecho, setFiltroDesfecho] = useState<"" | "regular" | "sanada" | "gera_procedimento" | "aguardando">("");
+  const [periodo, setPeriodo] = useState<"30" | "90" | "365" | "tudo">("30");
+  const [opm, setOpm] = useState("");
+  const [limite, setLimite] = useState(25);
+  const [baixando, setBaixando] = useState<string | null>(null);
   const [excluir, setExcluir] = useState<{ id: string; numero: string } | null>(null);
+  const getFn = useServerFn(getPdo);
+
+  async function baixarPdf(id: string) {
+    setBaixando(id);
+    try {
+      const pdo = await getFn({ data: { id } });
+      await exportPdoPdf(pdo as never);
+    } catch (e) {
+      toast.error((e as Error)?.message || "Falha ao gerar o PDF do PDO.");
+    } finally {
+      setBaixando(null);
+    }
+  }
 
   const cargo = session?.cargo ?? null;
   const isStaff = cargo && cargo !== "cidadao" && cargo !== "mp";
@@ -116,20 +120,42 @@ function PdoPage() {
   const canGenerate =
     cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || cargo === "corregedor" || (cargo === "subcorregedor_geral" || cargo === "corregedor_supervisor");
 
+  // Período e OPM valem para os indicadores e para a lista.
+  const doPeriodo = useMemo(() => {
+    const desde = periodo === "tudo" ? 0 : Date.now() - Number(periodo) * 864e5;
+    return (pdos ?? []).filter(
+      (p: any) => new Date(p.abordagem_em).getTime() >= desde && (!opm || p.vtr_unidade === opm),
+    );
+  }, [pdos, periodo, opm]);
+  const opms = useMemo(
+    () => Array.from(new Set((pdos ?? []).map((p: any) => p.vtr_unidade).filter(Boolean))).sort() as string[],
+    [pdos],
+  );
+  const aguardando = (p: any) => p.desfecho === "gera_procedimento" && !p.procedimento_id;
+  const contagem = {
+    total: doPeriodo.length,
+    regular: doPeriodo.filter((p: any) => p.desfecho === "regular").length,
+    sanada: doPeriodo.filter((p: any) => p.desfecho === "sanada").length,
+    gera: doPeriodo.filter((p: any) => p.desfecho === "gera_procedimento").length,
+    aguardando: doPeriodo.filter(aguardando).length,
+  };
+
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
-    if (!q) return pdos ?? [];
-    return (pdos ?? []).filter((p: any) => {
-      if (p.numero?.toLowerCase().includes(q)) return true;
-      if (p.vtr_prefixo?.toLowerCase().includes(q)) return true;
-      if (p.vtr_placa?.toLowerCase().includes(q)) return true;
-      const abs = Array.isArray(p.abordados) ? p.abordados : [];
-      return abs.some(
-        (a: any) =>
-          a?.nome?.toLowerCase().includes(q) || a?.matricula?.toLowerCase().includes(q),
+    return doPeriodo.filter((p: any) => {
+      if (filtroDesfecho === "aguardando" ? !aguardando(p) : filtroDesfecho && p.desfecho !== filtroDesfecho) return false;
+      if (!q) return true;
+      const pessoas = [
+        ...(Array.isArray(p.abordados) ? p.abordados : []),
+        ...(Array.isArray(p.equipe) ? p.equipe : []),
+      ];
+      return (
+        [p.numero, p.vtr_prefixo, p.vtr_placa, p.vtr_unidade, p.local, p.procedimento_numero].some((v) =>
+          String(v ?? "").toLowerCase().includes(q),
+        ) || pessoas.some((a: any) => `${a?.nome ?? ""} ${a?.matricula ?? ""}`.toLowerCase().includes(q))
       );
     });
-  }, [pdos, busca]);
+  }, [doPeriodo, busca, filtroDesfecho]);
 
   if (!isStaff) {
     return (
@@ -142,81 +168,224 @@ function PdoPage() {
     );
   }
 
+  const chip = (ativo: boolean) =>
+    `rounded-full border px-3 py-1.5 text-xs transition ${
+      ativo ? "border-primary/55 bg-primary/10 font-semibold text-primary" : "border-border hover:bg-surface-2"
+    }`;
+  const indicadores = [
+    { k: "PDOs no período", v: contagem.total, cls: "", filtro: "" as const },
+    { k: "Regular", v: contagem.regular, cls: "text-emerald-400", filtro: "regular" as const },
+    { k: "Sanada", v: contagem.sanada, cls: "text-sky-300", filtro: "sanada" as const },
+    { k: "Gera procedimento", v: contagem.gera, cls: "text-amber-300", filtro: "gera_procedimento" as const },
+  ];
+
   return (
     <div className="min-h-screen">
       <Header />
-      <div className="mx-auto max-w-6xl space-y-4 p-6">
-        <div className="flex items-center justify-between">
+      <div className="mx-auto max-w-7xl space-y-4 p-4 sm:p-6">
+        <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h1 className="font-serif text-2xl">PDO — Diligências Ostensivas</h1>
-            <p className="text-xs text-muted-foreground">
-              Registro de abordagens fiscalizatórias em viaturas da Polícia Militar do Estado de São Paulo.
-            </p>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Fiscalização</div>
+            <h1 className="font-serif text-2xl">PDO — Patrulhamento Disciplinar Ostensivo</h1>
           </div>
           <button
             onClick={() => setNovo(true)}
-            className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground hover:opacity-90"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
           >
-            <Plus className="h-3.5 w-3.5" /> Novo PDO
+            <Plus className="h-4 w-4" /> Novo PDO
           </button>
         </div>
 
-        <div className="surface p-3">
-          <input
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar por número, VTR ou abordado..."
-            className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm"
-          />
+        <div className="grid grid-cols-2 gap-2.5 md:grid-cols-5">
+          {indicadores.map((c) => (
+            <button
+              key={c.k}
+              type="button"
+              onClick={() => setFiltroDesfecho(c.filtro)}
+              className={`surface p-3 text-left transition hover:bg-surface-2 ${filtroDesfecho === c.filtro ? "ring-1 ring-primary/60" : ""}`}
+            >
+              <div className="text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">{c.k}</div>
+              <div className={`tabular text-2xl font-semibold ${c.cls}`}>{c.v}</div>
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setFiltroDesfecho("aguardando")}
+            className={`rounded-lg border p-3 text-left transition ${
+              contagem.aguardando
+                ? "border-amber-500/55 bg-amber-500/10 hover:bg-amber-500/15"
+                : "border-border bg-surface hover:bg-surface-2"
+            } ${filtroDesfecho === "aguardando" ? "ring-1 ring-primary/60" : ""}`}
+          >
+            <div className="text-[10.5px] font-semibold uppercase tracking-wider text-amber-400">Aguardando procedimento</div>
+            <div className="tabular text-2xl font-semibold text-amber-200">{contagem.aguardando}</div>
+          </button>
         </div>
 
-        <div className="surface divide-y divide-border">
-          {filtrados.length === 0 && (
-            <div className="p-6 text-sm text-muted-foreground">Nenhum PDO registrado.</div>
-          )}
-          {filtrados.map((p: any) => (
-            <div
-              key={p.id}
-              className="flex items-center gap-2 p-3 text-sm hover:bg-surface-2"
-            >
-              <button
-                onClick={() => setAberto(p.id)}
-                className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left"
-              >
-                <div className="min-w-0">
-                  <div className="tabular text-xs text-muted-foreground">{p.numero}</div>
-                  <div className="truncate">
-                    {new Date(p.abordagem_em).toLocaleString("pt-BR")} · {p.local}
-                  </div>
-                  <div className="truncate text-xs text-muted-foreground">
-                    VTR {p.vtr_prefixo || "—"}
-                    {p.vtr_placa ? ` · ${p.vtr_placa}` : ""}
-                    {p.vtr_unidade ? ` · ${p.vtr_unidade}` : ""}
-                  </div>
-                </div>
-                <div className="shrink-0 text-right">
-                  <DesfechoBadge d={p.desfecho} />
-                  {p.procedimento_numero && (
-                    <div className="mt-1 text-[10px] text-muted-foreground tabular">
-                      → {p.procedimento_numero}
-                    </div>
-                  )}
-                </div>
-              </button>
-              {canDelete && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setExcluir({ id: p.id, numero: p.numero });
-                  }}
-                  aria-label={`Excluir ${p.numero}`}
-                  className="rounded-md p-2 text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              )}
-            </div>
+        <div className="surface flex flex-wrap items-center gap-2 p-3">
+          <label className="flex min-w-[240px] flex-1 items-center gap-2 rounded-md border border-border bg-input px-3 py-2">
+            <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+            <input
+              type="search"
+              value={busca}
+              onChange={(e) => {
+                setBusca(e.target.value);
+                setLimite(25);
+              }}
+              placeholder="Nº, VTR, placa, local, equipe ou abordado…"
+              aria-label="Buscar PDO"
+              className="w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            />
+          </label>
+          {([
+            ["", "Todos"],
+            ["regular", "Regular"],
+            ["sanada", "Sanada"],
+            ["gera_procedimento", "Gera procedimento"],
+            ["aguardando", "Aguardando procedimento"],
+          ] as const).map(([v, l]) => (
+            <button key={v || "todos"} type="button" onClick={() => setFiltroDesfecho(v)} className={chip(filtroDesfecho === v)}>
+              {l}
+            </button>
           ))}
+          <select
+            value={periodo}
+            onChange={(e) => setPeriodo(e.target.value as typeof periodo)}
+            aria-label="Período"
+            className="rounded-md border border-border bg-input px-2 py-1.5 text-xs"
+          >
+            <option value="30">Últimos 30 dias</option>
+            <option value="90">Últimos 90 dias</option>
+            <option value="365">Últimos 12 meses</option>
+            <option value="tudo">Todo o período</option>
+          </select>
+          <select
+            value={opm}
+            onChange={(e) => setOpm(e.target.value)}
+            aria-label="OPM"
+            className="rounded-md border border-border bg-input px-2 py-1.5 text-xs"
+          >
+            <option value="">Todas as OPMs</option>
+            {opms.map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="surface overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[820px] text-sm">
+              <thead>
+                <tr className="border-b border-border bg-background/40 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <th className="px-4 py-2.5">Nº PDO</th>
+                  <th className="px-3 py-2.5">Data / hora</th>
+                  <th className="px-3 py-2.5">Local</th>
+                  <th className="px-3 py-2.5">VTR</th>
+                  <th className="hidden px-3 py-2.5 2xl:table-cell">Equipe</th>
+                  <th className="px-3 py-2.5">Desfecho</th>
+                  <th className="px-3 py-2.5">Procedimento</th>
+                  <th className="px-4 py-2.5 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {filtrados.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                      {(pdos ?? []).length === 0
+                        ? "Nenhum PDO registrado."
+                        : "Nenhum PDO encontrado com esses filtros."}
+                    </td>
+                  </tr>
+                )}
+                {filtrados.slice(0, limite).map((p: any) => (
+                  <tr key={p.id} className="hover:bg-surface-2/60">
+                    <td className="px-4 py-2.5">
+                      <button
+                        type="button"
+                        onClick={() => setAberto(p.id)}
+                        className="font-mono text-xs font-semibold text-primary hover:underline"
+                      >
+                        {p.numero}
+                      </button>
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-muted-foreground">
+                      {new Date(p.abordagem_em).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
+                    </td>
+                    <td className="max-w-[200px] truncate px-3 py-2.5" title={p.local}>{p.local}</td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-muted-foreground">
+                      {[p.vtr_prefixo, p.vtr_placa].filter(Boolean).join(" · ") || "—"}
+                    </td>
+                    <td className="hidden max-w-[200px] truncate px-3 py-2.5 text-muted-foreground 2xl:table-cell">
+                      {(Array.isArray(p.equipe) ? p.equipe : [])
+                        .map((m: any) => [m?.cargo, m?.nome].filter(Boolean).join(" "))
+                        .filter(Boolean)
+                        .join(", ") || "—"}
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <DesfechoBadge d={p.desfecho} />
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-xs">
+                      {p.procedimento_id ? (
+                        <a href={`/corregedoria?id=${p.procedimento_id}`} className="text-primary hover:underline">
+                          {p.procedimento_numero ?? "Aguardando instauração"}
+                        </a>
+                      ) : aguardando(p) ? (
+                        <span className="text-amber-300">Aguardando procedimento</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setAberto(p.id)}
+                          className="rounded-md px-2 py-1 text-xs hover:bg-surface-2"
+                        >
+                          Ver
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => baixarPdf(p.id)}
+                          disabled={baixando === p.id}
+                          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs hover:bg-surface-2 disabled:opacity-50"
+                          aria-label={`Baixar PDF do ${p.numero}`}
+                        >
+                          {baixando === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                          PDF
+                        </button>
+                        {canDelete && (
+                          <button
+                            onClick={() => setExcluir({ id: p.id, numero: p.numero })}
+                            aria-label={`Excluir ${p.numero}`}
+                            className="rounded-md p-1.5 text-red-500 transition-colors hover:bg-red-500/10"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-2.5 text-xs text-muted-foreground">
+            <span>
+              Mostrando {Math.min(limite, filtrados.length)} de {filtrados.length}
+            </span>
+            {filtrados.length > limite && (
+              <button
+                type="button"
+                onClick={() => setLimite((n) => n + 25)}
+                className="rounded-md border border-border px-3 py-1.5 text-xs text-foreground hover:bg-surface-2"
+              >
+                Carregar mais
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -265,7 +434,7 @@ function DesfechoBadge({ d }: { d: string }) {
   };
   const it = map[d] ?? { l: d, cls: "" };
   return (
-    <span className={`rounded-full border px-2 py-0.5 text-[10px] ${it.cls}`}>{it.l}</span>
+    <span className={`whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] ${it.cls}`}>{it.l}</span>
   );
 }
 
@@ -368,6 +537,7 @@ function NovoPdoDialog({
       }),
     onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: ["pdos"] });
+      toast.success("PDO registrado.");
       onCreated(r.id);
     },
   });
@@ -630,6 +800,7 @@ function VerPdoDialog({
   const gerarFn = useServerFn(gerarProcedimentoDoPdo);
   const { data: pdo } = useQuery({ queryKey: ["pdo", id], queryFn: () => getFn({ data: { id } }) });
   const [gerando, setGerando] = useState(false);
+  const [baixandoPdf, setBaixandoPdf] = useState(false);
 
   if (!pdo) return null;
   const abordados = Array.isArray(pdo.abordados) ? pdo.abordados : [];
@@ -707,7 +878,24 @@ function VerPdoDialog({
           </div>
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex flex-wrap justify-end gap-2">
+          <button
+            type="button"
+            onClick={async () => {
+              setBaixandoPdf(true);
+              try {
+                await exportPdoPdf(pdo);
+              } catch (e) {
+                toast.error((e as Error)?.message || "Falha ao gerar o PDF do PDO.");
+              } finally {
+                setBaixandoPdf(false);
+              }
+            }}
+            disabled={baixandoPdf}
+            className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2 disabled:opacity-50"
+          >
+            <Download className="h-3.5 w-3.5" /> {baixandoPdf ? "Gerando PDF..." : "Baixar PDF"}
+          </button>
           <button
             type="button"
             onClick={async () => {
@@ -726,11 +914,11 @@ function VerPdoDialog({
 
         {pdo.desfecho === "gera_procedimento" && (
           <div className="rounded-md border border-border p-3">
-            {pdo.procedimento_numero ? (
+            {pdo.procedimento_id ? (
               <div className="flex items-center justify-between gap-2 text-sm">
                 <span>
                   Procedimento gerado:{" "}
-                  <span className="tabular font-medium">{pdo.procedimento_numero}</span>
+                  <span className="tabular font-medium">{pdo.procedimento_numero ?? "Aguardando instauração"}</span>
                 </span>
                 <button
                   onClick={() => navigate({ to: "/corregedoria", search: { id: pdo.procedimento_id } })}
@@ -748,7 +936,7 @@ function VerPdoDialog({
               </button>
             ) : (
               <p className="text-xs text-muted-foreground">
-                Somente Corregedor-Geral, SSP ou Corregedor podem gerar o procedimento.
+                Somente cargos da Corregedoria, SSP ou CMTG podem gerar o procedimento.
               </p>
             )}
           </div>
@@ -784,12 +972,12 @@ function VerPdoDialog({
           defaultUnidade={pdo.vtr_unidade ?? ""}
           gerarFn={gerarFn}
           onClose={() => setGerando(false)}
-          onSuccess={(denuncia_id, protocolo) => {
+          onSuccess={(denuncia_id) => {
             qc.invalidateQueries({ queryKey: ["pdos"] });
             qc.invalidateQueries({ queryKey: ["pdo", id] });
             qc.invalidateQueries({ queryKey: ["denuncias"] });
             setGerando(false);
-            toast.success(`Procedimento ${protocolo} gerado.`);
+            toast.success("Procedimento gerado. Instaure-o para receber o número (IPM, SINDPM ou APFD).");
             onClose();
             navigate({ to: "/corregedoria", search: { id: denuncia_id } });
           }}

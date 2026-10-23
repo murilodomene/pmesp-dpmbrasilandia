@@ -29,6 +29,28 @@ export const getAviso = createServerFn({ method: "GET" })
     return row;
   });
 
+const CARGOS_PUBLICAM = ["ssp", "cmtg", "corregedor_geral", "subcorregedor_geral", "corregedor_supervisor"];
+const CARGOS_ADMIN = ["corregedor_geral", "subcorregedor_geral", "corregedor_supervisor"];
+
+/** Cargo do usuário (ativo) e o autor do aviso, para checar edição/exclusão no servidor. */
+async function permissaoAviso(
+  context: { supabase: import("@supabase/supabase-js").SupabaseClient; userId: string },
+  avisoId: string,
+): Promise<{ cargo: string | null; autor: boolean }> {
+  const [{ data: prof }, { data: ur }, { data: aviso, error }] = await Promise.all([
+    context.supabase.from("profiles").select("status").eq("id", context.userId).maybeSingle(),
+    context.supabase.from("user_roles").select("role").eq("user_id", context.userId).maybeSingle(),
+    context.supabase.from("avisos").select("autor_id").eq("id", avisoId).maybeSingle(),
+  ]);
+  if (error) throw new Error(error.message);
+  if (!aviso) throw new Error("Aviso não encontrado.");
+  if ((prof as { status?: string } | null)?.status !== "ativo") throw new Error("Usuário sem cadastro ativo.");
+  return {
+    cargo: (ur as { role?: string } | null)?.role ?? null,
+    autor: (aviso as { autor_id: string }).autor_id === context.userId,
+  };
+}
+
 const AvisoInput = z.object({
   titulo: z.string().trim().min(3).max(200),
   corpo: z.string().trim().min(3).max(20000),
@@ -54,7 +76,7 @@ export const criarAviso = createServerFn({ method: "POST" })
     if (rErr) throw new Error(rErr.message);
     const cargo = ur?.role;
     if (cargo !== "ssp" && cargo !== "cmtg" && cargo !== "corregedor_geral" && (cargo !== "subcorregedor_geral" && cargo !== "corregedor_supervisor")) {
-      throw new Error("Apenas SSP ou Corregedor-Geral podem publicar avisos.");
+      throw new Error("Apenas SSP, CMTG, Corregedor-Geral, Subcorregedor-Geral ou Corregedor Supervisor podem publicar avisos.");
     }
 
     const { data: numero, error: nErr } = await context.supabase.rpc("gerar_numero_aviso");
@@ -88,6 +110,10 @@ export const atualizarAviso = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
+    const { cargo, autor } = await permissaoAviso(context, data.id);
+    if (!autor && !CARGOS_ADMIN.includes(cargo ?? "")) {
+      throw new Error("Só quem publicou o aviso (ou a chefia da Corregedoria) pode editá-lo.");
+    }
     const { error } = await context.supabase
       .from("avisos")
       .update({ titulo: data.titulo, corpo: data.corpo })
@@ -102,6 +128,10 @@ export const excluirAviso = createServerFn({ method: "POST" })
     z.object({ id: z.string().uuid() }).parse(data),
   )
   .handler(async ({ data, context }) => {
+    const { cargo, autor } = await permissaoAviso(context, data.id);
+    if (!autor && !CARGOS_PUBLICAM.includes(cargo ?? "")) {
+      throw new Error("Sem permissão para excluir este aviso.");
+    }
     const { error } = await context.supabase.from("avisos").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };

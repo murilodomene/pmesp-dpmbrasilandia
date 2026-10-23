@@ -15,6 +15,15 @@ import { appendPdfElement } from "@/lib/pdf-export";
 import { ROLE_LABELS, type AppRole } from "@/lib/access-roles";
 import {
   gerarAtoPdf,
+  gerarPdoPdf,
+  gerarAvisoPdf,
+  nomeArquivoAviso,
+  type PdfAviso,
+  gerarFichaFuncionalPdf,
+  nomeArquivoPdo,
+  nomeArquivoFicha,
+  type PdfPdo,
+  type PdfFichaFuncional,
   gerarProcessoPdf,
   nomeArquivoAto,
   nomeArquivoProcesso,
@@ -670,4 +679,25 @@ export async function previsualizarAtoPdf(
   const blob = pdf.output("blob") as Blob;
   const url = URL.createObjectURL(blob);
   return { url, nome, baixar: () => pdf.save(nome) };
+}
+
+/** PDF do PDO no modelo do sistema. */
+export async function exportPdoPdf(pdo: PdfPdo): Promise<void> {
+  const assets = await carregarAssetsPdf([]);
+  const pdf = await gerarPdoPdf(pdo, assets);
+  pdf.save(nomeArquivoPdo(pdo.numero));
+}
+
+/** Ficha funcional do policial (procedimentos, PDOs e observações) em PDF. */
+export async function exportFichaFuncionalPdf(ficha: PdfFichaFuncional): Promise<void> {
+  const assets = await carregarAssetsPdf([]);
+  const pdf = await gerarFichaFuncionalPdf(ficha, assets);
+  pdf.save(nomeArquivoFicha(ficha.policial));
+}
+
+/** Aviso interno em PDF. */
+export async function exportAvisoPdf(aviso: PdfAviso): Promise<void> {
+  const assets = await carregarAssetsPdf([]);
+  const pdf = await gerarAvisoPdf(aviso, assets);
+  pdf.save(nomeArquivoAviso(aviso.numero));
 }

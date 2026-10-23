@@ -53,11 +53,11 @@ import { OPMS } from "@/lib/personnel-options";
 
 
 import { getSessionInfo } from "@/lib/usuarios.functions";
-import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2, Download, ShieldCheck, Bell, MessageSquare, Copy, Mic, Plus, Search, Lock, ScrollText } from "lucide-react";
+import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2, Download, ShieldCheck, Bell, MessageSquare, Copy, Mic, Plus, Search, Lock, ScrollText, ChevronRight } from "lucide-react";
 import { aplicarModelo, modelosDe } from "@/lib/modelos-ato";
 import { DocumentTemplate, exportDocumentToPdf, useDocumentRef } from "@/components/DocumentTemplate";
 import { RichTextEditor, isHtmlAto, sanitizeAtoHtml } from "@/components/RichTextEditor";
-import { exportAtoPdfV2, exportProcessoCompleto, exportProcessoCompletoV2, previsualizarAtoPdf } from "@/lib/exportProcesso";
+import { exportAtoPdfV2, exportProcessoCompleto, exportProcessoCompletoV2, previsualizarAtoPdf, type PreviaAtoPdf } from "@/lib/exportProcesso";
 import { ExportAtoContext, useExportarAto } from "@/components/ExportAtoContext";
 import { AtoAnexosUploader, type AtoAnexo } from "@/components/AtoAnexosUploader";
 import { AtoAnexosLinks } from "@/components/AtoAnexosLinks";
@@ -554,6 +554,19 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
   const [buscaAto, setBuscaAto] = useState("");
   const [modeloId, setModeloId] = useState("");
   const [gerandoPrevia, setGerandoPrevia] = useState(false);
+  const [previa, setPrevia] = useState<PreviaAtoPdf | null>(null);
+  const [lancarAberto, setLancarAberto] = useState(false);
+  // Esc fecha a pré-visualização do PDF.
+  useEffect(() => {
+    if (!previa) return;
+    const aoTeclar = (ev: KeyboardEvent) => {
+      if (ev.key !== "Escape") return;
+      URL.revokeObjectURL(previa.url);
+      setPrevia(null);
+    };
+    window.addEventListener("keydown", aoTeclar);
+    return () => window.removeEventListener("keydown", aoTeclar);
+  }, [previa]);
 
   const obsFn = useServerFn(atualizarObservacoes);
   const [obsPub, setObsPub] = useState<string | null>(null);
@@ -605,6 +618,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
       setAtaDepoente("");
       setModeloId("");
       setEspecie(null);
+      setLancarAberto(false);
       qc.invalidateQueries({ queryKey: ["denuncia", id] });
       qc.invalidateQueries({ queryKey: ["denuncias"] });
     },
@@ -673,6 +687,8 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
   // Botões "Exportar PDF" de cada ato: mesmo modelo vetorial do processo completo.
   const exportarAto = (movimentoId: string) =>
     exportAtoPdfV2({ denuncia, policiais, movimentos: movimentos as never }, movimentoId);
+
+  const portariaMov = movimentos.find((m) => m.especie === "portaria");
 
   // ---------- Painel "Lançar ato" ----------
   const perfil = session?.profile as {
@@ -794,29 +810,35 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
       },
       proximoEvento,
     )
+      .then((p) => setPrevia(p))
       .catch((e) => toast.error((e as Error)?.message || "Falha ao gerar a pré-visualização."))
       .finally(() => setGerandoPrevia(false));
+  }
+
+  function fecharPrevia() {
+    if (previa) URL.revokeObjectURL(previa.url);
+    setPrevia(null);
   }
 
   return (
     <ExportAtoContext.Provider value={exportarAto}>
     <div className="space-y-4">
-      {/* Cabeçalho */}
-      <div className="surface p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="tabular text-xs text-muted-foreground">
+      {/* Cabeçalho do processo (estilo eproc): identificação à esquerda, prescrição e portaria à direita */}
+      <div className="surface flex flex-wrap items-start justify-between gap-4 p-5">
+        <div className="min-w-0 space-y-1.5">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Processo</div>
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <h2 className="font-serif text-2xl">
               <NumeroProcedimento d={denuncia} />
-              {denuncia.numero_procedimento && (
-                <span className="ml-2 opacity-70">Protocolo: {denuncia.numero_protocolo}</span>
-              )}
-              {!denuncia.numero_procedimento && cargo && CARGOS_INSTAURACAO.includes(cargo) && (
-                <span className="ml-3 inline-block align-middle">
-                  <InstaurarProcedimentoBotao denunciaId={denuncia.id} />
-                </span>
-              )}
-            </div>
-            <div className="mt-1 flex flex-wrap items-center gap-2">
+            </h2>
+            {denuncia.numero_procedimento && (
+              <span className="tabular font-mono text-xs text-muted-foreground">Protocolo {denuncia.numero_protocolo}</span>
+            )}
+            {!denuncia.numero_procedimento && cargo && CARGOS_INSTAURACAO.includes(cargo) && (
+              <InstaurarProcedimentoBotao denunciaId={denuncia.id} />
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
               <StatusBadge status={status} />
               <NaturezaInline
                 denunciaId={denuncia.id}
@@ -834,8 +856,8 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
               {isInternoCorregedoria && (
                 <ObservacoesIndicador denunciaId={denuncia.id} numero={(denuncia.numero_procedimento ?? denuncia.numero_protocolo)} />
               )}
-            </div>
-            <div className="mt-2">
+          </div>
+          <div>
               <TarjasManager
                 denunciaId={denuncia.id}
                 tarjas={((data.tarjas ?? []) as { id: string; cor: string; texto: string }[]).map((t) => ({
@@ -845,10 +867,95 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 }))}
                 podeEditar={cargo === "corregedor_geral" || cargo === "corregedor" || (cargo === "subcorregedor_geral" || cargo === "corregedor_supervisor")}
               />
-            </div>
-
           </div>
-          <div className="flex items-center gap-2">
+        </div>
+        <div className="flex flex-wrap items-stretch gap-2.5">
+          <RelogioPrescricao
+            termo_inicial={denuncia.termo_inicial}
+            acrescimos_dias={denuncia.acrescimos_dias}
+            status={status}
+            interrupcoes_count={denuncia.interrupcoes_count}
+            variant="compact"
+          />
+          <div className="flex min-w-[170px] flex-col gap-0.5 rounded-lg border border-border bg-background/40 px-3.5 py-2.5">
+            <span className="text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">
+              {isApfd ? "APFD" : "Portaria"}
+            </span>
+            <span className="flex items-center gap-1.5 text-sm font-semibold">
+              <span className={`h-2 w-2 rounded-full ${portariaMov ? "bg-emerald-500" : "bg-amber-500"}`} aria-hidden />
+              {portariaMov
+                ? `Lavrad${isApfd ? "o" : "a"} em ${new Date(portariaMov.criado_em).toLocaleDateString("pt-BR")}`
+                : `Não lavrad${isApfd ? "o" : "a"}`}
+            </span>
+            <span className="text-[11px] text-muted-foreground">
+              {portariaMov ? "Prescrição interrompida" : "Lavrar interrompe a prescrição"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Ações do processo */}
+      <nav aria-label="Ações do processo" className="surface flex flex-wrap items-center gap-1.5 px-4 py-2.5">
+        <span className="mr-1.5 text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">Ações</span>
+        <button
+          onClick={() => {
+            if (!denuncia.numero_procedimento) {
+              toast.error(isApfd ? "Instaure o procedimento antes de lavrar o APFD." : "Instaure o procedimento (IPM, Sindicância ou APFD) antes de lavrar a Portaria.");
+              return;
+            }
+            if (portariaMov) {
+              if (
+                !window.confirm(
+                  isApfd ? "Já existe um APFD lavrado. Lavrar outro irá interromper o prazo novamente. Deseja prosseguir?" : "Já existe uma portaria lavrada. Lavrar outra irá interromper o prazo novamente. Deseja prosseguir?",
+                )
+              )
+                return;
+            }
+            setDialog({ kind: "portaria" });
+          }}
+          disabled={suspenso}
+          className={portariaMov
+            ? "inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2 disabled:opacity-40"
+            : "inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-40"}
+        >
+          <Stamp className="h-3.5 w-3.5" aria-hidden />
+          {isApfd ? (portariaMov ? "Lavrar novo APFD" : "Lavrar APFD") : portariaMov ? "Lavrar nova portaria" : "Lavrar portaria"}
+        </button>
+        {portariaMov && (
+          <button
+            onClick={() =>
+              setDialog({
+                kind: "verAto",
+                movimentoId: portariaMov.id,
+                especie: "portaria",
+                teor: portariaMov.teor,
+                quando: portariaMov.criado_em,
+                prolator: portariaMov.prolator_nome,
+                cargo: portariaMov.prolator_cargo as string,
+                portariaDados: portariaMov.portaria_dados,
+              })
+            }
+            className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2 disabled:opacity-40"
+          >
+            <Eye className="h-3.5 w-3.5" aria-hidden /> {isApfd ? "Ver APFD" : "Ver portaria"}
+          </button>
+        )}
+        <button
+          onClick={() => setDialog({ kind: "convocacao" })}
+          disabled={suspenso}
+          className="inline-flex items-center gap-1.5 rounded-md border border-primary/60 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 disabled:opacity-40"
+        >
+          Expedir convocação
+        </button>
+        <button
+          onClick={() => setDialog({ kind: "prorrogar" })}
+          disabled={suspenso}
+          title="Prorrogar o prazo em 30 dias (remarcação de oitiva)"
+          className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2 disabled:opacity-40"
+        >
+          Prorrogar +30 dias
+        </button>
+        <span className="mx-1 hidden h-5 w-px bg-border sm:block" aria-hidden />
             <button
               onClick={() => setDialog({ kind: "status" })}
               className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
@@ -891,6 +998,13 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 Certificar trânsito administrativo
               </button>
             )}
+        <button
+          onClick={() => setDialog({ kind: "oitiva" })}
+          className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2 disabled:opacity-40"
+        >
+          Juntar oitiva
+        </button>
+        <span className="mx-1 hidden h-5 w-px bg-border sm:block" aria-hidden />
             {(cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || (cargo === "subcorregedor_geral" || cargo === "corregedor_supervisor")) && (
               <ExportarProcessoBtn
                 denuncia={denuncia}
@@ -898,6 +1012,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 movimentos={movimentos as never}
               />
             )}
+        <span className="flex-1" aria-hidden />
             {podeExcluir && (
               <button
                 onClick={() => setDialog({ kind: "excluir" })}
@@ -907,30 +1022,59 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 <Trash2 className="h-3.5 w-3.5" /> Excluir
               </button>
             )}
-          </div>
-        </div>
-      </div>
+      </nav>
 
-      {/* Ficha + relógio */}
-      <div className="grid gap-4 md:grid-cols-[1fr_260px]">
-        <div className="surface p-5">
-          <h3 className="font-serif text-lg">Ficha</h3>
-          <div className="mt-3 grid gap-2 text-sm">
-            <Row k="Denunciante">
-              <DenunciantesBlock
-                principal={{
-                  nome: denuncia.denunciante_nome ?? null,
-                  identificador: (denuncia as { denunciante_identificador?: string | null }).denunciante_identificador ?? null,
-                  contato: (denuncia as { denunciante_contato?: string | null }).denunciante_contato ?? null,
-                  anonimo: !!denuncia.denunciante_anonimo,
-                }}
-                adicionais={((data as { denunciantesAdicionais?: DenuncianteAdicional[] }).denunciantesAdicionais ?? [])}
-                denunciaId={denuncia.id}
-                podeGerenciar={cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || (cargo === "subcorregedor_geral" || cargo === "corregedor_supervisor")}
-                onChanged={() => qc.invalidateQueries({ queryKey: ["denuncia", id] })}
-              />
-            </Row>
-            <Row k="Policiais">
+      {/* Capa do processo */}
+      <div className="surface overflow-hidden">
+        <div className="border-b border-border px-5 py-3">
+          <h3 className="font-serif text-lg">Capa do processo</h3>
+        </div>
+        <div className="grid lg:grid-cols-2">
+          <dl className="border-b border-border text-sm lg:border-b-0 lg:border-r">
+            <CapaLinha k="Natureza">{denuncia.ocorrencia_tipo || "—"}</CapaLinha>
+            <CapaLinha k="Ocorrência">
+              {denuncia.ocorrencia_data
+                ? new Date(denuncia.ocorrencia_data).toLocaleDateString("pt-BR")
+                : "—"}{" "}
+              {denuncia.ocorrencia_hora ?? ""}
+              {denuncia.ocorrencia_local && (
+                <span className="text-muted-foreground"> · {denuncia.ocorrencia_local}</span>
+              )}
+            </CapaLinha>
+            <CapaLinha k="Instaurada">
+              {denuncia.instaurada_em
+                ? new Date(denuncia.instaurada_em).toLocaleDateString("pt-BR")
+                : "Não instaurada"}
+            </CapaLinha>
+            <CapaLinha k="Termo inicial" ultima>
+              <span className="tabular">{new Date(denuncia.termo_inicial).toLocaleDateString("pt-BR")}</span>
+            </CapaLinha>
+          </dl>
+          <div className="text-sm">
+            <div className="border-b border-border bg-background/40 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Partes
+            </div>
+            <div className="grid gap-2 border-b border-border px-4 py-3 sm:grid-cols-[120px_minmax(0,1fr)]">
+              <span className="pt-0.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Denunciante</span>
+              <div>
+                <DenunciantesBlock
+                  principal={{
+                    nome: denuncia.denunciante_nome ?? null,
+                    identificador: (denuncia as { denunciante_identificador?: string | null }).denunciante_identificador ?? null,
+                    contato: (denuncia as { denunciante_contato?: string | null }).denunciante_contato ?? null,
+                    anonimo: !!denuncia.denunciante_anonimo,
+                  }}
+                  adicionais={((data as { denunciantesAdicionais?: DenuncianteAdicional[] }).denunciantesAdicionais ?? [])}
+                  denunciaId={denuncia.id}
+                  podeGerenciar={cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || (cargo === "subcorregedor_geral" || cargo === "corregedor_supervisor")}
+                  onChanged={() => qc.invalidateQueries({ queryKey: ["denuncia", id] })}
+                />
+              </div>
+            </div>
+            <div className="grid gap-2 px-4 py-3 sm:grid-cols-[120px_minmax(0,1fr)]">
+              <span className="pt-0.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {policiais.length > 1 ? "Denunciados" : "Denunciado"}
+              </span>
               <div className="flex flex-col gap-1">
                 {policiais.map((p) => (
                   <div key={p.id} className="flex items-center gap-2">
@@ -984,36 +1128,20 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                   </button>
                 )}
               </div>
-            </Row>
-
-            <Row k="Ocorrência">
-              {denuncia.ocorrencia_data
-                ? new Date(denuncia.ocorrencia_data).toLocaleDateString("pt-BR")
-                : "—"}{" "}
-              {denuncia.ocorrencia_hora ?? ""}
-              {denuncia.ocorrencia_local && (
-                <span className="text-muted-foreground"> · {denuncia.ocorrencia_local}</span>
-              )}
-            </Row>
-            <Row k="Instaurada">
-              {denuncia.instaurada_em
-                ? new Date(denuncia.instaurada_em).toLocaleDateString("pt-BR")
-                : "Não instaurada"}
-            </Row>
-            <Row k="Termo inicial">
-              <span className="tabular">
-                {new Date(denuncia.termo_inicial).toLocaleDateString("pt-BR")}
-              </span>
-            </Row>
+            </div>
           </div>
-
-          <div className="mt-4 border-t border-border pt-4">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Relato</div>
-            <p className="mt-2 whitespace-pre-wrap text-sm">{denuncia.relato}</p>
-          </div>
-
+        </div>
+        <details className="group border-t border-border px-5 py-3">
+          <summary className="flex cursor-pointer list-none items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground">
+            <ChevronRight className="h-3.5 w-3.5 text-primary transition-transform group-open:rotate-90" aria-hidden />
+            Relato da denúncia{(denuncia.links as string[]).length > 0 ? " e links" : ""}
+            <span className="ml-2 hidden min-w-0 flex-1 truncate font-normal normal-case tracking-normal text-muted-foreground/80 group-open:hidden sm:inline">
+              {denuncia.relato}
+            </span>
+          </summary>
+          <p className="mt-2 whitespace-pre-wrap text-sm">{denuncia.relato}</p>
           {(denuncia.links as string[]).length > 0 && (
-            <div className="mt-4 border-t border-border pt-4">
+            <div className="mt-3">
               <div className="text-xs uppercase tracking-wider text-muted-foreground">Links</div>
               <ul className="mt-2 space-y-1 text-sm">
                 {(denuncia.links as string[]).map((l, i) => (
@@ -1031,101 +1159,15 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
               </ul>
             </div>
           )}
-        </div>
-
-        <div className="space-y-3">
-          <RelogioPrescricao
-            termo_inicial={denuncia.termo_inicial}
-            acrescimos_dias={denuncia.acrescimos_dias}
-            status={status}
-            interrupcoes_count={denuncia.interrupcoes_count}
-            variant="block"
-          />
-          {(() => {
-            const portariaMov = movimentos.find((m) => m.especie === "portaria");
-            return (
-              <div className="rounded-md border border-border p-3">
-                <div className="flex items-center gap-2 text-xs font-medium">
-                  <Stamp className="h-3.5 w-3.5" /> {isApfd ? "Auto de Prisão em Flagrante Delito" : "Portaria Inaugural"}
-                </div>
-                <div className="mt-0.5 text-[10px] text-muted-foreground">
-                  {portariaMov
-                    ? "Já lavrada — interrompe a prescrição"
-                    : "Instaura o PAD e interrompe a prescrição"}
-                </div>
-                <div className="mt-2 flex flex-col gap-1.5">
-                  {portariaMov && (
-                    <button
-                      onClick={() =>
-                        setDialog({
-                          kind: "verAto",
-                          movimentoId: portariaMov.id,
-                          especie: "portaria",
-                          teor: portariaMov.teor,
-                          quando: portariaMov.criado_em,
-                          prolator: portariaMov.prolator_nome,
-                          cargo: portariaMov.prolator_cargo as string,
-                           portariaDados: portariaMov.portaria_dados,
-                        })
-                      }
-                      className="flex items-center justify-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
-                    >
-                      <Eye className="h-3.5 w-3.5" /> {isApfd ? "Ver APFD" : "Ver portaria"}
-                    </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      if (!denuncia.numero_procedimento) {
-                        toast.error(isApfd ? "Instaure o procedimento antes de lavrar o APFD." : "Instaure o procedimento (IPM, Sindicância ou APFD) antes de lavrar a Portaria.");
-                        return;
-                      }
-                      if (portariaMov) {
-                        if (
-                          !window.confirm(
-                            isApfd ? "Já existe um APFD lavrado. Lavrar outro irá interromper o prazo novamente. Deseja prosseguir?" : "Já existe uma portaria lavrada. Lavrar outra irá interromper o prazo novamente. Deseja prosseguir?",
-                          )
-                        )
-                          return;
-                      }
-                      setDialog({ kind: "portaria" });
-                    }}
-                    disabled={suspenso}
-                    className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-40"
-                  >
-                    {isApfd ? (portariaMov ? "Lavrar novo APFD" : "Lavrar APFD") : portariaMov ? "Lavrar nova portaria" : "Lavrar portaria"}
-                  </button>
-                  <button
-                    onClick={() => setDialog({ kind: "convocacao" })}
-                    disabled={suspenso}
-                    className="rounded-md border border-primary/60 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 disabled:opacity-40"
-                  >
-                    Expedir Convocação
-                  </button>
-                </div>
-              </div>
-            );
-          })()}
-          <button
-            onClick={() => setDialog({ kind: "prorrogar" })}
-            disabled={suspenso}
-            className="w-full rounded-md border border-border px-3 py-2 text-xs hover:bg-surface-2 disabled:opacity-40"
-          >
-            Prorrogar (+30 dias)
-            <div className="text-[10px] text-muted-foreground">remarcação de oitiva</div>
-          </button>
-        </div>
+        </details>
       </div>
 
       {/* Oitivas */}
       <div className="surface p-5">
         <div className="flex items-center justify-between">
-          <h3 className="font-serif text-lg">Oitivas juntadas</h3>
-          <button
-            onClick={() => setDialog({ kind: "oitiva" })}
-            className="rounded-md border border-border px-3 py-1 text-xs hover:bg-surface-2"
-          >
-            Juntar oitiva
-          </button>
+          <h3 className="font-serif text-lg">
+            Oitivas juntadas <span className="font-sans text-sm text-muted-foreground">({oitivas.length})</span>
+          </h3>
         </div>
         <ul className="mt-3 space-y-1 text-sm">
           {oitivas.length === 0 && (
@@ -1170,22 +1212,30 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
 
       {/* Formulário de ato — painel "Movimentar processo" (estilo eproc) */}
       <div className="surface overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
-          <div>
-            <h3 className="font-serif text-lg">Lançar ato</h3>
-            <p className="text-xs text-muted-foreground">
-              Movimentar processo · escolha o tipo de evento e redija o teor
-            </p>
-          </div>
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-muted-foreground">Próximo evento</span>
-            <span className="rounded-md border border-primary/40 bg-primary/10 px-2 py-0.5 font-mono font-semibold text-primary">
-              EVENTO Nº {proximoEventoLabel}
+        <button
+          type="button"
+          onClick={() => setLancarAberto((v) => !v)}
+          aria-expanded={lancarAberto}
+          className="flex w-full flex-wrap items-center gap-3 px-5 py-4 text-left transition hover:bg-surface-2/40"
+        >
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-primary/40 bg-primary/10 text-primary">
+            <ChevronRight className={`h-4 w-4 transition-transform ${lancarAberto ? "rotate-90" : ""}`} aria-hidden />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-serif text-lg">Lançar ato</span>
+            <span className="block text-xs text-muted-foreground">
+              {especieAtual && !lancarAberto
+                ? `Rascunho em andamento: ${rotuloAto(especieAtual.v, especieAtual.l)} — clique para continuar`
+                : "Movimentar processo · despacho, decisão, certidão, ata ou solução"}
             </span>
-          </div>
-        </div>
+          </span>
+          <span className="rounded-md border border-primary/40 bg-primary/10 px-2 py-0.5 font-mono text-xs font-semibold text-primary">
+            PRÓXIMO: EVENTO Nº {proximoEventoLabel}
+          </span>
+        </button>
 
-        <div className="grid md:grid-cols-[280px_minmax(0,1fr)]">
+        {lancarAberto && (
+        <div className="grid border-t border-border md:grid-cols-[280px_minmax(0,1fr)]">
           <aside className="space-y-4 border-b border-border bg-background/40 p-3 md:border-b-0 md:border-r">
             <label className="flex items-center gap-2 rounded-md border border-border bg-surface-2 px-2.5 py-2">
               <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
@@ -1237,8 +1287,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
               <p className="px-2 text-xs text-muted-foreground">Nenhum tipo de ato encontrado.</p>
             )}
             <p className="px-2 text-[11px] leading-relaxed text-muted-foreground">
-              {isApfd ? "APFD" : "Portaria"}, convocação e prorrogação continuam no quadro ao lado dos dados do
-              processo.
+              {isApfd ? "APFD" : "Portaria"}, convocação e prorrogação ficam na barra de Ações, no topo do processo.
             </p>
           </aside>
 
@@ -1450,7 +1499,46 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
             )}
           </div>
         </div>
+        )}
       </div>
+
+      {previa && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col bg-black/75 p-3 sm:p-6"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Pré-visualização do PDF"
+          onClick={(ev) => {
+            if (ev.target === ev.currentTarget) fecharPrevia();
+          }}
+        >
+          <div className="mx-auto flex h-full w-full max-w-5xl flex-col overflow-hidden rounded-lg border border-border bg-surface">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
+              <div>
+                <div className="text-sm font-semibold">Pré-visualização — Evento nº {proximoEventoLabel}</div>
+                <div className="text-xs text-muted-foreground">Nada foi lançado. Feche para continuar editando.</div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => previa.baixar()}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-surface-2"
+                >
+                  <Download className="h-4 w-4" aria-hidden /> Baixar PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={fecharPrevia}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
+                >
+                  <X className="h-4 w-4" aria-hidden /> Fechar
+                </button>
+              </div>
+            </div>
+            <iframe title="Pré-visualização do PDF" src={previa.url} className="min-h-0 w-full flex-1 bg-white" />
+          </div>
+        </div>
+      )}
 
 
       {/* Timeline */}
@@ -1947,6 +2035,18 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
       <style>{`.input{background:var(--input);border:1px solid var(--border);border-radius:6px;padding:.55rem .7rem;font-size:.9rem;color:var(--foreground);width:100%}`}</style>
     </div>
      </ExportAtoContext.Provider>
+  );
+}
+
+/** Linha da "Capa do processo": rótulo à esquerda (fundo escuro) e valor à direita, estilo eproc. */
+function CapaLinha({ k, children, ultima = false }: { k: string; children: React.ReactNode; ultima?: boolean }) {
+  return (
+    <div className={`grid grid-cols-[130px_minmax(0,1fr)] ${ultima ? "" : "border-b border-border"}`}>
+      <dt className="bg-background/40 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {k}
+      </dt>
+      <dd className="px-4 py-2.5">{children}</dd>
+    </div>
   );
 }
 

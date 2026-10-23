@@ -265,7 +265,7 @@ function alinharLocalData(paragrafos: Paragraph[]): Paragraph[] {
       .join("")
       .trim();
     if (p.align !== "center" && /^S[ãa]o Paulo\s*\/\s*SP\s*,.{3,60}\d{4}\.?$/i.test(t)) {
-      return { ...p, align: "right" as const };
+      return { ...p, align: "right" as const, textIndent: 0 };
     }
     return p;
   });

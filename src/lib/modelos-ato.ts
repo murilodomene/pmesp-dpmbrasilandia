@@ -2,7 +2,8 @@
  * Modelos de texto do painel "Lançar ato" (campo "Modelo de texto").
  *
  * Cada modelo é escrito em texto simples:
- * - parágrafos separados por linha em branco;
+ * - parágrafos separados por linha em branco (no ato, viram parágrafos
+ *   com uma linha em branco entre eles);
  * - **trecho** vira negrito;
  * - {PROCEDIMENTO}, {DENUNCIADO} e {DATA_EXTENSO} são preenchidos sozinhos;
  * - o que estiver entre [colchetes] é para o usuário completar.
@@ -96,7 +97,7 @@ Cumpra-se.`,
       nome: "Conclusão para Solução",
       texto: `Vistos.
 
-Encerrada a instrução do {PROCEDIMENTO}, façam-se os autos conclusos ao Corregedor-Geral para elaboração da Solução.
+Encerrada a instrução do {PROCEDIMENTO}, façam-se os autos conclusos para elaboração da Solução.
 
 Cumpra-se.`,
     },
@@ -371,7 +372,8 @@ export function aplicarModelo(modelo: ModeloAto, campos: CamposModelo): string {
         escapar(valores[k]),
       );
       html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-      return `<p style="text-align: justify">${html}</p>`;
+      return `<p style="text-align: justify; line-height: 1.15">${html}</p>`;
     })
-    .join("");
+    // Linha em branco entre parágrafos, como nos atos digitados à mão.
+    .join("<p></p>");
 }

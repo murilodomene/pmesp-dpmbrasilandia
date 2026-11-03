@@ -43,6 +43,7 @@ import {
   type StatusMinuta,
 } from "@/lib/minutas.functions";
 import { montarTeorAto, textoCurto } from "@/lib/teor-ato";
+import { listOficios, type Oficio } from "@/lib/oficios.functions";
 import { previsualizarAtoPdf, type PreviaAtoPdf } from "@/lib/exportProcesso";
 import { ROLE_LABELS, isAdminRole, isInternalRole } from "@/lib/access-roles";
 import { OPMS } from "@/lib/personnel-options";
@@ -55,7 +56,15 @@ export const Route = createFileRoute("/_authenticated/minutas")({
 /* ---------- categorias ---------- */
 
 type Categoria =
-  "despacho" | "decisao" | "certidao" | "ata" | "portaria" | "solucao" | "apfd" | "mandado";
+  | "despacho"
+  | "decisao"
+  | "certidao"
+  | "ata"
+  | "portaria"
+  | "solucao"
+  | "apfd"
+  | "mandado"
+  | "oficio";
 
 const CATEGORIAS: { id: Categoria; rotulo: string }[] = [
   { id: "despacho", rotulo: "Despacho" },
@@ -66,10 +75,12 @@ const CATEGORIAS: { id: Categoria; rotulo: string }[] = [
   { id: "solucao", rotulo: "IPM / Solução" },
   { id: "apfd", rotulo: "Atos do APFD" },
   { id: "mandado", rotulo: "Mandado" },
+  { id: "oficio", rotulo: "Ofício" },
 ];
 
 function categoriaDe(especie: string): Categoria {
   if (especie === "ipc") return "solucao";
+  if (especie === "oficio") return "oficio";
   if (
     especie === "nota_culpa" ||
     especie === "termo_declaracoes" ||
@@ -81,6 +92,8 @@ function categoriaDe(especie: string): Categoria {
 
 function rotuloAto(especie: string, tipo: string | null | undefined): string {
   switch (especie) {
+    case "oficio":
+      return "Ofício";
     case "despacho":
       return "Despacho";
     case "decisao":
@@ -149,6 +162,50 @@ function StatusChip({ status }: { status: StatusMinuta }) {
   );
 }
 
+/** Ofício em assinatura no formato da lista de minutas. */
+function oficioComoMinuta(o: Oficio): Minuta {
+  const status = (
+    {
+      aguardando_assinatura: "pendente",
+      devolvido: "devolvida",
+      expedido: "assinada",
+      cancelado: "cancelada",
+    } as const
+  )[o.status];
+  return {
+    id: o.id,
+    denuncia_id: o.denuncia_id ?? "",
+    especie: "oficio" as Minuta["especie"],
+    teor: `${o.assunto} — ${o.corpo}`,
+    dados: {},
+    anexos: [],
+    autor_id: o.redator_id,
+    autor_nome: o.redator_nome,
+    autor_posto: o.redator_posto,
+    autor_cargo: o.redator_cargo,
+    destinatarios: o.destinatarios,
+    recado: o.recado,
+    status,
+    observacao_devolucao: o.observacao_devolucao,
+    devolvida_por_nome: o.devolvido_por_nome,
+    assinada_por_id: o.signatario_id,
+    assinada_por_nome: o.signatario_nome
+      ? [o.signatario_posto, o.signatario_nome].filter(Boolean).join(" ")
+      : null,
+    assinada_em: o.expedido_em,
+    movimento_id: o.movimento_id,
+    criado_em: o.criado_em,
+    atualizado_em: o.atualizado_em,
+    denuncias: {
+      numero_procedimento: o.numero
+        ? `Ofício ${o.numero.replace(/^CORREGPM\s*/i, "")}`
+        : (o.destinatario.split("\n")[0] ?? "Ofício"),
+      numero_protocolo: "",
+      tipo_procedimento: null,
+    },
+  };
+}
+
 /* ---------- página ---------- */
 
 type Aba = "assinar" | "enviadas" | "assinadas" | "devolvidas" | "todas";
@@ -173,6 +230,14 @@ function MinutasPage() {
     queryFn: () => assinantesFn(),
     enabled: interno,
   });
+  // Ofícios encaminhados para assinatura entram aqui na categoria "Ofício".
+  const oficiosFn = useServerFn(listOficios);
+  const { data: dadosOficios } = useQuery({
+    queryKey: ["oficios"],
+    queryFn: () => oficiosFn(),
+    enabled: interno,
+    retry: false,
+  });
 
   if (session && !interno) {
     return (
@@ -185,10 +250,13 @@ function MinutasPage() {
     );
   }
 
-  const minutas = data?.minutas ?? [];
+  const minutas = [
+    ...(data?.minutas ?? []),
+    ...(dadosOficios?.oficios ?? []).filter((o) => o.destinatarios.length).map(oficioComoMinuta),
+  ].sort((a, b) => b.atualizado_em.localeCompare(a.atualizado_em));
   const uid = session?.userId ?? "";
   const nomes = new Map((assinantes ?? []).map((a) => [a.id, a]));
-  const aberta = id ? (minutas.find((m) => m.id === id) ?? null) : null;
+  const aberta = id ? ((data?.minutas ?? []).find((m) => m.id === id) ?? null) : null;
 
   return (
     <div className="min-h-screen">
@@ -376,7 +444,11 @@ function ListaMinutas({
                     <li key={m.id}>
                       <button
                         type="button"
-                        onClick={() => navigate({ to: "/minutas", search: { id: m.id } })}
+                        onClick={() =>
+                          m.especie === ("oficio" as string)
+                            ? navigate({ to: "/oficios", search: { id: m.id } })
+                            : navigate({ to: "/minutas", search: { id: m.id } })
+                        }
                         className="grid w-full gap-x-4 gap-y-1 px-4 py-3 text-left text-sm transition hover:bg-surface-2 md:grid-cols-[170px_minmax(0,1fr)_200px_150px_auto] md:items-center"
                       >
                         <span className="min-w-0">

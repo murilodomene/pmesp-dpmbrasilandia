@@ -100,6 +100,8 @@ export function NotificacoesBell() {
                     ? "/avisos"
                     : /^Minuta\b/.test(n.titulo ?? "")
                       ? "/minutas"
+                      : /^Of[íi]cio\b/.test(n.titulo ?? "")
+                        ? "/oficios"
                       : n.denuncia_id
                       ? `/corregedoria?id=${n.denuncia_id}`
                       : "/painel";

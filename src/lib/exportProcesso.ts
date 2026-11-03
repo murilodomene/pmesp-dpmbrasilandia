@@ -701,3 +701,21 @@ export async function exportAvisoPdf(aviso: PdfAviso): Promise<void> {
   const pdf = await gerarAvisoPdf(aviso, assets);
   pdf.save(nomeArquivoAviso(aviso.numero));
 }
+
+/** Ofício no timbre oficial: baixa o PDF. */
+export async function exportOficioPdf(oficio: import("@/lib/pdf/oficio-pdf").PdfOficio): Promise<void> {
+  const { gerarOficioPdf, nomeArquivoOficio } = await import("@/lib/pdf/oficio-pdf");
+  const brasao = await carregarImagemPublica("/pdf/brasao-ssp.png");
+  const pdf = await gerarOficioPdf(oficio, brasao);
+  pdf.save(nomeArquivoOficio(oficio.numero));
+}
+
+/** Ofício em PDF como endereço temporário (blob) para mostrar numa janela da própria página. */
+export async function previaOficioPdf(oficio: import("@/lib/pdf/oficio-pdf").PdfOficio): Promise<PreviaAtoPdf> {
+  const { gerarOficioPdf, nomeArquivoOficio } = await import("@/lib/pdf/oficio-pdf");
+  const brasao = await carregarImagemPublica("/pdf/brasao-ssp.png");
+  const pdf = await gerarOficioPdf(oficio, brasao);
+  const nome = nomeArquivoOficio(oficio.numero);
+  const url = URL.createObjectURL(pdf.output("blob") as Blob);
+  return { url, nome, baixar: () => pdf.save(nome) };
+}

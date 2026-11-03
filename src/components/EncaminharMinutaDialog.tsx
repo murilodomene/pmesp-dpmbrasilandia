@@ -26,6 +26,8 @@ export function EncaminharMinutaDialog({
   minuta,
   onClose,
   onDone,
+  enviar,
+  papel = "Escrivão",
 }: {
   denunciaId: string;
   procedimento: string;
@@ -41,6 +43,10 @@ export function EncaminharMinutaDialog({
   minuta?: { id: string; destinatarios: string[]; recado: string | null };
   onClose: () => void;
   onDone?: () => void;
+  /** Envio próprio (ex.: ofícios); sem ele, grava como minuta de ato. */
+  enviar?: (destinatarios: string[], recado: string | null) => Promise<unknown>;
+  /** Como quem encaminha consta no documento assinado. */
+  papel?: string;
 }) {
   const qc = useQueryClient();
   const sessionFn = useServerFn(getSessionInfo);
@@ -76,15 +82,17 @@ export function EncaminharMinutaDialog({
 
   const m = useMutation({
     mutationFn: async () => {
+      if (enviar) {
+        await enviar(marcados, recado.trim() || null);
+        return;
+      }
       const c = conteudo();
       const payload = { ...c, destinatarios: marcados, recado: recado.trim() || null };
       if (minuta) await reenviarFn({ data: { minuta_id: minuta.id, ...payload } });
       else await encaminharFn({ data: { denuncia_id: denunciaId, ...payload } });
     },
     onSuccess: () => {
-      toast.success(
-        minuta ? "Minuta reenviada para assinatura." : "Minuta encaminhada para assinatura.",
-      );
+      toast.success(minuta ? "Reenviado para assinatura." : "Encaminhado para assinatura.");
       qc.invalidateQueries({ queryKey: ["minutas"] });
       qc.invalidateQueries({ queryKey: ["minutas-pendentes"] });
       onDone?.();
@@ -199,7 +207,7 @@ export function EncaminharMinutaDialog({
             <UserRound className="h-4 w-4 shrink-0" aria-hidden />
             <span>
               Você{meuNome ? ` (${meuNome})` : ""} constará como{" "}
-              <strong className="text-foreground">Escrivão</strong> no ato assinado.
+              <strong className="text-foreground">{papel}</strong> no documento assinado.
             </span>
           </div>
         </div>

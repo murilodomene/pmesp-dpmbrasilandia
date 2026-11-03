@@ -53,17 +53,19 @@ import { OPMS } from "@/lib/personnel-options";
 
 
 import { getSessionInfo } from "@/lib/usuarios.functions";
-import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2, Download, ShieldCheck, Bell, MessageSquare, Copy, Mic, Plus, Search, Lock, ScrollText, ChevronRight, Send, UserRound } from "lucide-react";
+import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2, Download, ShieldCheck, Bell, MessageSquare, Copy, Mic, Plus, Search, Lock, ScrollText, ChevronRight, Send, UserRound, Mail } from "lucide-react";
 import { aplicarModelo, modelosDe } from "@/lib/modelos-ato";
 import { montarTeorAto } from "@/lib/teor-ato";
 import { DocumentTemplate, exportDocumentToPdf, useDocumentRef } from "@/components/DocumentTemplate";
 import { RichTextEditor, isHtmlAto, sanitizeAtoHtml } from "@/components/RichTextEditor";
-import { exportAtoPdfV2, exportProcessoCompleto, exportProcessoCompletoV2, previsualizarAtoPdf, type PreviaAtoPdf } from "@/lib/exportProcesso";
+import { exportAtoPdfV2, exportOficioPdf, exportProcessoCompleto, exportProcessoCompletoV2, previsualizarAtoPdf, type PreviaAtoPdf } from "@/lib/exportProcesso";
 import { ExportAtoContext, useExportarAto } from "@/components/ExportAtoContext";
 import { AtoAnexosUploader, type AtoAnexo } from "@/components/AtoAnexosUploader";
 import { AtoAnexosLinks } from "@/components/AtoAnexosLinks";
 import { IntimarDialog } from "@/components/IntimarDialog";
 import { EncaminharMinutaDialog } from "@/components/EncaminharMinutaDialog";
+import { getOficio } from "@/lib/oficios.functions";
+import { pdfDoOficio } from "@/lib/pdf/oficio-pdf";
 import { TarjasManager, TarjasStrip, type CorTarja } from "@/components/Tarja";
 import { PortariaTemplate, exportPortariaToPdf, isPortariaDados, type PortariaDados } from "@/components/PortariaTemplate";
 
@@ -559,6 +561,19 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
   const [previa, setPrevia] = useState<PreviaAtoPdf | null>(null);
   const [lancarAberto, setLancarAberto] = useState(false);
   const [encaminhando, setEncaminhando] = useState(false);
+  const getOficioFn = useServerFn(getOficio);
+  const [baixandoOficio, setBaixandoOficio] = useState<string | null>(null);
+  async function baixarOficio(numero: string) {
+    setBaixandoOficio(numero);
+    try {
+      const o = await getOficioFn({ data: { numero } });
+      await exportOficioPdf(pdfDoOficio(o));
+    } catch (e) {
+      toast.error((e as Error)?.message || "Falha ao gerar o PDF do ofício.");
+    } finally {
+      setBaixandoOficio(null);
+    }
+  }
   // Esc fecha a pré-visualização do PDF.
   useEffect(() => {
     if (!previa) return;
@@ -942,6 +957,16 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
         >
           Expedir convocação
         </button>
+        {isInternoCorregedoria && (
+          <Link
+            to="/oficios"
+            search={{ novo: true, processo: id }}
+            title="Redigir um ofício vinculado a este processo"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
+          >
+            <Mail className="h-3.5 w-3.5" aria-hidden /> Expedir ofício
+          </Link>
+        )}
         <button
           onClick={() => setDialog({ kind: "prorrogar" })}
           disabled={suspenso}
@@ -1667,6 +1692,20 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 <Trash2 className="h-3.5 w-3.5" /> Excluir
               </button>
             );
+            const numeroOficio =
+              m.especie === "evento" && typeof m.teor === "string"
+                ? (m.teor.match(/^\s*Expedido o Of[íi]cio nº (CORREGPM \d{3}\/360\/\d{2})/)?.[1] ?? null)
+                : null;
+            const btnOficio = numeroOficio && (
+              <button
+                type="button"
+                onClick={() => baixarOficio(numeroOficio)}
+                disabled={baixandoOficio === numeroOficio}
+                className="inline-flex items-center gap-1 rounded-md border border-primary/50 bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
+              >
+                <Download className="h-3.5 w-3.5" aria-hidden /> {baixandoOficio === numeroOficio ? "Gerando..." : "PDF do ofício"}
+              </button>
+            );
             const btnTextoDiscord = m.especie === "mandado" && !canceladoEm && (
               <button
                 type="button"
@@ -1928,6 +1967,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                       {m.prolator_nome} · {cargoLabel(m.prolator_cargo as string)}
                     </span>
                     <div className="flex items-center gap-2">
+                      {btnOficio}
                       {btnCancelar}
                       {btnExcluirSilencioso}
                     </div>

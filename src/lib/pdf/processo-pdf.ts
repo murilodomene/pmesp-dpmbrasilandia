@@ -57,6 +57,9 @@ export interface PdfMovimento {
   motivo_cancelamento?: string | null;
   anexos?: Array<{ nome: string; path: string }> | null;
   portaria_dados?: unknown;
+  /** Quem redigiu a minuta e a encaminhou para assinatura. */
+  escrivao_nome?: string | null;
+  escrivao_posto?: string | null;
 }
 
 export interface PdfDenuncia {
@@ -455,6 +458,18 @@ class ProcessoPdf {
     if (cargo) w.texto(cargo.toUpperCase(), { size: 11, align: "center" });
   }
 
+  /** Linha do Escrivão (quem redigiu a minuta), abaixo da assinatura. */
+  escrivao(m: PdfMovimento): void {
+    const nomeBase = m.escrivao_nome?.trim();
+    if (!nomeBase) return;
+    const { w } = this;
+    const nome = [m.escrivao_posto?.trim(), nomeBase].filter(Boolean).join(" ");
+    w.pular(7);
+    w.garantir(5 * 2 + 1);
+    w.texto(nome.toUpperCase(), { size: 10, align: "center" });
+    w.texto("Escrivão", { size: 10, italic: true, align: "center" });
+  }
+
   avisoCancelado(m: PdfMovimento): void {
     if (!m.cancelado_em) return;
     const { w } = this;
@@ -700,6 +715,7 @@ class ProcessoPdf {
     w.pular(3.6);
     this.corpoChave(p.corpo);
     this.fechoChave(p.localData, p.signatarioNome, p.signatarioPosto);
+    this.escrivao(m);
   }
 
   /** Portaria mais recente (não cancelada) lavrada antes do movimento. */
@@ -774,6 +790,7 @@ class ProcessoPdf {
         cargoLabel(m.prolator_cargo),
       );
     }
+    this.escrivao(m);
   }
 
   async codigoDeBarras(
@@ -838,6 +855,7 @@ class ProcessoPdf {
         puro.toUpperCase().includes(m.prolator_nome.trim().toUpperCase()) &&
         /CORREGEDOR/i.test(puro.slice(-400)));
     if (!jaAssinado) this.assinatura(m);
+    this.escrivao(m);
 
     this.provas(m, numeroEvento);
   }

@@ -20,10 +20,10 @@ const STATUS_VALUES = [
 
 const UNIDADES = OPMS;
 
-const ESPECIES = ["despacho", "decisao", "ipc", "mandado", "ata", "certidao", "nota_culpa", "termo_declaracoes", "auto_interrogatorio"] as const;
+export const ESPECIES = ["despacho", "decisao", "ipc", "mandado", "ata", "certidao", "nota_culpa", "termo_declaracoes", "auto_interrogatorio"] as const;
 const ESPECIES_PORTARIA = "portaria" as const;
 
-const portariaDadosSchema = z.object({
+export const portariaDadosSchema = z.object({
   ipmNumero: z.string().trim().min(3).max(80),
   tipoProcedimento: z.enum(["ipm", "sindicancia", "apfd"]).optional(),
   dataInstauracao: z.string().trim().min(3).max(100),

@@ -13,9 +13,11 @@ import {
   Wrench,
   Menu,
   X,
+  FileSignature,
 } from "lucide-react";
 import { getSessionInfo } from "@/lib/usuarios.functions";
 import { listAvisos } from "@/lib/avisos.functions";
+import { contarMinutasParaAssinar } from "@/lib/minutas.functions";
 import { ROLE_LABELS, isAdminRole, isInternalRole } from "@/lib/access-roles";
 import { PMESP_CREST_URL } from "@/lib/branding";
 import { aoMudarAvisosVistos, avisosNaoVistos } from "@/lib/avisos-vistos";
@@ -52,6 +54,13 @@ export function AreaInternaLayout({ children }: { children: ReactNode }) {
     queryFn: () => avisosFn(),
     enabled: !!interno,
   });
+  const minutasFn = useServerFn(contarMinutasParaAssinar);
+  const { data: paraAssinar } = useQuery({
+    queryKey: ["minutas-pendentes"],
+    queryFn: () => minutasFn(),
+    enabled: !!interno,
+    refetchInterval: 60_000,
+  });
   const [novos, setNovos] = useState(0);
   useEffect(() => {
     const contar = () => setNovos(avisosNaoVistos((avisos ?? []).map((a: { id: string }) => a.id)).size);
@@ -70,6 +79,9 @@ export function AreaInternaLayout({ children }: { children: ReactNode }) {
       itens: [
         { to: "/painel", label: "Painel interno", icon: LayoutDashboard },
         { to: "/corregedoria", label: "Corregedoria", icon: Gavel },
+        ...(interno
+          ? [{ to: "/minutas", label: "Minutas", icon: FileSignature, badge: paraAssinar ? `${paraAssinar} p/ assinar` : null }]
+          : []),
         { to: "/pdo", label: "PDO", icon: Car },
       ],
     },

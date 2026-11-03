@@ -368,6 +368,93 @@ export type Database = {
         }
         Relationships: []
       }
+      minutas: {
+        Row: {
+          anexos: Json
+          assinada_em: string | null
+          assinada_por_id: string | null
+          assinada_por_nome: string | null
+          atualizado_em: string
+          autor_cargo: Database["public"]["Enums"]["app_role"]
+          autor_id: string
+          autor_nome: string
+          autor_posto: string | null
+          criado_em: string
+          dados: Json
+          denuncia_id: string
+          destinatarios: string[]
+          devolvida_por_nome: string | null
+          especie: Database["public"]["Enums"]["movimento_especie"]
+          id: string
+          movimento_id: string | null
+          observacao_devolucao: string | null
+          recado: string | null
+          status: Database["public"]["Enums"]["minuta_status"]
+          teor: string
+        }
+        Insert: {
+          anexos?: Json
+          assinada_em?: string | null
+          assinada_por_id?: string | null
+          assinada_por_nome?: string | null
+          atualizado_em?: string
+          autor_cargo: Database["public"]["Enums"]["app_role"]
+          autor_id: string
+          autor_nome: string
+          autor_posto?: string | null
+          criado_em?: string
+          dados?: Json
+          denuncia_id: string
+          destinatarios: string[]
+          devolvida_por_nome?: string | null
+          especie: Database["public"]["Enums"]["movimento_especie"]
+          id?: string
+          movimento_id?: string | null
+          observacao_devolucao?: string | null
+          recado?: string | null
+          status?: Database["public"]["Enums"]["minuta_status"]
+          teor: string
+        }
+        Update: {
+          anexos?: Json
+          assinada_em?: string | null
+          assinada_por_id?: string | null
+          assinada_por_nome?: string | null
+          atualizado_em?: string
+          autor_cargo?: Database["public"]["Enums"]["app_role"]
+          autor_id?: string
+          autor_nome?: string
+          autor_posto?: string | null
+          criado_em?: string
+          dados?: Json
+          denuncia_id?: string
+          destinatarios?: string[]
+          devolvida_por_nome?: string | null
+          especie?: Database["public"]["Enums"]["movimento_especie"]
+          id?: string
+          movimento_id?: string | null
+          observacao_devolucao?: string | null
+          recado?: string | null
+          status?: Database["public"]["Enums"]["minuta_status"]
+          teor?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "minutas_denuncia_id_fkey"
+            columns: ["denuncia_id"]
+            isOneToOne: false
+            referencedRelation: "denuncias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "minutas_movimento_id_fkey"
+            columns: ["movimento_id"]
+            isOneToOne: false
+            referencedRelation: "movimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       movimentos: {
         Row: {
           anexos: Json
@@ -377,6 +464,9 @@ export type Database = {
           cancelado_por_nome: string | null
           criado_em: string
           denuncia_id: string
+          escrivao_id: string | null
+          escrivao_nome: string | null
+          escrivao_posto: string | null
           especie: Database["public"]["Enums"]["movimento_especie"]
           id: string
           interrompe: boolean
@@ -397,6 +487,9 @@ export type Database = {
           cancelado_por_nome?: string | null
           criado_em?: string
           denuncia_id: string
+          escrivao_id?: string | null
+          escrivao_nome?: string | null
+          escrivao_posto?: string | null
           especie: Database["public"]["Enums"]["movimento_especie"]
           id?: string
           interrompe?: boolean
@@ -417,6 +510,9 @@ export type Database = {
           cancelado_por_nome?: string | null
           criado_em?: string
           denuncia_id?: string
+          escrivao_id?: string | null
+          escrivao_nome?: string | null
+          escrivao_posto?: string | null
           especie?: Database["public"]["Enums"]["movimento_especie"]
           id?: string
           interrompe?: boolean
@@ -833,6 +929,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assinar_minuta: {
+        Args: { _dados: Json; _minuta_id: string; _teor: string }
+        Returns: string
+      }
       buscar_internos: {
         Args: { _termo: string }
         Returns: {
@@ -929,6 +1029,43 @@ export type Database = {
       manutencao_limpar_observacoes: { Args: never; Returns: Json }
       manutencao_limpar_pdos: { Args: never; Returns: Json }
       manutencao_limpar_processos: { Args: never; Returns: Json }
+      cancelar_minuta: { Args: { _minuta_id: string }; Returns: undefined }
+      devolver_minuta: {
+        Args: { _minuta_id: string; _observacao: string }
+        Returns: undefined
+      }
+      encaminhar_minuta: {
+        Args: {
+          _anexos: Json
+          _dados: Json
+          _denuncia_id: string
+          _destinatarios: string[]
+          _especie: Database["public"]["Enums"]["movimento_especie"]
+          _recado: string
+          _teor: string
+        }
+        Returns: string
+      }
+      listar_assinantes_minuta: {
+        Args: never
+        Returns: {
+          cargo: Database["public"]["Enums"]["app_role"]
+          id: string
+          nome: string
+          posto_graduacao: string
+        }[]
+      }
+      reenviar_minuta: {
+        Args: {
+          _anexos: Json
+          _dados: Json
+          _destinatarios: string[]
+          _minuta_id: string
+          _recado: string
+          _teor: string
+        }
+        Returns: undefined
+      }
       marcar_notificacao_lida: {
         Args: { _notif_id: string }
         Returns: undefined
@@ -997,6 +1134,7 @@ export type Database = {
         | "nota_culpa"
         | "termo_declaracoes"
         | "auto_interrogatorio"
+      minuta_status: "pendente" | "assinada" | "devolvida" | "cancelada"
       notificacao_tipo: "auto" | "intimacao" | "aviso"
       profile_status: "pendente" | "ativo" | "inativo"
       tipo_procedimento: "ipm" | "sindicancia" | "apfd"
@@ -1183,6 +1321,7 @@ export const Constants = {
         "termo_declaracoes",
         "auto_interrogatorio",
       ],
+      minuta_status: ["pendente", "assinada", "devolvida", "cancelada"],
       notificacao_tipo: ["auto", "intimacao", "aviso"],
       profile_status: ["pendente", "ativo", "inativo"],
       tipo_procedimento: ["ipm", "sindicancia", "apfd"],

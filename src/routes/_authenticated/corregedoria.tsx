@@ -53,8 +53,9 @@ import { OPMS } from "@/lib/personnel-options";
 
 
 import { getSessionInfo } from "@/lib/usuarios.functions";
-import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2, Download, ShieldCheck, Bell, MessageSquare, Copy, Mic, Plus, Search, Lock, ScrollText, ChevronRight } from "lucide-react";
+import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2, Download, ShieldCheck, Bell, MessageSquare, Copy, Mic, Plus, Search, Lock, ScrollText, ChevronRight, Send, UserRound } from "lucide-react";
 import { aplicarModelo, modelosDe } from "@/lib/modelos-ato";
+import { montarTeorAto } from "@/lib/teor-ato";
 import { DocumentTemplate, exportDocumentToPdf, useDocumentRef } from "@/components/DocumentTemplate";
 import { RichTextEditor, isHtmlAto, sanitizeAtoHtml } from "@/components/RichTextEditor";
 import { exportAtoPdfV2, exportProcessoCompleto, exportProcessoCompletoV2, previsualizarAtoPdf, type PreviaAtoPdf } from "@/lib/exportProcesso";
@@ -62,6 +63,7 @@ import { ExportAtoContext, useExportarAto } from "@/components/ExportAtoContext"
 import { AtoAnexosUploader, type AtoAnexo } from "@/components/AtoAnexosUploader";
 import { AtoAnexosLinks } from "@/components/AtoAnexosLinks";
 import { IntimarDialog } from "@/components/IntimarDialog";
+import { EncaminharMinutaDialog } from "@/components/EncaminharMinutaDialog";
 import { TarjasManager, TarjasStrip, type CorTarja } from "@/components/Tarja";
 import { PortariaTemplate, exportPortariaToPdf, isPortariaDados, type PortariaDados } from "@/components/PortariaTemplate";
 
@@ -556,6 +558,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
   const [gerandoPrevia, setGerandoPrevia] = useState(false);
   const [previa, setPrevia] = useState<PreviaAtoPdf | null>(null);
   const [lancarAberto, setLancarAberto] = useState(false);
+  const [encaminhando, setEncaminhando] = useState(false);
   // Esc fecha a pré-visualização do PDF.
   useEffect(() => {
     if (!previa) return;
@@ -583,20 +586,12 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
   /** Teor como será gravado (o mesmo usado na pré-visualização do PDF). */
   function montarTeorFinal(): string {
     if (!especie) throw new Error("Selecione uma espécie.");
-    if (especie === "ipc") {
-      return montarTeorIpc({
-        unidade: ipcUnidade || null,
-        protocolo: data?.denuncia.numero_procedimento ?? data?.denuncia.numero_protocolo ?? "",
-        identificacao: ipcIdent.trim(),
-        relato: sanitizeAtoHtml(teor),
-      });
-    }
-    if (especie === "ata") {
-      const depoente = ataDepoente.trim();
-      if (!depoente) throw new Error("Informe quem prestou o depoimento.");
-      return montarTeorAta({ depoente, relato: sanitizeAtoHtml(teor) });
-    }
-    return sanitizeAtoHtml(teor);
+    return montarTeorAto(
+      especie,
+      sanitizeAtoHtml(teor),
+      { ataDepoente, ipcUnidade, ipcIdent },
+      data?.denuncia.numero_procedimento ?? data?.denuncia.numero_protocolo ?? "",
+    );
   }
   function anexosDoAto(): AtoAnexo[] {
     return especie === "despacho" || especie === "decisao" || especie === "certidao" || (especie && ESPECIES_APFD.has(especie))
@@ -1463,8 +1458,8 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
 
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
                   <span className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Lock className="h-3.5 w-3.5" aria-hidden /> Assinatura e data são registradas automaticamente no
-                    lançamento.
+                    <Lock className="h-3.5 w-3.5" aria-hidden /> Lance você mesmo ou encaminhe a minuta para uma
+                    autoridade assinar.
                   </span>
                   <div className="flex flex-wrap gap-2">
                     <button
@@ -1481,6 +1476,22 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                       className="inline-flex items-center gap-1.5 rounded-md border border-primary/50 bg-primary/10 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
                     >
                       <Eye className="h-4 w-4" aria-hidden /> {gerandoPrevia ? "Gerando..." : "Pré-visualizar PDF"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        try {
+                          montarTeorFinal();
+                          setEncaminhando(true);
+                        } catch (e) {
+                          toast.error((e as Error).message);
+                        }
+                      }}
+                      disabled={teor.replace(/<[^>]+>/g, "").trim().length < 3 || mLancar.isPending}
+                      title="Envia a minuta para uma autoridade revisar e assinar. Você constará como Escrivão."
+                      className="inline-flex items-center gap-1.5 rounded-md border border-primary bg-primary/15 px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/25 disabled:opacity-50"
+                    >
+                      <Send className="h-4 w-4" aria-hidden /> Encaminhar para assinatura
                     </button>
                     <button
                       onClick={() => mLancar.mutate()}
@@ -1501,6 +1512,30 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
         </div>
         )}
       </div>
+
+      {encaminhando && especie && especieAtual && (
+        <EncaminharMinutaDialog
+          denunciaId={id}
+          procedimento={procedimentoAtual}
+          rotuloAto={rotuloAto(especieAtual.v, especieAtual.l)}
+          conteudo={() => ({
+            especie,
+            teor: sanitizeAtoHtml(teor),
+            dados:
+              especie === "ata"
+                ? { ataDepoente: ataDepoente.trim() }
+                : especie === "ipc"
+                  ? { ipcUnidade, ipcIdent: ipcIdent.trim() }
+                  : {},
+            anexos: anexosDoAto(),
+          })}
+          onClose={() => setEncaminhando(false)}
+          onDone={() => {
+            limparFormularioAto();
+            setLancarAberto(false);
+          }}
+        />
+      )}
 
       {previa && (
         <div
@@ -1560,7 +1595,18 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
               cancelado_por_nome?: string | null;
               cancelado_por_cargo?: string | null;
               motivo_cancelamento?: string | null;
+              escrivao_nome?: string | null;
+              escrivao_posto?: string | null;
             };
+            const escrivaoChip = m.escrivao_nome ? (
+              <span
+                className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-muted-foreground"
+                title="Minuta redigida e encaminhada para assinatura"
+              >
+                <UserRound className="h-3 w-3" aria-hidden />
+                Escrivão: {[m.escrivao_posto, m.escrivao_nome].filter(Boolean).join(" ")}
+              </span>
+            ) : null;
             const isAto =
               m.especie === "despacho" || m.especie === "decisao" || m.especie === "portaria" || m.especie === "mandado" || m.especie === "ata" || m.especie === "certidao" || m.especie === "nota_culpa" || m.especie === "termo_declaracoes" || m.especie === "auto_interrogatorio";
             const isIpc = m.especie === "ipc";
@@ -1665,6 +1711,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                           +30 dias
                         </span>
                       )}
+                      {escrivaoChip}
                       <span className="ml-auto text-muted-foreground tabular">
                         {new Date(m.criado_em).toLocaleString("pt-BR")}
                       </span>
@@ -1729,6 +1776,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                       >
                         {m.ipc_publicado ? "Público" : "Privado"}
                       </span>
+                      {escrivaoChip}
                       <span className="ml-auto text-muted-foreground tabular">
                         {new Date(m.criado_em).toLocaleString("pt-BR")}
                       </span>
@@ -2066,33 +2114,6 @@ function IpcCampoAuto({ label, valor }: { label: string; valor: string }) {
       <div className="mt-0.5 whitespace-pre-wrap text-sm">{valor}</div>
     </div>
   );
-}
-
-function montarTeorIpc(params: {
-  unidade: string | null;
-  protocolo: string;
-  identificacao: string;
-  relato: string;
-}): string {
-  return [
-    `| UNIDADE: ${params.unidade || "—"}`,
-    ``,
-    `| 1º PROCESSO NÚMERO: ${params.protocolo}`,
-    ``,
-    `| 2º IDENTIFICAÇÃO DO POLICIAL: ${params.identificacao || "—"}`,
-    ``,
-    `| 3º RELATO DO FATO:`,
-    params.relato.trim(),
-    ``,
-    `| 4º CIENTE DOS FATOS:`,
-    `Corregedoria da Polícia Militar do Estado de São Paulo`,
-  ].join("\n");
-}
-
-function montarTeorAta(params: { depoente: string; relato: string }): string {
-  const dep = params.depoente.trim().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  const relato = params.relato.trim();
-  return `<p><strong>DEPOENTE:</strong> ${dep}</p>${relato}`;
 }
 
 function extrairDepoenteAta(teor: string): { depoente: string | null; corpo: string } {
@@ -2644,6 +2665,9 @@ function PortariaDialog({
       onClose();
     },
   });
+  const [encaminhando, setEncaminhando] = useState(false);
+  const podeEnviar =
+    corpo.replace(/<[^>]+>/g, "").trim().length >= 50 && dados.naturezas.length > 0 && dados.indiciados.length > 0;
 
   return (
     <Modal title={isApfdDoc ? "Auto de Prisão em Flagrante Delito" : "Portaria Inaugural"} onClose={onClose} size="3xl">
@@ -2688,13 +2712,37 @@ function PortariaDialog({
           Cancelar
         </button>
         <button
+          type="button"
+          onClick={() => setEncaminhando(true)}
+          disabled={!podeEnviar || m.isPending}
+          title="A autoridade que assinar consta como signatária; você consta como Escrivão."
+          className="inline-flex items-center gap-1.5 rounded-md border border-primary bg-primary/15 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/25 disabled:opacity-50"
+        >
+          <Send className="h-4 w-4" aria-hidden /> Encaminhar para assinatura
+        </button>
+        <button
           onClick={() => m.mutate()}
-          disabled={corpo.replace(/<[^>]+>/g, "").trim().length < 50 || dados.naturezas.length === 0 || dados.indiciados.length === 0 || m.isPending}
+          disabled={!podeEnviar || m.isPending}
           className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
           {m.isPending ? "Lavrando..." : isApfdDoc ? "Confirmar e lavrar APFD" : "Confirmar e lavrar portaria"}
         </button>
       </div>
+      {encaminhando && (
+        <EncaminharMinutaDialog
+          denunciaId={id}
+          procedimento={denuncia.numero_procedimento ?? denuncia.numero_protocolo}
+          rotuloAto={isApfdDoc ? "Auto de Prisão em Flagrante Delito" : "Portaria"}
+          conteudo={() => ({
+            especie: "portaria",
+            teor: dados.corpo,
+            dados: { ...dados, signatarioNome: "", signatarioPosto: "", localData: "" },
+            anexos: [],
+          })}
+          onClose={() => setEncaminhando(false)}
+          onDone={onClose}
+        />
+      )}
     </Modal>
   );
 }

@@ -98,7 +98,9 @@ export function NotificacoesBell() {
                 const to =
                   n.tipo === "aviso"
                     ? "/avisos"
-                    : n.denuncia_id
+                    : /^Minuta\b/.test(n.titulo ?? "")
+                      ? "/minutas"
+                      : n.denuncia_id
                       ? `/corregedoria?id=${n.denuncia_id}`
                       : "/painel";
 

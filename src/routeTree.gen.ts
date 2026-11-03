@@ -27,6 +27,7 @@ import { Route as AuthenticatedMinhasDenunciasRouteImport } from './routes/_auth
 import { Route as AuthenticatedMinutasRouteImport } from './routes/_authenticated/minutas'
 import { Route as AuthenticatedMpProcessosRouteImport } from './routes/_authenticated/mp-processos'
 import { Route as AuthenticatedObservacoesRouteImport } from './routes/_authenticated/observacoes'
+import { Route as AuthenticatedOficiosRouteImport } from './routes/_authenticated/oficios'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
 import { Route as AuthenticatedPdoRouteImport } from './routes/_authenticated/pdo'
 import { Route as AuthenticatedPendenteRouteImport } from './routes/_authenticated/pendente'
@@ -130,6 +131,11 @@ const AuthenticatedObservacoesRoute =
     path: '/observacoes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedOficiosRoute = AuthenticatedOficiosRouteImport.update({
+  id: '/oficios',
+  path: '/oficios',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPainelRoute = AuthenticatedPainelRouteImport.update({
   id: '/painel',
   path: '/painel',
@@ -194,6 +200,7 @@ export interface FileRoutesByFullPath {
   '/minutas': typeof AuthenticatedMinutasRoute
   '/mp-processos': typeof AuthenticatedMpProcessosRoute
   '/observacoes': typeof AuthenticatedObservacoesRoute
+  '/oficios': typeof AuthenticatedOficiosRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/pdo': typeof AuthenticatedPdoRoute
   '/pendente': typeof AuthenticatedPendenteRoute
@@ -222,6 +229,7 @@ export interface FileRoutesByTo {
   '/minutas': typeof AuthenticatedMinutasRoute
   '/mp-processos': typeof AuthenticatedMpProcessosRoute
   '/observacoes': typeof AuthenticatedObservacoesRoute
+  '/oficios': typeof AuthenticatedOficiosRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/pdo': typeof AuthenticatedPdoRoute
   '/pendente': typeof AuthenticatedPendenteRoute
@@ -252,6 +260,7 @@ export interface FileRoutesById {
   '/_authenticated/minutas': typeof AuthenticatedMinutasRoute
   '/_authenticated/mp-processos': typeof AuthenticatedMpProcessosRoute
   '/_authenticated/observacoes': typeof AuthenticatedObservacoesRoute
+  '/_authenticated/oficios': typeof AuthenticatedOficiosRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
   '/_authenticated/pdo': typeof AuthenticatedPdoRoute
   '/_authenticated/pendente': typeof AuthenticatedPendenteRoute
@@ -282,6 +291,7 @@ export interface FileRouteTypes {
     | '/minutas'
     | '/mp-processos'
     | '/observacoes'
+    | '/oficios'
     | '/painel'
     | '/pdo'
     | '/pendente'
@@ -310,6 +320,7 @@ export interface FileRouteTypes {
     | '/minutas'
     | '/mp-processos'
     | '/observacoes'
+    | '/oficios'
     | '/painel'
     | '/pdo'
     | '/pendente'
@@ -339,6 +350,7 @@ export interface FileRouteTypes {
     | '/_authenticated/minutas'
     | '/_authenticated/mp-processos'
     | '/_authenticated/observacoes'
+    | '/_authenticated/oficios'
     | '/_authenticated/painel'
     | '/_authenticated/pdo'
     | '/_authenticated/pendente'
@@ -495,6 +507,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedObservacoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/oficios': {
+      id: '/_authenticated/oficios'
+      path: '/oficios'
+      fullPath: '/oficios'
+      preLoaderRoute: typeof AuthenticatedOficiosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/painel': {
       id: '/_authenticated/painel'
       path: '/painel'
@@ -570,6 +589,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMinutasRoute: typeof AuthenticatedMinutasRoute
   AuthenticatedMpProcessosRoute: typeof AuthenticatedMpProcessosRoute
   AuthenticatedObservacoesRoute: typeof AuthenticatedObservacoesRoute
+  AuthenticatedOficiosRoute: typeof AuthenticatedOficiosRoute
   AuthenticatedPainelRoute: typeof AuthenticatedPainelRoute
   AuthenticatedPdoRoute: typeof AuthenticatedPdoRoute
   AuthenticatedPendenteRoute: typeof AuthenticatedPendenteRoute
@@ -586,6 +606,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMinutasRoute: AuthenticatedMinutasRoute,
   AuthenticatedMpProcessosRoute: AuthenticatedMpProcessosRoute,
   AuthenticatedObservacoesRoute: AuthenticatedObservacoesRoute,
+  AuthenticatedOficiosRoute: AuthenticatedOficiosRoute,
   AuthenticatedPainelRoute: AuthenticatedPainelRoute,
   AuthenticatedPdoRoute: AuthenticatedPdoRoute,
   AuthenticatedPendenteRoute: AuthenticatedPendenteRoute,

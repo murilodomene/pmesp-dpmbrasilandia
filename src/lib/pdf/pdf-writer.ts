@@ -67,6 +67,8 @@ export class PdfWriter {
   pdf: jsPDF;
   /** Topo da próxima linha (mm). */
   y = TOPO;
+  /** Família da fonte padrão do PDF (o ofício usa Times, como no modelo). */
+  familia: "helvetica" | "times" = "helvetica";
 
   constructor(pdf: jsPDF) {
     this.pdf = pdf;
@@ -95,7 +97,7 @@ export class PdfWriter {
   /* ---------- texto simples ---------- */
 
   private fonte(r: { bold?: boolean; italic?: boolean }, size: number, cor: Cor = PRETO) {
-    this.pdf.setFont("helvetica", estiloFonte(r));
+    this.pdf.setFont(this.familia, estiloFonte(r));
     this.pdf.setFontSize(size);
     this.pdf.setTextColor(cor[0], cor[1], cor[2]);
   }

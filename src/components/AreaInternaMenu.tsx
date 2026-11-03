@@ -14,10 +14,12 @@ import {
   Menu,
   X,
   FileSignature,
+  Mail,
 } from "lucide-react";
 import { getSessionInfo } from "@/lib/usuarios.functions";
 import { listAvisos } from "@/lib/avisos.functions";
 import { contarMinutasParaAssinar } from "@/lib/minutas.functions";
+import { contarOficiosParaAssinar } from "@/lib/oficios.functions";
 import { ROLE_LABELS, isAdminRole, isInternalRole } from "@/lib/access-roles";
 import { PMESP_CREST_URL } from "@/lib/branding";
 import { aoMudarAvisosVistos, avisosNaoVistos } from "@/lib/avisos-vistos";
@@ -61,6 +63,14 @@ export function AreaInternaLayout({ children }: { children: ReactNode }) {
     enabled: !!interno,
     refetchInterval: 60_000,
   });
+  const oficiosFn = useServerFn(contarOficiosParaAssinar);
+  const { data: oficiosParaAssinar } = useQuery({
+    queryKey: ["oficios-pendentes"],
+    queryFn: () => oficiosFn(),
+    enabled: !!interno,
+    refetchInterval: 60_000,
+  });
+  const totalParaAssinar = (paraAssinar ?? 0) + (oficiosParaAssinar ?? 0);
   const [novos, setNovos] = useState(0);
   useEffect(() => {
     const contar = () => setNovos(avisosNaoVistos((avisos ?? []).map((a: { id: string }) => a.id)).size);
@@ -80,7 +90,14 @@ export function AreaInternaLayout({ children }: { children: ReactNode }) {
         { to: "/painel", label: "Painel interno", icon: LayoutDashboard },
         { to: "/corregedoria", label: "Corregedoria", icon: Gavel },
         ...(interno
-          ? [{ to: "/minutas", label: "Minutas", icon: FileSignature, badge: paraAssinar ? `${paraAssinar} p/ assinar` : null }]
+          ? [
+              {
+                to: "/minutas",
+                label: "Minutas",
+                icon: FileSignature,
+                badge: totalParaAssinar ? `${totalParaAssinar} p/ assinar` : null,
+              },
+            ]
           : []),
         { to: "/pdo", label: "PDO", icon: Car },
       ],
@@ -90,6 +107,16 @@ export function AreaInternaLayout({ children }: { children: ReactNode }) {
       itens: [
         ...(interno
           ? [{ to: "/avisos", label: "Avisos", icon: Megaphone, badge: novos ? `${novos} ${novos === 1 ? "novo" : "novos"}` : null }]
+          : []),
+        ...(interno
+          ? [
+              {
+                to: "/oficios",
+                label: "Ofícios",
+                icon: Mail,
+                badge: oficiosParaAssinar ? `${oficiosParaAssinar} p/ assinar` : null,
+              },
+            ]
           : []),
         ...(interno ? [{ to: "/observacoes", label: "Observações", icon: Users }] : []),
         { to: "/documentos", label: "Documentos", icon: FileText },

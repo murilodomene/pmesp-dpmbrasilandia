@@ -318,6 +318,40 @@ export interface PdfPdo {
   procedimento_numero?: string | null;
 }
 
+const MESES_EXTENSO: Record<number, string> = {
+  1: "um", 2: "dois", 3: "três", 4: "quatro", 5: "cinco", 6: "seis", 7: "sete", 8: "oito", 9: "nove",
+  10: "dez", 11: "onze", 12: "doze", 18: "dezoito", 24: "vinte e quatro",
+};
+
+export interface PdfTac {
+  id: string;
+  /** "001/2026" */
+  numero: string;
+  celebrado_em: string;
+  compromissario: { nome: string; posto?: string | null; re?: string | null; opm?: string | null };
+  /** Procedimento/PDO de origem (ex.: "SINDPM nº 004/2026"), quando houver. */
+  origem?: string | null;
+  data_fato?: string | null;
+  /** Capitulação da transgressão (ex.: "art. 13, item 21, do RDPM — natureza leve"). */
+  capitulacao?: string | null;
+  /** Síntese do fato (HTML do editor). */
+  fato: string;
+  /** Requisitos conferidos (texto de cada um). */
+  requisitos: string[];
+  obrigacoes: string[];
+  prazo_meses: number;
+  inicio: string;
+  fim: string;
+  acompanhamento?: string | null;
+  clausula_descumprimento: string;
+  disposicoes_finais: string;
+  /** Autoridade que celebra; null enquanto aguarda assinatura (prévia). */
+  autoridade: { nome: string; posto?: string | null; cargo?: string | null } | null;
+  /** Marca em vermelho (ex.: termo cancelado ou revogado). */
+  aviso?: string | null;
+  previa?: boolean;
+}
+
 export interface PdfFichaFuncional {
   policial: { nome: string; posto?: string | null; re?: string | null; opm?: string | null };
   emitidaPor: { nome: string; cargo?: string | null };
@@ -330,6 +364,8 @@ export interface PdfFichaFuncional {
   }>;
   pdos: Array<{ numero: string; data: string; local: string; desfecho: string; papel: "fiscalizado" | "equipe" }>;
   observacoes: Array<{ data: string; autor: string; corpo: string; processos?: string[] }>;
+  /** Termos de Ajustamento de Conduta celebrados (sem caráter de punição). */
+  tacs?: Array<{ numero: string; celebrado_em: string; fim?: string | null; situacao: string; origem?: string | null }>;
 }
 
 export interface PdfAviso {
@@ -1022,6 +1058,66 @@ class ProcessoPdf {
     this.fechoChave(`São Paulo/SP, ${dataExtenso(p.assinado_em)}.`, p.lavrado_por_nome, cargoLabel(p.lavrado_por_cargo));
   }
 
+  /* ---------- Termo de Ajustamento de Conduta ---------- */
+
+  async tac(t: PdfTac): Promise<void> {
+    const { w } = this;
+    const fake = { id: t.id, criado_em: t.celebrado_em } as PdfMovimento;
+    await this.cabecalhoChave(chaveIdentificadora(t.id, t.numero), fake, null);
+    this.titulosChave(`TAC Nº ${t.numero}`, "TERMO DE AJUSTAMENTO DE CONDUTA");
+    const c = t.compromissario;
+    const nome = [c.posto?.trim().toUpperCase(), c.nome.trim().toUpperCase()].filter(Boolean).join(" ");
+    this.campo("COMPROMISSÁRIO:", `${nome}${c.re ? `, RE ${c.re}` : ""}`);
+    this.campo("OPM:", c.opm || "—");
+    this.campo("ORIGEM:", t.origem || "—");
+    this.campo("DATA DO FATO:", t.data_fato ? dataExtenso(t.data_fato) : "—");
+    this.campo("CAPITULAÇÃO:", t.capitulacao || "—");
+    if (t.aviso) {
+      w.pular(2);
+      w.texto(t.aviso, { size: 10, bold: true, color: [185, 28, 28] });
+    }
+
+    this.faixa("DO FATO", 5.2);
+    w.pular(4.2);
+    this.corpoChave(t.fato?.trim() ? t.fato : "—");
+
+    this.faixa("DOS REQUISITOS", 2);
+    this.itensFaixa(t.requisitos.map((r) => `[X] ${r}`));
+
+    this.faixa("DAS OBRIGAÇÕES DO COMPROMISSÁRIO", 4.2);
+    this.itensFaixa(t.obrigacoes.map((o, i) => `${i + 1}. ${o}`));
+
+    this.faixa("DO PRAZO E DO ACOMPANHAMENTO", 4.2);
+    this.itensFaixa([
+      `Período de prova de ${t.prazo_meses} (${MESES_EXTENSO[t.prazo_meses] ?? String(t.prazo_meses)}) ${t.prazo_meses === 1 ? "mês" : "meses"}, de ${dataExtenso(t.inicio)} a ${dataExtenso(t.fim)}.`,
+      `Acompanhamento: ${t.acompanhamento?.trim() || "Corregedoria da Polícia Militar, com informação do comandante imediato ao final do período."}`,
+    ]);
+
+    this.faixa("DO DESCUMPRIMENTO", 4.2);
+    this.itensFaixa([t.clausula_descumprimento]);
+
+    this.faixa("DISPOSIÇÕES FINAIS", 4.2);
+    this.itensFaixa([t.disposicoes_finais, "E, por estarem de acordo, as partes assinam o presente termo."]);
+
+    w.pular(6);
+    if (t.autoridade) {
+      const nomeAut = [t.autoridade.posto?.trim(), t.autoridade.nome.trim()].filter(Boolean).join(" ");
+      const cargo = t.autoridade.cargo ? cargoLabel(t.autoridade.cargo) : "";
+      this.fechoChave(`São Paulo/SP, ${dataExtenso(t.celebrado_em)}.`, nomeAut, cargo);
+    } else {
+      this.fechoChave(`São Paulo/SP, ${dataExtenso(t.celebrado_em)}.`, undefined, undefined);
+      w.texto("[assinatura da autoridade]", { size: 11, align: "center", color: CINZA });
+    }
+    w.pular(14);
+    w.garantir(20);
+    w.texto(nome, { size: 11, bold: true, align: "center", after: 3.6 });
+    w.texto("COMPROMISSÁRIO — CIENTE E DE ACORDO", { size: 11, align: "center" });
+    if (t.previa) {
+      w.pular(10);
+      w.texto("PRÉVIA — TERMO AINDA NÃO CELEBRADO", { size: 9, bold: true, align: "center", color: [185, 28, 28] });
+    }
+  }
+
   /* ---------- Aviso interno ---------- */
 
   aviso(a: PdfAviso): void {
@@ -1067,6 +1163,7 @@ class ProcessoPdf {
       `Procedimentos disciplinares como denunciado: ${f.procedimentos.length}${f.procedimentos.length ? ` (${emAndamento} em andamento)` : ""}`,
       `PDOs como policial fiscalizado: ${f.pdos.filter((x) => x.papel === "fiscalizado").length}`,
       `Observações registradas pela Corregedoria: ${f.observacoes.length}`,
+      ...(f.tacs ? [`Termos de Ajustamento de Conduta: ${f.tacs.length}`] : []),
     ]);
 
     this.faixa("PROCEDIMENTOS DISCIPLINARES", 4.2);
@@ -1100,6 +1197,26 @@ class ProcessoPdf {
         `${rotuloDesfechoPdo(x.desfecho)}${x.papel === "equipe" ? " (integrou a equipe)" : ""}`,
       ]),
     );
+
+    if (f.tacs) {
+      this.faixa("TERMOS DE AJUSTAMENTO DE CONDUTA (SEM CARÁTER DE PUNIÇÃO)", 6);
+      this.tabela(
+        [
+          { titulo: "TAC", largura: 26 },
+          { titulo: "Celebrado", largura: 26, align: "center" },
+          { titulo: "Fim do prazo", largura: 28, align: "center" },
+          { titulo: "Origem", largura: 48 },
+          { titulo: "Situação", largura: LARGURA_UTIL - 128 },
+        ],
+        f.tacs.map((x) => [
+          x.numero,
+          new Date(x.celebrado_em).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }),
+          x.fim ? new Date(`${x.fim}T12:00:00-03:00`).toLocaleDateString("pt-BR") : "—",
+          x.origem || "—",
+          x.situacao,
+        ]),
+      );
+    }
 
     this.faixa("OBSERVAÇÕES DA CORREGEDORIA", 6);
     if (!f.observacoes.length) this.itensFaixa(["Nada consta."]);
@@ -1354,4 +1471,17 @@ export async function gerarAvisoPdf(a: PdfAviso, assets: PdfAssets): Promise<jsP
 export function nomeArquivoAviso(numero: string): string {
   const n = numero.replace(/^\s*AVISO\s*(n[ºo°.]*)?\s*/i, "").replace(/[^\w-]+/g, "-");
   return `Aviso-${n || "sem-numero"}.pdf`;
+}
+
+/** Termo de Ajustamento de Conduta no modelo com chave identificadora. */
+export async function gerarTacPdf(t: PdfTac, assets: PdfAssets): Promise<jsPDF> {
+  const { pdf, w } = await novoDocumento(`TAC nº ${t.numero}`);
+  const doc = documentoAvulso(w, assets, `TAC/${t.numero}`);
+  await doc.tac(t);
+  doc.rodapes();
+  return pdf;
+}
+
+export function nomeArquivoTac(numero: string): string {
+  return `TAC-${numero.replace(/[^\w-]+/g, "-")}.pdf`;
 }

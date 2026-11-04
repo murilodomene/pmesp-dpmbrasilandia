@@ -7,6 +7,9 @@ import { toast } from "sonner";
 import { Header } from "@/components/Header";
 import { getSessionInfo } from "@/lib/usuarios.functions";
 import { exportFichaFuncionalPdf } from "@/lib/exportProcesso";
+import { listTacs, type Tac } from "@/lib/tac.functions";
+import { rotuloOrigem } from "@/lib/tac-pdf-dados";
+
 import { rotuloDesfechoPdo } from "@/lib/pdo-rotulos";
 import { ROLE_LABELS } from "@/lib/access-roles";
 import {
@@ -98,6 +101,13 @@ type FiscAuto = {
   re: string | null;
   cargo: string | null;
 };
+const SITUACAO_TAC: Record<string, string> = {
+  em_cumprimento: "Em cumprimento",
+  cumprido: "Cumprido",
+  descumprido: "Descumprido (revogado)",
+  cancelado: "Cancelado",
+};
+
 type Ficha = {
   chave: string;
   nome: string;
@@ -107,6 +117,7 @@ type Ficha = {
   observacoes: Observacao[];
   procedimentos: ProcAuto[];
   pdos: FiscAuto[];
+  tacs: Tac[];
   ultima: number;
 };
 
@@ -128,7 +139,7 @@ const textoDe = (html: string) =>
  * Junta observações, procedimentos (como denunciado) e PDOs (como fiscalizado)
  * por policial: pelo RE e, quando não houver RE, pelo nome.
  */
-function montarFichas(obs: Observacao[], procs: ProcAuto[], fiscs: FiscAuto[]): Ficha[] {
+function montarFichas(obs: Observacao[], procs: ProcAuto[], fiscs: FiscAuto[], tacs: Tac[] = []): Ficha[] {
   type Pessoa = { nome: string; re: string | null; posto: string | null; opm: string | null; data: number; add: (f: Ficha) => void };
   const pessoas: Pessoa[] = [
     ...obs
@@ -161,6 +172,18 @@ function montarFichas(obs: Observacao[], procs: ProcAuto[], fiscs: FiscAuto[]): 
         if (!f.pdos.some((y) => y.pdo_id === x.pdo_id)) f.pdos.push(x);
       },
     })),
+    ...tacs
+      .filter((t) => t.celebrado_em)
+      .map((t) => ({
+        nome: t.compromissario_nome,
+        re: t.compromissario_re,
+        posto: t.compromissario_posto,
+        opm: t.compromissario_opm,
+        data: new Date(t.celebrado_em!).getTime(),
+        add: (f: Ficha) => {
+          if (!f.tacs.some((y) => y.id === t.id)) f.tacs.push(t);
+        },
+      })),
   ];
   // Quem tem RE primeiro: assim um registro só com nome cai na ficha certa.
   pessoas.sort((a, b) => Number(!!b.re?.trim()) - Number(!!a.re?.trim()));
@@ -173,7 +196,7 @@ function montarFichas(obs: Observacao[], procs: ProcAuto[], fiscs: FiscAuto[]): 
     const chave = re ? `re:${re}` : porNome.get(nome) ?? `nome:${nome}`;
     let f = fichas.get(chave);
     if (!f) {
-      f = { chave, nome: p.nome.trim(), re: p.re?.trim() || null, posto: null, opm: null, observacoes: [], procedimentos: [], pdos: [], ultima: 0 };
+      f = { chave, nome: p.nome.trim(), re: p.re?.trim() || null, posto: null, opm: null, observacoes: [], procedimentos: [], pdos: [], tacs: [], ultima: 0 };
       fichas.set(chave, f);
     }
     if (nome && !porNome.has(nome)) porNome.set(nome, chave);
@@ -187,6 +210,7 @@ function montarFichas(obs: Observacao[], procs: ProcAuto[], fiscs: FiscAuto[]): 
     f.observacoes.sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
     f.procedimentos.sort((a, b) => +new Date(b.instaurada_em ?? 0) - +new Date(a.instaurada_em ?? 0));
     f.pdos.sort((a, b) => +new Date(b.data) - +new Date(a.data));
+    f.tacs.sort((a, b) => +new Date(b.celebrado_em ?? 0) - +new Date(a.celebrado_em ?? 0));
   }
   return Array.from(fichas.values()).sort((a, b) => b.ultima - a.ultima);
 }
@@ -226,9 +250,22 @@ function ObservacoesPage() {
     enabled: podeVer,
   });
 
+  const tacsFn = useServerFn(listTacs);
+  const { data: dadosTacs } = useQuery({
+    queryKey: ["tacs"],
+    queryFn: () => tacsFn(),
+    enabled: podeVer,
+    retry: false,
+  });
   const fichas = useMemo(
-    () => montarFichas(obs, (auto?.procedimentos ?? []) as ProcAuto[], (auto?.fiscalizacoes ?? []) as FiscAuto[]),
-    [obs, auto],
+    () =>
+      montarFichas(
+        obs,
+        (auto?.procedimentos ?? []) as ProcAuto[],
+        (auto?.fiscalizacoes ?? []) as FiscAuto[],
+        dadosTacs?.tacs ?? [],
+      ),
+    [obs, auto, dadosTacs],
   );
   const termo = semAcento(busca);
   const fichasFiltradas = useMemo(() => {
@@ -242,6 +279,7 @@ function ObservacoesPage() {
           f.opm,
           ...f.procedimentos.map((p) => `${p.numero} ${p.natureza ?? ""}`),
           ...f.pdos.map((p) => p.numero),
+          ...f.tacs.map((t) => `TAC ${t.numero ?? ""}`),
           ...f.observacoes.map((o) => `${o.autor_nome} ${textoDe(o.corpo)} ${o.pads.map((x) => x.numero_protocolo).join(" ")}`),
         ]
           .filter(Boolean)
@@ -287,6 +325,15 @@ function ObservacoesPage() {
           status: p.status,
         })),
         pdos: f.pdos.map((p) => ({ numero: p.numero, data: p.data, local: p.local, desfecho: p.desfecho, papel: "fiscalizado" as const })),
+        tacs: dadosTacs
+          ? f.tacs.map((t) => ({
+              numero: t.numero ?? "—",
+              celebrado_em: t.celebrado_em!,
+              fim: t.fim,
+              origem: rotuloOrigem(t),
+              situacao: SITUACAO_TAC[t.status] ?? t.status,
+            }))
+          : undefined,
         observacoes: f.observacoes.map((o) => ({
           data: o.created_at,
           autor: `${o.autor_nome} — ${cargoLabel(o.autor_cargo)}`,
@@ -381,7 +428,7 @@ function ObservacoesPage() {
                   <ul className="divide-y divide-border">
                     {fichasFiltradas.map((f) => {
                       const ativa = ficha?.chave === f.chave;
-                      const total = f.observacoes.length + f.procedimentos.length + f.pdos.length;
+                      const total = f.observacoes.length + f.procedimentos.length + f.pdos.length + f.tacs.length;
                       return (
                         <li key={f.chave}>
                           <button
@@ -519,7 +566,7 @@ function FichaPolicial({
       <dl className="grid grid-cols-2 border-b border-border sm:grid-cols-4">
         {[
           { k: "Procedimentos", v: ficha.procedimentos.length },
-          { k: "PDOs fiscalizado", v: ficha.pdos.length },
+          { k: ficha.tacs.length ? "PDOs · TACs" : "PDOs fiscalizado", v: ficha.tacs.length ? `${ficha.pdos.length} · ${ficha.tacs.length}` : ficha.pdos.length },
           { k: "Observações", v: ficha.observacoes.length },
           { k: "Último registro", v: ficha.ultima ? new Date(ficha.ultima).toLocaleDateString("pt-BR") : "—" },
         ].map((c, i) => (
@@ -575,6 +622,24 @@ function FichaPolicial({
                   <span className="tabular text-muted-foreground">{fmt(p.data)}</span>
                   <span className="min-w-0 flex-1 truncate">{p.local}</span>
                   <span className="text-xs text-muted-foreground">{rotuloDesfechoPdo(p.desfecho)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {ficha.tacs.length > 0 && (
+          <div>
+            <div className={`${titulo} mb-2`}>Termos de Ajustamento de Conduta (sem caráter de punição)</div>
+            <ul className="divide-y divide-border rounded-md border border-border text-sm">
+              {ficha.tacs.map((t) => (
+                <li key={t.id} className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-3 py-2">
+                  <a href={`/tac?id=${t.id}`} className="font-mono text-xs font-semibold text-primary hover:underline">
+                    TAC {t.numero}
+                  </a>
+                  <span className="tabular text-muted-foreground">{fmt(t.celebrado_em)}</span>
+                  <span className="min-w-0 flex-1 truncate">{rotuloOrigem(t) ?? "—"}</span>
+                  <span className="text-xs text-muted-foreground">{SITUACAO_TAC[t.status] ?? t.status}</span>
                 </li>
               ))}
             </ul>

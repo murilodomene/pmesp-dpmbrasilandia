@@ -44,6 +44,7 @@ import {
 } from "@/lib/minutas.functions";
 import { montarTeorAto, textoCurto } from "@/lib/teor-ato";
 import { listOficios, type Oficio } from "@/lib/oficios.functions";
+import { listTacs, type Tac } from "@/lib/tac.functions";
 import { previsualizarAtoPdf, type PreviaAtoPdf } from "@/lib/exportProcesso";
 import { ROLE_LABELS, isAdminRole, isInternalRole } from "@/lib/access-roles";
 import { OPMS } from "@/lib/personnel-options";
@@ -64,7 +65,8 @@ type Categoria =
   | "solucao"
   | "apfd"
   | "mandado"
-  | "oficio";
+  | "oficio"
+  | "tac";
 
 const CATEGORIAS: { id: Categoria; rotulo: string }[] = [
   { id: "despacho", rotulo: "Despacho" },
@@ -76,11 +78,13 @@ const CATEGORIAS: { id: Categoria; rotulo: string }[] = [
   { id: "apfd", rotulo: "Atos do APFD" },
   { id: "mandado", rotulo: "Mandado" },
   { id: "oficio", rotulo: "Ofício" },
+  { id: "tac", rotulo: "TAC" },
 ];
 
 function categoriaDe(especie: string): Categoria {
   if (especie === "ipc") return "solucao";
   if (especie === "oficio") return "oficio";
+  if (especie === "tac") return "tac";
   if (
     especie === "nota_culpa" ||
     especie === "termo_declaracoes" ||
@@ -92,6 +96,8 @@ function categoriaDe(especie: string): Categoria {
 
 function rotuloAto(especie: string, tipo: string | null | undefined): string {
   switch (especie) {
+    case "tac":
+      return "Termo de Ajustamento de Conduta";
     case "oficio":
       return "Ofício";
     case "despacho":
@@ -206,6 +212,51 @@ function oficioComoMinuta(o: Oficio): Minuta {
   };
 }
 
+/** TAC em assinatura no formato da lista de minutas. */
+function tacComoMinuta(t: Tac): Minuta {
+  const status = (
+    {
+      aguardando_assinatura: "pendente",
+      devolvido: "devolvida",
+      em_cumprimento: "assinada",
+      cumprido: "assinada",
+      descumprido: "assinada",
+      cancelado: "cancelada",
+    } as const
+  )[t.status];
+  const quem = [t.compromissario_posto, t.compromissario_nome].filter(Boolean).join(" ");
+  return {
+    id: t.id,
+    denuncia_id: t.origem_denuncia_id ?? "",
+    especie: "tac" as Minuta["especie"],
+    teor: `TAC — ${quem} — ${t.fato}`,
+    dados: {},
+    anexos: [],
+    autor_id: t.redator_id,
+    autor_nome: t.redator_nome,
+    autor_posto: t.redator_posto,
+    autor_cargo: t.redator_cargo,
+    destinatarios: t.destinatarios,
+    recado: t.recado,
+    status,
+    observacao_devolucao: t.observacao_devolucao,
+    devolvida_por_nome: t.devolvido_por_nome,
+    assinada_por_id: t.signatario_id,
+    assinada_por_nome: t.signatario_nome
+      ? [t.signatario_posto, t.signatario_nome].filter(Boolean).join(" ")
+      : null,
+    assinada_em: t.celebrado_em,
+    movimento_id: null,
+    criado_em: t.criado_em,
+    atualizado_em: t.atualizado_em,
+    denuncias: {
+      numero_procedimento: t.numero ? `TAC ${t.numero}` : quem,
+      numero_protocolo: "",
+      tipo_procedimento: null,
+    },
+  };
+}
+
 /* ---------- página ---------- */
 
 type Aba = "assinar" | "enviadas" | "assinadas" | "devolvidas" | "todas";
@@ -238,6 +289,14 @@ function MinutasPage() {
     enabled: interno,
     retry: false,
   });
+  // TACs encaminhados para assinatura entram na categoria "TAC".
+  const tacsFn = useServerFn(listTacs);
+  const { data: dadosTacs } = useQuery({
+    queryKey: ["tacs"],
+    queryFn: () => tacsFn(),
+    enabled: interno,
+    retry: false,
+  });
 
   if (session && !interno) {
     return (
@@ -253,6 +312,7 @@ function MinutasPage() {
   const minutas = [
     ...(data?.minutas ?? []),
     ...(dadosOficios?.oficios ?? []).filter((o) => o.destinatarios.length).map(oficioComoMinuta),
+    ...(dadosTacs?.tacs ?? []).filter((t) => t.destinatarios.length).map(tacComoMinuta),
   ].sort((a, b) => b.atualizado_em.localeCompare(a.atualizado_em));
   const uid = session?.userId ?? "";
   const nomes = new Map((assinantes ?? []).map((a) => [a.id, a]));
@@ -447,7 +507,9 @@ function ListaMinutas({
                         onClick={() =>
                           m.especie === ("oficio" as string)
                             ? navigate({ to: "/oficios", search: { id: m.id } })
-                            : navigate({ to: "/minutas", search: { id: m.id } })
+                            : m.especie === ("tac" as string)
+                              ? navigate({ to: "/tac", search: { id: m.id } })
+                              : navigate({ to: "/minutas", search: { id: m.id } })
                         }
                         className="grid w-full gap-x-4 gap-y-1 px-4 py-3 text-left text-sm transition hover:bg-surface-2 md:grid-cols-[170px_minmax(0,1fr)_200px_150px_auto] md:items-center"
                       >

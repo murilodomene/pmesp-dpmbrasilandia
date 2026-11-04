@@ -32,6 +32,7 @@ import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedPdoRouteImport } from './routes/_authenticated/pdo'
 import { Route as AuthenticatedPendenteRouteImport } from './routes/_authenticated/pendente'
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
+import { Route as AuthenticatedTacRouteImport } from './routes/_authenticated/tac'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as IpcIndexRouteImport } from './routes/ipc.index'
 import { Route as IpcIdRouteImport } from './routes/ipc.$id'
@@ -156,6 +157,11 @@ const AuthenticatedPerfilRoute = AuthenticatedPerfilRouteImport.update({
   path: '/perfil',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTacRoute = AuthenticatedTacRouteImport.update({
+  id: '/tac',
+  path: '/tac',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
   id: '/usuarios',
   path: '/usuarios',
@@ -205,6 +211,7 @@ export interface FileRoutesByFullPath {
   '/pdo': typeof AuthenticatedPdoRoute
   '/pendente': typeof AuthenticatedPendenteRoute
   '/perfil': typeof AuthenticatedPerfilRoute
+  '/tac': typeof AuthenticatedTacRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/ipc/$id': typeof IpcIdRoute
   '/ipm/$id': typeof IpmIdRoute
@@ -234,6 +241,7 @@ export interface FileRoutesByTo {
   '/pdo': typeof AuthenticatedPdoRoute
   '/pendente': typeof AuthenticatedPendenteRoute
   '/perfil': typeof AuthenticatedPerfilRoute
+  '/tac': typeof AuthenticatedTacRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/ipc/$id': typeof IpcIdRoute
   '/ipm/$id': typeof IpmIdRoute
@@ -265,6 +273,7 @@ export interface FileRoutesById {
   '/_authenticated/pdo': typeof AuthenticatedPdoRoute
   '/_authenticated/pendente': typeof AuthenticatedPendenteRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
+  '/_authenticated/tac': typeof AuthenticatedTacRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/ipc/$id': typeof IpcIdRoute
   '/ipm/$id': typeof IpmIdRoute
@@ -296,6 +305,7 @@ export interface FileRouteTypes {
     | '/pdo'
     | '/pendente'
     | '/perfil'
+    | '/tac'
     | '/usuarios'
     | '/ipc/$id'
     | '/ipm/$id'
@@ -325,6 +335,7 @@ export interface FileRouteTypes {
     | '/pdo'
     | '/pendente'
     | '/perfil'
+    | '/tac'
     | '/usuarios'
     | '/ipc/$id'
     | '/ipm/$id'
@@ -355,6 +366,7 @@ export interface FileRouteTypes {
     | '/_authenticated/pdo'
     | '/_authenticated/pendente'
     | '/_authenticated/perfil'
+    | '/_authenticated/tac'
     | '/_authenticated/usuarios'
     | '/ipc/$id'
     | '/ipm/$id'
@@ -542,6 +554,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPerfilRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/tac': {
+      id: '/_authenticated/tac'
+      path: '/tac'
+      fullPath: '/tac'
+      preLoaderRoute: typeof AuthenticatedTacRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/usuarios': {
       id: '/_authenticated/usuarios'
       path: '/usuarios'
@@ -594,6 +613,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPdoRoute: typeof AuthenticatedPdoRoute
   AuthenticatedPendenteRoute: typeof AuthenticatedPendenteRoute
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
+  AuthenticatedTacRoute: typeof AuthenticatedTacRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
 }
 
@@ -611,6 +631,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPdoRoute: AuthenticatedPdoRoute,
   AuthenticatedPendenteRoute: AuthenticatedPendenteRoute,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
+  AuthenticatedTacRoute: AuthenticatedTacRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
 }
 

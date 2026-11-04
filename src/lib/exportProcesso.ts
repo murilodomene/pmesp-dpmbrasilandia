@@ -719,3 +719,21 @@ export async function previaOficioPdf(oficio: import("@/lib/pdf/oficio-pdf").Pdf
   const url = URL.createObjectURL(pdf.output("blob") as Blob);
   return { url, nome, baixar: () => pdf.save(nome) };
 }
+
+/** Termo de Ajustamento de Conduta: baixa o PDF. */
+export async function exportTacPdf(tac: import("@/lib/pdf/processo-pdf").PdfTac): Promise<void> {
+  const { gerarTacPdf, nomeArquivoTac } = await import("@/lib/pdf/processo-pdf");
+  const assets = await carregarAssetsPdf([]);
+  const pdf = await gerarTacPdf(tac, assets);
+  pdf.save(nomeArquivoTac(tac.numero));
+}
+
+/** TAC em PDF como endereço temporário (blob) para a prévia na própria página. */
+export async function previaTacPdf(tac: import("@/lib/pdf/processo-pdf").PdfTac): Promise<PreviaAtoPdf> {
+  const { gerarTacPdf, nomeArquivoTac } = await import("@/lib/pdf/processo-pdf");
+  const assets = await carregarAssetsPdf([]);
+  const pdf = await gerarTacPdf(tac, assets);
+  const nome = nomeArquivoTac(tac.numero);
+  const url = URL.createObjectURL(pdf.output("blob") as Blob);
+  return { url, nome, baixar: () => pdf.save(nome) };
+}

@@ -15,11 +15,13 @@ import {
   X,
   FileSignature,
   Mail,
+  Handshake,
 } from "lucide-react";
 import { getSessionInfo } from "@/lib/usuarios.functions";
 import { listAvisos } from "@/lib/avisos.functions";
 import { contarMinutasParaAssinar } from "@/lib/minutas.functions";
 import { contarOficiosParaAssinar } from "@/lib/oficios.functions";
+import { contarTacsParaAssinar } from "@/lib/tac.functions";
 import { ROLE_LABELS, isAdminRole, isInternalRole } from "@/lib/access-roles";
 import { PMESP_CREST_URL } from "@/lib/branding";
 import { aoMudarAvisosVistos, avisosNaoVistos } from "@/lib/avisos-vistos";
@@ -70,7 +72,14 @@ export function AreaInternaLayout({ children }: { children: ReactNode }) {
     enabled: !!interno,
     refetchInterval: 60_000,
   });
-  const totalParaAssinar = (paraAssinar ?? 0) + (oficiosParaAssinar ?? 0);
+  const tacsFn = useServerFn(contarTacsParaAssinar);
+  const { data: tacsParaAssinar } = useQuery({
+    queryKey: ["tacs-pendentes"],
+    queryFn: () => tacsFn(),
+    enabled: !!interno,
+    refetchInterval: 60_000,
+  });
+  const totalParaAssinar = (paraAssinar ?? 0) + (oficiosParaAssinar ?? 0) + (tacsParaAssinar ?? 0);
   const [novos, setNovos] = useState(0);
   useEffect(() => {
     const contar = () => setNovos(avisosNaoVistos((avisos ?? []).map((a: { id: string }) => a.id)).size);
@@ -96,6 +105,16 @@ export function AreaInternaLayout({ children }: { children: ReactNode }) {
                 label: "Minutas",
                 icon: FileSignature,
                 badge: totalParaAssinar ? `${totalParaAssinar} p/ assinar` : null,
+              },
+            ]
+          : []),
+        ...(interno
+          ? [
+              {
+                to: "/tac",
+                label: "TAC",
+                icon: Handshake,
+                badge: tacsParaAssinar ? `${tacsParaAssinar} p/ assinar` : null,
               },
             ]
           : []),

@@ -102,6 +102,8 @@ export function NotificacoesBell() {
                       ? "/minutas"
                       : /^Of[íi]cio\b/.test(n.titulo ?? "")
                         ? "/oficios"
+                        : /^TAC\b/.test(n.titulo ?? "")
+                          ? "/tac"
                       : n.denuncia_id
                       ? `/corregedoria?id=${n.denuncia_id}`
                       : "/painel";

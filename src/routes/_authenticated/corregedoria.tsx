@@ -1,6 +1,6 @@
 import { montarNotaCulpa } from "@/lib/nota-culpa";
 import { montarAutoInterrogatorio, montarTermoDeclaracoes } from "@/lib/termos-apfd";
-import { ROLE_LABELS as ROTULOS_CARGO } from "@/lib/access-roles";
+import { ROLE_LABELS as ROTULOS_CARGO, isInternalRole } from "@/lib/access-roles";
 import { NumeroProcedimento } from "@/components/NumeroProcedimento";
 import { InstaurarProcedimentoBotao, CARGOS_INSTAURACAO } from "@/components/InstaurarProcedimentoDialog";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -53,12 +53,12 @@ import { OPMS } from "@/lib/personnel-options";
 
 
 import { getSessionInfo } from "@/lib/usuarios.functions";
-import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2, Download, ShieldCheck, Bell, MessageSquare, Copy, Mic, Plus, Search, Lock, ScrollText, ChevronRight, Send, UserRound, Mail } from "lucide-react";
+import { Gavel, FileText, Scale, ExternalLink, X, Users, Pencil, Stamp, Eye, Trash2, Download, ShieldCheck, Bell, MessageSquare, Copy, Mic, Plus, Search, Lock, ScrollText, ChevronRight, Send, UserRound, Mail, Handshake } from "lucide-react";
 import { aplicarModelo, modelosDe } from "@/lib/modelos-ato";
 import { montarTeorAto } from "@/lib/teor-ato";
 import { DocumentTemplate, exportDocumentToPdf, useDocumentRef } from "@/components/DocumentTemplate";
 import { RichTextEditor, isHtmlAto, sanitizeAtoHtml } from "@/components/RichTextEditor";
-import { exportAtoPdfV2, exportOficioPdf, exportProcessoCompleto, exportProcessoCompletoV2, previsualizarAtoPdf, type PreviaAtoPdf } from "@/lib/exportProcesso";
+import { exportAtoPdfV2, exportOficioPdf, exportTacPdf, exportProcessoCompleto, exportProcessoCompletoV2, previsualizarAtoPdf, type PreviaAtoPdf } from "@/lib/exportProcesso";
 import { ExportAtoContext, useExportarAto } from "@/components/ExportAtoContext";
 import { AtoAnexosUploader, type AtoAnexo } from "@/components/AtoAnexosUploader";
 import { AtoAnexosLinks } from "@/components/AtoAnexosLinks";
@@ -66,6 +66,8 @@ import { IntimarDialog } from "@/components/IntimarDialog";
 import { EncaminharMinutaDialog } from "@/components/EncaminharMinutaDialog";
 import { getOficio } from "@/lib/oficios.functions";
 import { pdfDoOficio } from "@/lib/pdf/oficio-pdf";
+import { listTacs } from "@/lib/tac.functions";
+import { pdfDoTac } from "@/lib/tac-pdf-dados";
 import { TarjasManager, TarjasStrip, type CorTarja } from "@/components/Tarja";
 import { PortariaTemplate, exportPortariaToPdf, isPortariaDados, type PortariaDados } from "@/components/PortariaTemplate";
 
@@ -563,6 +565,28 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
   const [encaminhando, setEncaminhando] = useState(false);
   const getOficioFn = useServerFn(getOficio);
   const [baixandoOficio, setBaixandoOficio] = useState<string | null>(null);
+  const listTacsFn = useServerFn(listTacs);
+  const { data: dadosTacs } = useQuery({
+    queryKey: ["tacs"],
+    queryFn: () => listTacsFn(),
+    enabled: isInternalRole((session as { cargo?: string | null } | undefined)?.cargo ?? null),
+    retry: false,
+  });
+  const tacsDoProcesso = (dadosTacs?.tacs ?? []).filter((t) => t.origem_denuncia_id === id);
+  const tacVigente = tacsDoProcesso.find((t) => t.status === "em_cumprimento") ?? null;
+  const [baixandoTac, setBaixandoTac] = useState<string | null>(null);
+  async function baixarTac(numero: string) {
+    const t = (dadosTacs?.tacs ?? []).find((x) => x.numero === numero);
+    if (!t) return toast.error("TAC não encontrado.");
+    setBaixandoTac(numero);
+    try {
+      await exportTacPdf(pdfDoTac(t, dadosTacs?.config ?? null));
+    } catch (e) {
+      toast.error((e as Error)?.message || "Falha ao gerar o PDF do TAC.");
+    } finally {
+      setBaixandoTac(null);
+    }
+  }
   async function baixarOficio(numero: string) {
     setBaixandoOficio(numero);
     try {
@@ -880,6 +904,19 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
           </div>
         </div>
         <div className="flex flex-wrap items-stretch gap-2.5">
+          {tacVigente && (
+            <Link
+              to="/tac"
+              search={{ id: tacVigente.id }}
+              className="flex min-w-[200px] flex-col gap-0.5 rounded-lg border border-sky-400/50 bg-sky-400/10 px-3.5 py-2.5 hover:bg-sky-400/15"
+            >
+              <span className="text-[10.5px] font-semibold uppercase tracking-wider text-sky-200">Suspenso por TAC</span>
+              <span className="text-sm font-semibold">TAC nº {tacVigente.numero}</span>
+              <span className="text-[11px] text-muted-foreground">
+                até {tacVigente.fim ? new Date(`${tacVigente.fim}T12:00:00-03:00`).toLocaleDateString("pt-BR") : "—"} · prescrição suspensa
+              </span>
+            </Link>
+          )}
           <RelogioPrescricao
             termo_inicial={denuncia.termo_inicial}
             acrescimos_dias={denuncia.acrescimos_dias}
@@ -965,6 +1002,16 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
             className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
           >
             <Mail className="h-3.5 w-3.5" aria-hidden /> Expedir ofício
+          </Link>
+        )}
+        {isInternoCorregedoria && !tacVigente && (
+          <Link
+            to="/tac"
+            search={{ novo: true, processo: id }}
+            title="Propor Termo de Ajustamento de Conduta (o processo fica suspenso enquanto durar o ajuste)"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2"
+          >
+            <Handshake className="h-3.5 w-3.5" aria-hidden /> Propor TAC
           </Link>
         )}
         <button
@@ -1706,6 +1753,20 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 <Download className="h-3.5 w-3.5" aria-hidden /> {baixandoOficio === numeroOficio ? "Gerando..." : "PDF do ofício"}
               </button>
             );
+            const numeroTac =
+              m.especie === "evento" && typeof m.teor === "string"
+                ? (m.teor.match(/^\s*Celebrado o TAC nº (\d{3}\/\d{4})/)?.[1] ?? null)
+                : null;
+            const btnTac = numeroTac && (dadosTacs?.tacs ?? []).some((t) => t.numero === numeroTac) && (
+              <button
+                type="button"
+                onClick={() => baixarTac(numeroTac)}
+                disabled={baixandoTac === numeroTac}
+                className="inline-flex items-center gap-1 rounded-md border border-primary/50 bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
+              >
+                <Download className="h-3.5 w-3.5" aria-hidden /> {baixandoTac === numeroTac ? "Gerando..." : "PDF do TAC"}
+              </button>
+            );
             const btnTextoDiscord = m.especie === "mandado" && !canceladoEm && (
               <button
                 type="button"
@@ -1968,6 +2029,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                     </span>
                     <div className="flex items-center gap-2">
                       {btnOficio}
+                      {btnTac}
                       {btnCancelar}
                       {btnExcluirSilencioso}
                     </div>

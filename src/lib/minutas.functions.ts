@@ -236,3 +236,27 @@ export const cancelarMinuta = createServerFn({ method: "POST" })
     if (error) throw erroMinutas(error);
     return { ok: true };
   });
+
+/** Remove minutas já assinadas da lista (só a cúpula). O ato lançado continua no processo. */
+export const removerMinutas = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ ids: z.array(z.string().uuid()).min(1).max(500) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: n, error } = await (context.supabase as any).rpc("remover_minutas", {
+      _ids: data.ids,
+    });
+    if (error) {
+      if (
+        /remover_minutas/.test(error.message ?? "") &&
+        /could not find|does not exist|schema cache/i.test(error.message ?? "")
+      ) {
+        throw new Error(
+          "A remoção de minutas ainda não foi instalada no banco deste site (falta rodar o script SQL).",
+        );
+      }
+      throw erroMinutas(error);
+    }
+    return { removidas: (n as number) ?? 0 };
+  });

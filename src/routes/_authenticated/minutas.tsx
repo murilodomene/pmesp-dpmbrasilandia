@@ -39,6 +39,7 @@ import {
   devolverMinuta,
   listAssinantesMinuta,
   listMinutas,
+  removerMinutas,
   type Minuta,
   type StatusMinuta,
 } from "@/lib/minutas.functions";
@@ -369,7 +370,28 @@ function ListaMinutas({
   nomes: Map<string, { nome: string; posto_graduacao: string | null }>;
 }) {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const assinante = isAdminRole(cargo);
+  // Só minutas de ato já assinadas; ofícios e TACs são documentos e não saem daqui.
+  const podeRemover = (m: Minuta) =>
+    assinante &&
+    m.status === "assinada" &&
+    m.especie !== ("oficio" as string) &&
+    m.especie !== ("tac" as string);
+  const removerFn = useServerFn(removerMinutas);
+  const [remover, setRemover] = useState<string[] | null>(null);
+  const mRemover = useMutation({
+    mutationFn: (ids: string[]) => removerFn({ data: { ids } }),
+    onSuccess: (r) => {
+      toast.success(r.removidas === 1 ? "Minuta removida." : `${r.removidas} minutas removidas.`);
+      setRemover(null);
+      qc.invalidateQueries({ queryKey: ["minutas"] });
+    },
+    onError: (e) => {
+      setRemover(null);
+      toast.error((e as Error)?.message || "Não foi possível remover.");
+    },
+  });
   const filtros: Record<Aba, (m: Minuta) => boolean> = {
     assinar: (m) => m.status === "pendente" && m.destinatarios.includes(uid),
     enviadas: (m) => m.autor_id === uid && m.status !== "cancelada",
@@ -479,6 +501,20 @@ function ListaMinutas({
         </div>
       </div>
 
+      {aba === "assinadas" && filtradas.some(podeRemover) && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => setRemover(filtradas.filter(podeRemover).map((m) => m.id))}
+            className="inline-flex items-center gap-1.5 rounded-md border border-destructive/60 px-3 py-1.5 text-xs text-red-300 hover:bg-destructive/10"
+          >
+            <Trash2 className="h-3.5 w-3.5" aria-hidden /> Remover{" "}
+            {cat === "todas" && !q ? "todas as" : "as"} assinadas listadas (
+            {filtradas.filter(podeRemover).length})
+          </button>
+        </div>
+      )}
+
       {grupos.length === 0 ? (
         <div className="surface p-8 text-center text-sm text-muted-foreground">
           {aba === "assinar"
@@ -501,7 +537,7 @@ function ListaMinutas({
                     .map((a) => nomeComPosto(a!.posto_graduacao, a!.nome));
                   const paraMim = m.status === "pendente" && m.destinatarios.includes(uid);
                   return (
-                    <li key={m.id}>
+                    <li key={m.id} className="flex items-stretch">
                       <button
                         type="button"
                         onClick={() =>
@@ -511,7 +547,7 @@ function ListaMinutas({
                               ? navigate({ to: "/tac", search: { id: m.id } })
                               : navigate({ to: "/minutas", search: { id: m.id } })
                         }
-                        className="grid w-full gap-x-4 gap-y-1 px-4 py-3 text-left text-sm transition hover:bg-surface-2 md:grid-cols-[170px_minmax(0,1fr)_200px_150px_auto] md:items-center"
+                        className="grid min-w-0 flex-1 gap-x-4 gap-y-1 px-4 py-3 text-left text-sm transition hover:bg-surface-2 md:grid-cols-[170px_minmax(0,1fr)_200px_150px_auto] md:items-center"
                       >
                         <span className="min-w-0">
                           <span className="block font-medium text-primary">
@@ -549,6 +585,17 @@ function ListaMinutas({
                           )}
                         </span>
                       </button>
+                      {podeRemover(m) && (
+                        <button
+                          type="button"
+                          onClick={() => setRemover([m.id])}
+                          aria-label={`Remover a minuta assinada de ${procedimentoDe(m)}`}
+                          title="Remover da lista (o ato continua no processo)"
+                          className="shrink-0 px-3 text-muted-foreground transition hover:bg-destructive/10 hover:text-red-300"
+                        >
+                          <Trash2 className="h-4 w-4" aria-hidden />
+                        </button>
+                      )}
                     </li>
                   );
                 })}
@@ -557,6 +604,39 @@ function ListaMinutas({
           ))}
         </div>
       )}
+
+      <AlertDialog
+        open={!!remover}
+        onOpenChange={(v) => !v && !mRemover.isPending && setRemover(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {remover && remover.length > 1
+                ? `Remover ${remover.length} minutas assinadas?`
+                : "Remover esta minuta assinada?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {remover && remover.length > 1 ? "Elas saem" : "Ela sai"} da aba Minutas
+              definitivamente. O ato assinado continua no processo, com o PDF e o Escrivão, sem
+              nenhuma alteração.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={mRemover.isPending}>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(ev) => {
+                ev.preventDefault();
+                if (remover) mRemover.mutate(remover);
+              }}
+              disabled={mRemover.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {mRemover.isPending ? "Removendo..." : "Remover"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
@@ -785,6 +865,21 @@ function MinutaDetalhe({
     },
     onError: (e) => toast.error((e as Error)?.message || "Não foi possível devolver."),
   });
+  const removerFn = useServerFn(removerMinutas);
+  const [confirmarRemover, setConfirmarRemover] = useState(false);
+  const mRemover = useMutation({
+    mutationFn: () => removerFn({ data: { ids: [minuta.id] } }),
+    onSuccess: () => {
+      toast.success("Minuta removida. O ato continua no processo.");
+      setConfirmarRemover(false);
+      qc.invalidateQueries({ queryKey: ["minutas"] });
+      navigate({ to: "/minutas" });
+    },
+    onError: (e) => {
+      setConfirmarRemover(false);
+      toast.error((e as Error)?.message || "Não foi possível remover.");
+    },
+  });
   const mCancelar = useMutation({
     mutationFn: () => cancelarFn({ data: { minuta_id: minuta.id } }),
     onSuccess: () => {
@@ -853,6 +948,15 @@ function MinutaDetalhe({
               >
                 Ver na linha do tempo
               </Link>
+              {isAdminRole(cargo) && (
+                <button
+                  type="button"
+                  onClick={() => setConfirmarRemover(true)}
+                  className="inline-flex items-center gap-1 rounded-md border border-destructive/60 px-2.5 py-1 text-xs text-red-300 hover:bg-destructive/10"
+                >
+                  <Trash2 className="h-3.5 w-3.5" aria-hidden /> Remover minuta
+                </button>
+              )}
             </div>
           )}
           {editavel && (
@@ -1171,6 +1275,34 @@ function MinutaDetalhe({
               disabled={mAssinar.isPending}
             >
               {mAssinar.isPending ? "Assinando..." : "Assinar e lançar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={confirmarRemover}
+        onOpenChange={(v) => !mRemover.isPending && setConfirmarRemover(v)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover esta minuta assinada?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Ela sai da aba Minutas definitivamente. O ato assinado continua no processo, com o PDF
+              e o Escrivão, sem nenhuma alteração.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={mRemover.isPending}>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(ev) => {
+                ev.preventDefault();
+                mRemover.mutate();
+              }}
+              disabled={mRemover.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {mRemover.isPending ? "Removendo..." : "Remover"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

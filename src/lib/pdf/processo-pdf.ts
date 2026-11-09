@@ -705,6 +705,8 @@ class ProcessoPdf {
     w.pular(3);
     if (anonimo) {
       this.campo("IDENTIFICAÇÃO:", "Denúncia anônima");
+    } else if (den.denunciante_nome?.trim() === "Corregedoria") {
+      this.campo("IDENTIFICAÇÃO:", "Corregedoria (procedimento instaurado de ofício)");
     } else {
       this.campo("NOME:", den.denunciante_nome || "Não informado");
       this.campo("IDENTIFICADOR:", den.denunciante_identificador || "Não informado");

@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { DENUNCIANTE_CORREGEDORIA } from "@/lib/denuncias.functions";
 
 const DESFECHOS = ["regular", "sanada", "gera_procedimento"] as const;
 const ESTADOS = ["conforme", "nao_conforme", "nao_aplicavel"] as const;
@@ -152,7 +153,8 @@ export const gerarProcedimentoDoPdo = createServerFn({ method: "POST" })
     const { data: den, error: e2 } = await sb
       .from("denuncias")
       .insert({
-        denunciante_nome: pdo.lavrado_por_nome,
+        // Diligência da própria Corregedoria: o denunciante é a Corregedoria.
+        denunciante_nome: DENUNCIANTE_CORREGEDORIA,
         denunciante_anonimo: false,
         ocorrencia_tipo: "Diligência Corregedoria (PDO)",
         ocorrencia_local: pdo.local,

@@ -94,6 +94,22 @@ async function juntarPeticoesEnviadas(
   }
 }
 
+/**
+ * O denunciante é sempre quem consta no formulário (nome, identificador e
+ * contato), nunca o usuário logado. Falha aqui não derruba a denúncia.
+ */
+async function registrarDenunciante(
+  ref: { id?: string; protocolo?: string },
+  data: z.infer<typeof submitSchema>,
+): Promise<void> {
+  try {
+    const { gravarDenunciante } = await import("@/lib/denuncias.server");
+    await gravarDenunciante(ref, data);
+  } catch (e) {
+    console.error("[denuncias] falha ao gravar o denunciante informado", e);
+  }
+}
+
 export const submitDenuncia = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => submitSchema.parse(data))
   .handler(async ({ data }) => {
@@ -107,6 +123,7 @@ export const submitDenuncia = createServerFn({ method: "POST" })
     );
     if (error) throw new Error(error.message);
     if (!protocolo) throw new Error("Não foi possível gerar o protocolo da denúncia.");
+    await registrarDenunciante({ protocolo: String(protocolo) }, data);
     let peticoesFalharam = 0;
     if (peticoes.length) {
       const { idDenunciaPorProtocolo } = await import("@/lib/peticoes.server");
@@ -766,6 +783,9 @@ export const lavrarPortaria = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Denunciante dos procedimentos abertos pela própria Corregedoria (de ofício, PDO). */
+export const DENUNCIANTE_CORREGEDORIA = "Corregedoria";
+
 // Instauração de ofício pela Corregedoria (SSP, Corregedor
 // ou Corregedor-Geral). Cria a denúncia já instaurada, com termo inicial
 // no momento da criação e status 'em_investigacao', e registra um despacho
@@ -808,7 +828,8 @@ export const instaurarOficio = createServerFn({ method: "POST" })
       .from("denuncias")
       .insert({
         owner_id: context.userId,
-        denunciante_nome: p.prolator_nome,
+        // De ofício: quem denuncia é a própria Corregedoria (não o corregedor que instaurou).
+        denunciante_nome: DENUNCIANTE_CORREGEDORIA,
         denunciante_anonimo: false,
         ocorrencia_tipo: data.titulo,
         ocorrencia_data: data.ocorrencia_data || null,
@@ -890,6 +911,7 @@ export const submitDenunciaCidadao = createServerFn({ method: "POST" })
       }));
       await context.supabase.from("denuncia_policiais").insert(rows);
     }
+    await registrarDenunciante({ id: den.id }, data);
     const peticoesFalharam = await juntarPeticoesEnviadas(den.id, data.peticoes);
     return { protocolo: den.numero_protocolo, peticoesFalharam };
   });

@@ -25,11 +25,13 @@ import {
   type PdfPdo,
   type PdfFichaFuncional,
   gerarProcessoPdf,
+  montarProcessoPdf,
   nomeArquivoAto,
   nomeArquivoProcesso,
   type PdfAssets,
   type PdfDenuncia,
   type PdfImagem,
+  type PdfPeticao,
   type PdfMovimento,
   type PdfPolicial,
 } from "@/lib/pdf/processo-pdf";
@@ -467,14 +469,113 @@ async function carregarImagemPublica(caminho: string): Promise<PdfImagem> {
  * com IPM/SINDPM, emblema da PM e "Página X de Y". NÃO inclui observações internas.
  */
 export async function exportProcessoCompletoV2(
-  data: Omit<ExportProcessoData, "denuncia"> & { denuncia: PdfDenuncia },
+  data: Omit<ExportProcessoData, "denuncia"> & {
+    denuncia: PdfDenuncia;
+    peticoes?: PeticoesExport;
+  },
 ): Promise<void> {
   const assets = await carregarAssetsPdf(data.movimentos);
-  const pdf = await gerarProcessoPdf(
-    { denuncia: data.denuncia, policiais: data.policiais, movimentos: data.movimentos },
+  const { peticoes, arquivos } = await prepararPeticoesPdf(data.peticoes);
+  const denuncia: PdfDenuncia = { ...data.denuncia, peticoes };
+  const { pdf, reservas, rodape } = await montarProcessoPdf(
+    { denuncia, policiais: data.policiais, movimentos: data.movimentos },
     assets,
   );
-  pdf.save(nomeArquivoProcesso(data.denuncia));
+  const nome = nomeArquivoProcesso(denuncia);
+  if (!arquivos.length) {
+    pdf.save(nome);
+    return;
+  }
+  const { juntarPeticoes } = await import("@/lib/pdf/juntada-pdf");
+  const emblema = await fetch("/pdf/emblema-pm.png")
+    .then((r) => (r.ok ? r.arrayBuffer() : undefined))
+    .catch(() => undefined);
+  const bytes = await juntarPeticoes(
+    pdf.output("arraybuffer"),
+    reservas,
+    arquivos,
+    rodape,
+    emblema,
+  );
+  const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: "application/pdf" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nome;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+/* ------------ petições do denunciante ------------ */
+
+export interface PeticaoExport {
+  id: string;
+  nome: string;
+  enviado_em: string;
+  paginas: number | null;
+  tamanho: number | null;
+  expira_em: string | null;
+  removido_em: string | null;
+}
+
+export interface PeticoesExport {
+  lista: PeticaoExport[];
+  /** Junta as páginas das petições ainda disponíveis (senão, só o índice). */
+  juntar: boolean;
+  /** Endereço temporário para baixar o PDF da petição. */
+  obterUrl: (id: string) => Promise<string>;
+}
+
+/** Baixa e confere as petições a juntar; as que falharem ficam só no índice. */
+async function prepararPeticoesPdf(entrada?: PeticoesExport): Promise<{
+  peticoes: PdfPeticao[];
+  arquivos: Array<{ bytes: ArrayBuffer; tarja: string }>;
+}> {
+  const peticoes: PdfPeticao[] = [];
+  const arquivos: Array<{ bytes: ArrayBuffer; tarja: string }> = [];
+  if (!entrada?.lista.length) return { peticoes, arquivos };
+  const { PDFDocument } = entrada.juntar ? await import("pdf-lib") : { PDFDocument: null };
+  for (const [i, p] of entrada.lista.entries()) {
+    let paginas = p.paginas;
+    let juntada = false;
+    if (entrada.juntar && PDFDocument && !p.removido_em) {
+      try {
+        const url = await entrada.obterUrl(p.id);
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const bytes = await resp.arrayBuffer();
+        const doc = await PDFDocument.load(bytes, { ignoreEncryption: true, updateMetadata: false });
+        paginas = doc.getPageCount();
+        // PDF protegido por senha não pode ser reproduzido: fica só no índice.
+        if (doc.isEncrypted) throw new Error("PDF protegido");
+        await (await PDFDocument.create()).embedPages(doc.getPages());
+        if (paginas > 0) {
+          juntada = true;
+          const quando = new Date(p.enviado_em).toLocaleString("pt-BR", {
+            dateStyle: "short",
+            timeStyle: "short",
+          });
+          arquivos.push({
+            bytes,
+            tarja: `PETIÇÃO ${String(i + 1).padStart(2, "0")} — enviada pelo denunciante em ${quando}`,
+          });
+        }
+      } catch (e) {
+        console.error("[export] petição não juntada", p.nome, e);
+      }
+    }
+    peticoes.push({
+      nome: p.nome,
+      enviado_em: p.enviado_em,
+      paginas,
+      tamanho: p.tamanho,
+      expira_em: p.expira_em,
+      removido_em: p.removido_em,
+      juntada,
+    });
+  }
+  return { peticoes, arquivos };
 }
 
 /** Timbre, emblema e imagens anexadas aos movimentos informados. */

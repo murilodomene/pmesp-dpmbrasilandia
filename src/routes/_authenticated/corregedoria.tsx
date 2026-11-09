@@ -68,6 +68,8 @@ import { getOficio } from "@/lib/oficios.functions";
 import { pdfDoOficio } from "@/lib/pdf/oficio-pdf";
 import { listTacs } from "@/lib/tac.functions";
 import { pdfDoTac } from "@/lib/tac-pdf-dados";
+import { JuntarPeticoesCheckbox, PeticoesDenuncia, usePeticoesExport } from "@/components/PeticoesDenuncia";
+import { faxinaPeticoes } from "@/lib/peticoes.functions";
 import { TarjasManager, TarjasStrip, type CorTarja } from "@/components/Tarja";
 import { PortariaTemplate, exportPortariaToPdf, isPortariaDados, type PortariaDados } from "@/components/PortariaTemplate";
 
@@ -152,6 +154,18 @@ function Corregedoria() {
   const listFn = useServerFn(listDenuncias);
   const { data: session } = useQuery({ queryKey: ["session-info"], queryFn: () => sessionFn() });
   const { data: denuncias } = useQuery({ queryKey: ["denuncias"], queryFn: () => listFn() });
+  const faxinaFn = useServerFn(faxinaPeticoes);
+  // Expurgo dos PDFs de denunciantes vencidos (30 dias): uma vez por sessão.
+  useEffect(() => {
+    if (!session?.cargo || session.profile?.status !== "ativo") return;
+    try {
+      if (sessionStorage.getItem("faxina-peticoes")) return;
+      sessionStorage.setItem("faxina-peticoes", "1");
+    } catch {
+      /* sem sessionStorage: roda assim mesmo */
+    }
+    faxinaFn().catch(() => undefined);
+  }, [session?.cargo, session?.profile?.status, faxinaFn]);
 
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState<DenunciaStatus | "">("");
@@ -1074,6 +1088,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
         <span className="mx-1 hidden h-5 w-px bg-border sm:block" aria-hidden />
             {(cargo === "ssp" || cargo === "cmtg" || cargo === "corregedor_geral" || (cargo === "subcorregedor_geral" || cargo === "corregedor_supervisor")) && (
               <ExportarProcessoBtn
+                denunciaId={id}
                 denuncia={denuncia}
                 policiais={policiais}
                 movimentos={movimentos as never}
@@ -1227,6 +1242,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
             </div>
           )}
         </details>
+        <PeticoesDenuncia denunciaId={id} />
       </div>
 
       {/* Oitivas */}
@@ -4050,11 +4066,13 @@ function ConvocacaoDialog({
 }
 
 function ExportarProcessoBtn({
+  denunciaId,
   denuncia,
 
   policiais,
   movimentos,
 }: {
+  denunciaId: string;
   denuncia: {
     numero_protocolo: string;
     numero_procedimento?: string | null;
@@ -4088,10 +4106,18 @@ function ExportarProcessoBtn({
   }>;
 }) {
   const [gerando, setGerando] = useState<"novo" | "anterior" | null>(null);
+  const peticoes = usePeticoesExport(denunciaId);
   async function gerar(versao: "novo" | "anterior") {
     setGerando(versao);
     try {
-      if (versao === "novo") await exportProcessoCompletoV2({ denuncia, policiais, movimentos, oitivas: [] });
+      if (versao === "novo")
+        await exportProcessoCompletoV2({
+          denuncia,
+          policiais,
+          movimentos,
+          oitivas: [],
+          peticoes: peticoes.dados(),
+        });
       else await exportProcessoCompleto({ denuncia, policiais, movimentos, oitivas: [] });
     } catch (e) {
       toast.error((e as Error)?.message || "Falha ao gerar o PDF do processo.");
@@ -4118,6 +4144,7 @@ function ExportarProcessoBtn({
       >
         {gerando === "anterior" ? "Gerando..." : "versão anterior"}
       </button>
+      <JuntarPeticoesCheckbox ctl={peticoes} />
     </span>
   );
 }

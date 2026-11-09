@@ -8,6 +8,7 @@ import { submitDenuncia, submitDenunciaCidadao } from "@/lib/denuncias.functions
 import { supabase } from "@/integrations/supabase/client";
 import { Trash2, Plus } from "lucide-react";
 import { OPMS } from "@/lib/personnel-options";
+import { PeticoesUploader, type PeticaoLocal } from "@/components/PeticoesUploader";
 
 export const Route = createFileRoute("/denunciar")({
   head: () => ({
@@ -58,17 +59,27 @@ function DenunciarPage() {
   const [policiais, setPoliciais] = useState<Policial[]>([{ nome: "", rg_funcional: "", unidade: "" }]);
   const [linksTxt, setLinksTxt] = useState("");
   const [protocolo, setProtocolo] = useState<string | null>(null);
+  const [peticoes, setPeticoes] = useState<PeticaoLocal[]>([]);
+  const [enviandoPdf, setEnviandoPdf] = useState(0);
+  const [peticoesFalharam, setPeticoesFalharam] = useState(0);
 
   const mut = useMutation({
     mutationFn: (payload: Record<string, unknown>) =>
       logado
         ? submitCidadaoFn({ data: payload as never })
         : submitFn({ data: payload as never }),
-    onSuccess: (r) => setProtocolo(r.protocolo),
+    onSuccess: (r) => {
+      setPeticoesFalharam(r.peticoesFalharam ?? 0);
+      setProtocolo(r.protocolo);
+    },
   });
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (enviandoPdf > 0) {
+      toast.error("Aguarde o envio dos PDFs terminar.");
+      return;
+    }
     const links = linksTxt
       .split("\n")
       .map((s) => s.trim())
@@ -86,6 +97,7 @@ function DenunciarPage() {
       relato: form.relato,
       info_adicional: form.info_adicional || null,
       links,
+      peticoes: peticoes.map((p) => ({ path: p.path, nome: p.nome, paginas: p.paginas })),
       policiais: policiais
         .filter((p) => p.nome.trim())
         .map((p) => ({
@@ -125,6 +137,12 @@ function DenunciarPage() {
               Guarde este protocolo em local seguro: ele é necessário para consultar o andamento da denúncia.
             </p>
           </div>
+          {peticoesFalharam > 0 && (
+            <div className="mt-4 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+              A denúncia foi registrada, mas {peticoesFalharam === 1 ? "1 PDF não pôde ser juntado" : `${peticoesFalharam} PDFs não puderam ser juntados`}.
+              Informe isso à Corregedoria pelo protocolo acima.
+            </div>
+          )}
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
               to="/consultar"
@@ -332,6 +350,20 @@ function DenunciarPage() {
                 placeholder="https://..."
               />
             </Field>
+            <div className="grid gap-1.5">
+              <span className="text-xs uppercase tracking-wider text-muted-foreground">
+                Petições e documentos em PDF (opcional)
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Petições de advogado, procurações, laudos e outros documentos.
+              </span>
+              <PeticoesUploader
+                value={peticoes}
+                onChange={setPeticoes}
+                onEnviando={(d) => setEnviandoPdf((n) => n + d)}
+                disabled={mut.isPending}
+              />
+            </div>
             <div className="rounded-md border border-border/60 bg-surface-2/40 p-3 text-xs text-muted-foreground">
               <strong className="font-medium text-foreground">Atenção quanto aos clipes:</strong>{" "}
               o clipe encaminhado deverá conter o contexto integral da interação com o(s)
@@ -354,10 +386,10 @@ function DenunciarPage() {
           </Link>
           <button
             type="submit"
-            disabled={mut.isPending}
+            disabled={mut.isPending || enviandoPdf > 0}
             className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
           >
-            {mut.isPending ? "Enviando..." : "Enviar denúncia"}
+            {mut.isPending ? "Enviando..." : enviandoPdf > 0 ? "Enviando PDFs..." : "Enviar denúncia"}
           </button>
         </div>
 

@@ -82,6 +82,16 @@ export const limparDados = createServerFn({ method: "POST" })
     const { data: res, error } = await (context.supabase as any).rpc(rpc);
     if (error) throw new Error(error.message);
 
+    // Processos excluídos: apaga também os PDFs enviados pelos denunciantes.
+    if (data.tipo === "processos") {
+      try {
+        const { apagarTodosOsPdfsDeDenunciantes } = await import("@/lib/peticoes.server");
+        await apagarTodosOsPdfsDeDenunciantes();
+      } catch (e) {
+        console.error("[manutencao] falha ao limpar os PDFs dos denunciantes", e);
+      }
+    }
+
     // Para observações, também remove as imagens do bucket privado via Storage API.
     if (data.tipo === "observacoes") {
       try {

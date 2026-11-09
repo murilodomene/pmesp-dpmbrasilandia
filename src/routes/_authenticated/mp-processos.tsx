@@ -14,6 +14,7 @@ import { ExportAtoContext } from "@/components/ExportAtoContext";
 import { toast } from "sonner";
 import { ProcessoLetterhead, ProcessoDetalheSkeleton } from "@/components/ProcessoLetterhead";
 import { TimelineMovimentos } from "@/components/TimelineMovimentos";
+import { JuntarPeticoesCheckbox, PeticoesDenuncia, usePeticoesExport } from "@/components/PeticoesDenuncia";
 
 export const Route = createFileRoute("/_authenticated/mp-processos")({
   component: MpProcessosPage,
@@ -220,6 +221,9 @@ function DetalheProcesso({ id }: { id: string }) {
             </ul>
           </div>
         )}
+        <div className="-mx-5 -mb-5 mt-4">
+          <PeticoesDenuncia denunciaId={(d as { id: string }).id} />
+        </div>
       </div>
 
       <div className="surface p-5">
@@ -308,6 +312,7 @@ function Info({ label, children }: { label: string; children: React.ReactNode })
 
 function ExportarProcessoMpBtn({ data }: { data: Awaited<ReturnType<typeof getDenuncia>> }) {
   const [gerando, setGerando] = useState(false);
+  const peticoes = usePeticoesExport((data.denuncia as { id: string }).id);
   async function onClick() {
     setGerando(true);
     try {
@@ -316,6 +321,7 @@ function ExportarProcessoMpBtn({ data }: { data: Awaited<ReturnType<typeof getDe
         policiais: data.policiais as never,
         movimentos: data.movimentos as never,
         oitivas: [],
+        peticoes: peticoes.dados(),
       });
     } catch (e) {
       toast.error((e as Error)?.message || "Falha ao gerar o PDF do processo.");
@@ -324,14 +330,17 @@ function ExportarProcessoMpBtn({ data }: { data: Awaited<ReturnType<typeof getDe
     }
   }
   return (
-    <button
-      onClick={onClick}
-      disabled={gerando}
-      title="Exportar processo completo em PDF"
-      className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2 disabled:opacity-50"
-    >
-      <Download className="h-3.5 w-3.5" /> {gerando ? "Gerando PDF..." : "Exportar processo (PDF)"}
-    </button>
+    <span className="inline-flex flex-wrap items-center gap-2">
+      <button
+        onClick={onClick}
+        disabled={gerando}
+        title="Exportar processo completo em PDF"
+        className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface-2 disabled:opacity-50"
+      >
+        <Download className="h-3.5 w-3.5" /> {gerando ? "Gerando PDF..." : "Exportar processo (PDF)"}
+      </button>
+      <JuntarPeticoesCheckbox ctl={peticoes} />
+    </span>
   );
 }
 

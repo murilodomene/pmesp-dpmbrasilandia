@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AlertTriangle } from "lucide-react";
+import { PeticoesManutencaoCard } from "@/components/PeticoesManutencao";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/manutencao")({
@@ -57,7 +58,7 @@ const CARDS: Array<{
     tipo: "processos",
     titulo: "Limpar processos administrativos",
     descricao:
-      "Remove TODAS as denúncias/PADs e o que está atrelado (movimentações, atos, oitivas, certidões, intimações, acessos do MP, provas anexadas). Reinicia a numeração de IPM, SINDPM e APFD para 001.",
+      "Remove TODAS as denúncias/PADs e o que está atrelado (movimentações, atos, oitivas, certidões, intimações, acessos do MP, provas anexadas e PDFs enviados pelos denunciantes). Reinicia a numeração de IPM, SINDPM e APFD para 001.",
     palavra: "PROCESSOS",
   },
   {
@@ -201,6 +202,8 @@ function ManutencaoPage() {
         </div>
 
         <NumeracaoCard />
+
+        <PeticoesManutencaoCard />
 
         <div className="grid gap-4">
           {CARDS.map((c) => (

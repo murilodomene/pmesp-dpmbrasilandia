@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { OPMS, POSTOS_GRADUACOES } from "@/lib/personnel-options";
+import { peticaoEnviadaSchema, PETICOES_MAX_ARQUIVOS } from "@/lib/peticoes.functions";
 
 const STATUS_VALUES = [
   "novo",
@@ -73,7 +74,25 @@ const submitSchema = z.object({
     )
     .min(1, "Informe pelo menos um policial denunciado.")
     .max(20),
+  /** PDFs já enviados ao espaço temporário (petições, procurações…). */
+  peticoes: z.array(peticaoEnviadaSchema).max(PETICOES_MAX_ARQUIVOS).default([]),
 });
+
+/** Junta os PDFs enviados à denúncia recém-criada; devolve quantos falharam. */
+async function juntarPeticoesEnviadas(
+  denunciaId: string | null,
+  peticoes: z.infer<typeof submitSchema>["peticoes"],
+): Promise<number> {
+  if (!peticoes.length) return 0;
+  if (!denunciaId) return peticoes.length;
+  try {
+    const { vincularPeticoesDenuncia } = await import("@/lib/peticoes.server");
+    return await vincularPeticoesDenuncia(denunciaId, peticoes);
+  } catch (e) {
+    console.error("[denuncias] falha ao juntar PDFs", e);
+    return peticoes.length;
+  }
+}
 
 export const submitDenuncia = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => submitSchema.parse(data))
@@ -81,13 +100,20 @@ export const submitDenuncia = createServerFn({ method: "POST" })
     // A função de banco grava tudo atomicamente e devolve apenas o protocolo.
     // Isso evita que o INSERT dependa de uma política pública de SELECT.
     const sb = publicClient();
+    const { peticoes, ...payload } = data;
     const { data: protocolo, error } = await sb.rpc(
       "submeter_denuncia_anonima",
-      { _payload: data },
+      { _payload: payload },
     );
     if (error) throw new Error(error.message);
     if (!protocolo) throw new Error("Não foi possível gerar o protocolo da denúncia.");
-    return { protocolo };
+    let peticoesFalharam = 0;
+    if (peticoes.length) {
+      const { idDenunciaPorProtocolo } = await import("@/lib/peticoes.server");
+      const id = await idDenunciaPorProtocolo(String(protocolo)).catch(() => null);
+      peticoesFalharam = await juntarPeticoesEnviadas(id, peticoes);
+    }
+    return { protocolo, peticoesFalharam };
   });
 
 export const consultarPublica = createServerFn({ method: "GET" })
@@ -864,7 +890,8 @@ export const submitDenunciaCidadao = createServerFn({ method: "POST" })
       }));
       await context.supabase.from("denuncia_policiais").insert(rows);
     }
-    return { protocolo: den.numero_protocolo };
+    const peticoesFalharam = await juntarPeticoesEnviadas(den.id, data.peticoes);
+    return { protocolo: den.numero_protocolo, peticoesFalharam };
   });
 
 // Publica/despublica um IPM para o denunciante.
@@ -1048,6 +1075,13 @@ export const excluirDenuncia = createServerFn({ method: "POST" })
     }
     const { error } = await sb.from("denuncias").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
+    // PDFs enviados pelo denunciante: apaga os arquivos do processo excluído.
+    try {
+      const { apagarPdfsDaDenuncia } = await import("@/lib/peticoes.server");
+      await apagarPdfsDaDenuncia(data.id);
+    } catch (e) {
+      console.error("[denuncias] falha ao apagar os PDFs do processo excluído", e);
+    }
     return { ok: true };
   });
 

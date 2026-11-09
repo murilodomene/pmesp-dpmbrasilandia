@@ -77,6 +77,29 @@ export interface PdfDenuncia {
   interrupcoes_count?: number;
   instaurada_em: string | null;
   created_at: string;
+  /* Dados da denúncia transcritos na íntegra no Termo de Denúncia. */
+  denunciante_identificador?: string | null;
+  denunciante_contato?: string | null;
+  ocorrencia_local?: string | null;
+  ocorrencia_data?: string | null;
+  ocorrencia_hora?: string | null;
+  relato?: string | null;
+  info_adicional?: string | null;
+  links?: unknown;
+  /** Petições em PDF enviadas pelo denunciante (índice no Termo de Denúncia). */
+  peticoes?: PdfPeticao[] | null;
+}
+
+export interface PdfPeticao {
+  nome: string;
+  enviado_em: string;
+  paginas: number | null;
+  tamanho: number | null;
+  /** Data em que o arquivo foi (ou será) expurgado do sistema. */
+  expira_em: string | null;
+  removido_em?: string | null;
+  /** true quando as páginas da petição foram juntadas a este PDF. */
+  juntada?: boolean;
 }
 
 export interface PdfProcessoData {
@@ -276,6 +299,37 @@ function alinharLocalData(paragrafos: Paragraph[]): Paragraph[] {
 }
 
 /* ------------ blocos de página ------------ */
+
+/** Texto plano em parágrafos, com endereços (http…, www…) clicáveis. */
+function paragrafosComLinks(texto: string, align: "left" | "justify" = "justify"): Paragraph[] {
+  const URL_RE = /((?:https?:\/\/|www\.)[^\s<>"]+)/gi;
+  return texto
+    .replace(/\r\n?/g, "\n")
+    .split("\n")
+    .map((linha) => {
+      const runs: Paragraph["runs"] = [];
+      let ultimo = 0;
+      for (const m of linha.trim().matchAll(URL_RE)) {
+        const url = m[0].replace(/[.,;:)\]]+$/, "");
+        const ini = m.index ?? 0;
+        if (ini > ultimo) runs.push({ text: linha.trim().slice(ultimo, ini) });
+        runs.push({
+          text: url,
+          href: /^https?:/i.test(url) ? url : `https://${url}`,
+        });
+        ultimo = ini + url.length;
+      }
+      if (ultimo < linha.trim().length) runs.push({ text: linha.trim().slice(ultimo) });
+      return { align, lineHeight: 1.15, runs };
+    });
+}
+
+function tamanhoArquivo(bytes: number | null | undefined): string {
+  if (!bytes) return "—";
+  return bytes >= 1024 * 1024
+    ? `${(bytes / 1024 / 1024).toFixed(1).replace(".", ",")} MB`
+    : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
 
 const CINZA_BARRA: Cor = [199, 199, 199];
 const CORREGPM = "CORREGPM";
@@ -604,6 +658,146 @@ class ProcessoPdf {
     });
     w.pular(14);
     w.texto("Capa de autuação gerada automaticamente pelo sistema.", {
+      size: 8.5,
+      italic: true,
+      align: "center",
+      color: CINZA,
+    });
+  }
+
+  /* ---------- termo de denúncia (relato e links na íntegra) ---------- */
+
+  /** Há algo da denúncia original a transcrever? */
+  get temTermoDenuncia(): boolean {
+    const den = this.d.denuncia;
+    return !!(
+      den.relato?.trim() ||
+      den.info_adicional?.trim() ||
+      (Array.isArray(den.links) && den.links.length) ||
+      den.peticoes?.length
+    );
+  }
+
+  /**
+   * Termo de Denúncia: transcreve, na íntegra, o que o denunciante enviou —
+   * qualificação, dados da ocorrência, relato, informações adicionais, links
+   * e o índice das petições em PDF. Vem logo após a capa.
+   */
+  termoDenuncia(): void {
+    const { w } = this;
+    const den = this.d.denuncia;
+    this.timbreAto();
+    this.identificacaoAto({ numero: null, quando: dataHora(den.created_at) });
+    this.titulo(`TERMO DE DENÚNCIA - ${CORREGPM}`);
+    w.texto(
+      `Recebida pelo sistema em ${dataHora(den.created_at)}, sob o protocolo ${den.numero_protocolo}. Transcrição integral do conteúdo enviado pelo denunciante.`,
+      { size: 10, italic: true, align: "justify", color: CINZA, after: 2 },
+    );
+
+    const anonimo = !!den.denunciante_anonimo;
+    const dataFato = den.ocorrencia_data
+      ? `${new Date(`${den.ocorrencia_data}T12:00:00-03:00`).toLocaleDateString("pt-BR")}${den.ocorrencia_hora ? `, às ${den.ocorrencia_hora.slice(0, 5)}` : ""}`
+      : den.ocorrencia_hora
+        ? `às ${den.ocorrencia_hora.slice(0, 5)}`
+        : "Não informada";
+
+    this.faixa("DENUNCIANTE", 3);
+    w.pular(3);
+    if (anonimo) {
+      this.campo("IDENTIFICAÇÃO:", "Denúncia anônima");
+    } else {
+      this.campo("NOME:", den.denunciante_nome || "Não informado");
+      this.campo("IDENTIFICADOR:", den.denunciante_identificador || "Não informado");
+      this.campo("CONTATO:", den.denunciante_contato || "Não informado");
+    }
+
+    this.faixa("OCORRÊNCIA", 4);
+    w.pular(3);
+    this.campo("NATUREZA:", den.ocorrencia_tipo || "Não informada");
+    this.campo("LOCAL:", den.ocorrencia_local || "Não informado");
+    this.campo("DATA DO FATO:", dataFato);
+
+    this.faixa("RELATO DO DENUNCIANTE", 4);
+    w.pular(4);
+    const relato = den.relato?.trim() ? den.relato : "Não informado.";
+    for (const p of paragrafosComLinks(relato)) {
+      w.paragrafo(p, { size: 11, after: p.runs.length ? 2.2 : 0 });
+    }
+
+    if (den.info_adicional?.trim()) {
+      this.faixa("INFORMAÇÕES ADICIONAIS", 4);
+      w.pular(4);
+      for (const p of paragrafosComLinks(den.info_adicional)) {
+        w.paragrafo(p, { size: 11, after: p.runs.length ? 2.2 : 0 });
+      }
+    }
+
+    const links = (Array.isArray(den.links) ? den.links : [])
+      .map((l) => String(l ?? "").trim())
+      .filter(Boolean);
+    this.faixa("LINKS INDICADOS PELO DENUNCIANTE", 4);
+    w.pular(3);
+    if (!links.length) {
+      w.texto("Nenhum link informado.", { size: 11 });
+    } else {
+      links.forEach((url, i) => {
+        const href = /^https?:/i.test(url) ? url : `https://${url}`;
+        w.paragrafo(
+          {
+            align: "left",
+            lineHeight: 1.15,
+            runs: [{ text: `${String(i + 1).padStart(2, "0")}. `, bold: true }, { text: url, href }],
+          },
+          { size: 10.5, after: 1.2 },
+        );
+      });
+    }
+
+    const peticoes = den.peticoes ?? [];
+    if (peticoes.length) {
+      this.faixa("PETIÇÕES E DOCUMENTOS EM PDF", 4);
+      w.pular(3);
+      this.tabela(
+        [
+          { titulo: "Nº", largura: 9, align: "center" },
+          { titulo: "Documento", largura: 58 },
+          { titulo: "Enviado em", largura: 33, align: "center" },
+          { titulo: "Págs.", largura: 15, align: "center" },
+          { titulo: "Tamanho", largura: 21, align: "center" },
+          { titulo: "Situação", largura: LARGURA_UTIL - 136 },
+        ],
+        peticoes.map((pt, i) => [
+          String(i + 1).padStart(2, "0"),
+          pt.nome,
+          dataHora(pt.enviado_em),
+          pt.paginas ? String(pt.paginas) : "—",
+          tamanhoArquivo(pt.tamanho),
+          pt.removido_em
+            ? `Arquivo expurgado em ${new Date(pt.removido_em).toLocaleDateString("pt-BR")}`
+            : pt.juntada
+              ? "Juntada na íntegra a seguir"
+              : `Disponível no sistema até ${pt.expira_em ? new Date(pt.expira_em).toLocaleDateString("pt-BR") : "—"}`,
+        ]),
+      );
+      w.pular(2);
+      w.texto(
+        "Os arquivos em PDF enviados pelo denunciante permanecem no sistema por 30 dias a contar do envio; após esse prazo, apenas este registro é mantido.",
+        { size: 8.5, italic: true, color: CINZA, align: "justify" },
+      );
+    }
+  }
+
+  /** Folha de rosto da juntada de uma petição (as páginas do PDF vêm logo após). */
+  folhaJuntada(pt: PdfPeticao, ordem: number): void {
+    const { w } = this;
+    this.timbreAto();
+    this.identificacaoAto();
+    this.titulo(`TERMO DE JUNTADA - ${CORREGPM}`);
+    this.corpo(
+      `Junta-se aos autos, na íntegra, o documento em PDF "${pt.nome}" (Petição ${String(ordem).padStart(2, "0")}), enviado pelo denunciante em ${dataHora(pt.enviado_em)}, com ${pt.paginas ?? "—"} página(s), que segue nas folhas subsequentes.`,
+    );
+    w.pular(4);
+    w.texto("Documento gerado automaticamente pelo sistema na exportação dos autos.", {
       size: 8.5,
       italic: true,
       align: "center",
@@ -1242,16 +1436,24 @@ class ProcessoPdf {
 
   /* ---------- rodapé ---------- */
 
+  /** Páginas de petições que serão inseridas depois (juntada), para numerar certo. */
+  paginasReservadas: Array<{ aposPagina: number; paginas: number }> = [];
+
   rodapes(): void {
     const { w, a } = this;
     const pdf = w.pdf;
-    const total = pdf.getNumberOfPages();
+    const fisicas = pdf.getNumberOfPages();
+    const extras = this.paginasReservadas.reduce((s, r) => s + r.paginas, 0);
+    const total = fisicas + extras;
     const ew = 13;
     const eh = (ew * a.emblema.height) / a.emblema.width;
-    for (let i = 1; i <= total; i++) {
+    for (let i = 1; i <= fisicas; i++) {
       pdf.setPage(i);
+      const n =
+        i +
+        this.paginasReservadas.filter((r) => r.aposPagina < i).reduce((s, r) => s + r.paginas, 0);
       w.textoEm(this.ident.rodape, MARGEM_ESQ + 0.4, 266.6, { size: 8, color: PRETO });
-      w.textoEm(`Página ${i} de ${total}`, PAGE_W - 20, 266.6, {
+      w.textoEm(`Página ${n} de ${total}`, PAGE_W - 20, 266.6, {
         size: 8,
         color: PRETO,
         align: "right",
@@ -1264,6 +1466,18 @@ class ProcessoPdf {
 /* ------------ montagem ------------ */
 
 export async function gerarProcessoPdf(data: PdfProcessoData, assets: PdfAssets): Promise<jsPDF> {
+  return (await montarProcessoPdf(data, assets)).pdf;
+}
+
+/** Processo completo + onde entram as páginas das petições juntadas. */
+export async function montarProcessoPdf(
+  data: PdfProcessoData,
+  assets: PdfAssets,
+): Promise<{
+  pdf: jsPDF;
+  reservas: Array<{ aposPagina: number; paginas: number }>;
+  rodape: string;
+}> {
   const { jsPDF } = await import("jspdf");
   const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
   pdf.setProperties({
@@ -1276,6 +1490,26 @@ export async function gerarProcessoPdf(data: PdfProcessoData, assets: PdfAssets)
 
   doc.capa();
 
+  // Termo de Denúncia e juntada das petições: logo após a capa (e os
+  // registros iniciais que cabem nela), antes do primeiro ato.
+  let termoFeito = false;
+  const termo = () => {
+    if (termoFeito) return;
+    termoFeito = true;
+    if (doc.temTermoDenuncia) {
+      w.novaPagina();
+      doc.termoDenuncia();
+    }
+    const juntadas = (data.denuncia.peticoes ?? [])
+      .map((pt, i) => ({ pt, ordem: i + 1 }))
+      .filter(({ pt }) => pt.juntada && pt.paginas);
+    juntadas.forEach(({ pt, ordem }) => {
+      w.novaPagina();
+      doc.folhaJuntada(pt, ordem);
+      doc.paginasReservadas.push({ aposPagina: w.pdf.getNumberOfPages(), paginas: pt.paginas ?? 0 });
+    });
+  };
+
   const movs = [...data.movimentos].sort(
     (x, y) => new Date(x.criado_em).getTime() - new Date(y.criado_em).getTime(),
   );
@@ -1285,6 +1519,7 @@ export async function gerarProcessoPdf(data: PdfProcessoData, assets: PdfAssets)
     const n = i + 1;
     const ehAto = ESPECIES_ATO.has(m.especie) || ehCertidaoDeEvento(m);
     if (ehAto) {
+      termo();
       w.novaPagina();
       if (m.especie === "portaria" && isPortaria(m.portaria_dados)) {
         await doc.portaria(m, m.portaria_dados, n);
@@ -1302,9 +1537,10 @@ export async function gerarProcessoPdf(data: PdfProcessoData, assets: PdfAssets)
       ultimo = "registro";
     }
   }
+  termo();
 
   doc.rodapes();
-  return pdf;
+  return { pdf, reservas: doc.paginasReservadas, rodape: identificacaoProcedimento(data.denuncia).rodape };
 }
 
 /** Dados para exportar um único ato (sem capa nem demais eventos). */

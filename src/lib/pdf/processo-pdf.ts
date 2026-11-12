@@ -73,6 +73,8 @@ export interface PdfDenuncia {
   unidade: string | null;
   status: string;
   termo_inicial: string;
+  /** Data da Portaria em vigor (início do contador de prescrição). */
+  prescricao_inicio?: string | null;
   acrescimos_dias: number;
   interrupcoes_count?: number;
   instaurada_em: string | null;
@@ -604,15 +606,17 @@ class ProcessoPdf {
     w.pular(12);
 
     const p = calcularPrescricao({
-      termo_inicial: den.termo_inicial,
+      prescricao_inicio: den.prescricao_inicio,
       acrescimos_dias: den.acrescimos_dias,
       status: den.status as DenunciaStatus,
     });
-    const prescricao = p.prescrita
-      ? `Prescrição consumada há ${Math.abs(p.diasRestantes)} dia(s)`
-      : p.suspenso
-        ? "Relógio suspenso"
-        : `${formatarDiasRestantes(p)} (base ${p.totalPrazo} dias)`;
+    const prescricao = p.aguardandoPortaria
+      ? "Aguardando a lavratura da Portaria (contador de 15 dias)"
+      : p.prescrita
+        ? `Prescrição consumada há ${Math.abs(p.diasRestantes)} dia(s)`
+        : p.suspenso
+          ? "Contador suspenso"
+          : `${formatarDiasRestantes(p)} (prazo de ${p.totalPrazo} dias desde a Portaria de ${new Date(den.prescricao_inicio as string).toLocaleDateString("pt-BR")})`;
     const linhas: Array<[string, string]> = [
       [
         "DENUNCIANTE:",

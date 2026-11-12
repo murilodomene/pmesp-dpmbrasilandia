@@ -72,6 +72,7 @@ export interface ExportDenuncia {
   unidade: string | null;
   status: string;
   termo_inicial: string;
+  prescricao_inicio?: string | null;
   acrescimos_dias: number;
   interrupcoes_count: number;
   instaurada_em: string | null;
@@ -205,7 +206,7 @@ function portariaPageWrap(inner: string): string {
 
 function coverPage(d: ExportDenuncia, policiais: ExportPolicial[]): string {
   const p = calcularPrescricao({
-    termo_inicial: d.termo_inicial,
+    prescricao_inicio: d.prescricao_inicio,
     acrescimos_dias: d.acrescimos_dias,
     status: d.status as DenunciaStatus,
   });
@@ -226,11 +227,13 @@ function coverPage(d: ExportDenuncia, policiais: ExportPolicial[]): string {
           )
           .join("");
 
-  const prescr = p.prescrita
-    ? `<strong style="color:#b91c1c">Prescrição consumada há ${Math.abs(p.diasRestantes)} dia(s)</strong>`
-    : p.suspenso
-      ? "Relógio suspenso"
-      : `${formatarDiasRestantes(p)} (base ${p.totalPrazo} dias)`;
+  const prescr = p.aguardandoPortaria
+    ? "Aguardando a lavratura da Portaria"
+    : p.prescrita
+      ? `<strong style="color:#b91c1c">Prescrição consumada há ${Math.abs(p.diasRestantes)} dia(s)</strong>`
+      : p.suspenso
+        ? "Contador suspenso"
+        : `${formatarDiasRestantes(p)} (prazo de ${p.totalPrazo} dias desde a Portaria)`;
 
   return pageWrap(`
     ${HEADER_HTML}

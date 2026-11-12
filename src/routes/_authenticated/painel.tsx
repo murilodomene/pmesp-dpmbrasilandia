@@ -9,6 +9,7 @@ import { StatusBadge, STATUS_LABEL } from "@/components/StatusBadge";
 import { RelogioPrescricao } from "@/components/RelogioPrescricao";
 import {
   calcularPrescricao,
+  chaveUrgencia,
   calcularDecursoPrazo,
   type DenunciaStatus,
 } from "@/lib/prescricao";
@@ -111,16 +112,16 @@ function PainelInterno() {
       // ordenar por prazo prescricional crescente (o que prescreve primeiro no topo)
       filtrada = [...filtrada].sort((a, b) => {
         const pa = calcularPrescricao({
-          termo_inicial: a.termo_inicial,
+          prescricao_inicio: (a as { prescricao_inicio?: string | null }).prescricao_inicio,
           acrescimos_dias: a.acrescimos_dias,
           status: a.status as DenunciaStatus,
         });
         const pb = calcularPrescricao({
-          termo_inicial: b.termo_inicial,
+          prescricao_inicio: (b as { prescricao_inicio?: string | null }).prescricao_inicio,
           acrescimos_dias: b.acrescimos_dias,
           status: b.status as DenunciaStatus,
         });
-        return pa.diasRestantes - pb.diasRestantes;
+        return chaveUrgencia(pa) - chaveUrgencia(pb);
       });
     }
     return filtrada;
@@ -207,7 +208,7 @@ function PainelInterno() {
           )}
           {lista.map((d) => {
             const prescr = calcularPrescricao({
-              termo_inicial: d.termo_inicial,
+              prescricao_inicio: (d as { prescricao_inicio?: string | null }).prescricao_inicio,
               acrescimos_dias: d.acrescimos_dias,
               status: d.status as DenunciaStatus,
             });
@@ -235,7 +236,7 @@ function PainelInterno() {
                     </span>
                   ) : (
                     <RelogioPrescricao
-                      termo_inicial={d.termo_inicial}
+                      prescricao_inicio={(d as { prescricao_inicio?: string | null }).prescricao_inicio ?? null}
                       acrescimos_dias={d.acrescimos_dias}
                       status={d.status as DenunciaStatus}
                     />
@@ -313,7 +314,7 @@ function TriagemModal({ id, onClose }: { id: string; onClose: () => void }) {
             <div className="mt-1 flex items-center gap-2">
               <StatusBadge status={d.status as DenunciaStatus} />
               <RelogioPrescricao
-                termo_inicial={d.termo_inicial}
+                prescricao_inicio={(d as { prescricao_inicio?: string | null }).prescricao_inicio ?? null}
                 acrescimos_dias={d.acrescimos_dias}
                 status={d.status as DenunciaStatus}
               />

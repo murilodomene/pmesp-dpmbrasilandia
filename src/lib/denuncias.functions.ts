@@ -138,7 +138,7 @@ export const listDenuncias = createServerFn({ method: "GET" })
     const { data, error } = await context.supabase
       .from("denuncias")
       .select(
-        "id, numero_protocolo, numero_procedimento, tipo_procedimento, status, unidade, ocorrencia_tipo, termo_inicial, acrescimos_dias, interrupcoes_count, concluido_em, certidao_gerada, created_at, denunciante_nome, denuncia_policiais(nome, unidade), denuncia_tarjas(id, cor, texto)",
+        "id, numero_protocolo, numero_procedimento, tipo_procedimento, status, unidade, ocorrencia_tipo, termo_inicial, prescricao_inicio, acrescimos_dias, interrupcoes_count, concluido_em, certidao_gerada, created_at, denunciante_nome, denuncia_policiais(nome, unidade), denuncia_tarjas(id, cor, texto)",
       )
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
@@ -150,7 +150,7 @@ export const getDenuncia = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     const cols =
-      "id, numero_protocolo, numero_procedimento, tipo_procedimento, denunciante_nome, denunciante_identificador, denunciante_contato, denunciante_anonimo, ocorrencia_tipo, ocorrencia_local, ocorrencia_data, ocorrencia_hora, relato, info_adicional, anexos, links, status, unidade, obs_denunciante, termo_inicial, acrescimos_dias, interrupcoes_count, concluido_em, certidao_gerada, created_at, instaurada_em, owner_id";
+      "id, numero_protocolo, numero_procedimento, tipo_procedimento, denunciante_nome, denunciante_identificador, denunciante_contato, denunciante_anonimo, ocorrencia_tipo, ocorrencia_local, ocorrencia_data, ocorrencia_hora, relato, info_adicional, anexos, links, status, unidade, obs_denunciante, termo_inicial, prescricao_inicio, acrescimos_dias, interrupcoes_count, concluido_em, certidao_gerada, created_at, instaurada_em, owner_id";
     // Salvaguarda: se o prazo de 7 dias já venceu, transita antes de ler.
     await context.supabase
       .rpc("transitar_denuncia" as never, { _denuncia_id: data.id } as never)
@@ -378,27 +378,25 @@ export const receberDenuncia = createServerFn({ method: "POST" })
     const agora = new Date().toISOString();
     const { data: atual } = await context.supabase
       .from("denuncias")
-      .select("interrupcoes_count, instaurada_em")
+      .select("instaurada_em")
       .eq("id", data.denuncia_id)
       .single();
     if (!atual) throw new Error("Denúncia não encontrada.");
 
-    const { error: updErr } = await context.supabase
-      .from("denuncias")
-      .update({
-        termo_inicial: agora,
-        acrescimos_dias: 0,
-        interrupcoes_count: (atual.interrupcoes_count ?? 0) + 1,
-        instaurada_em: atual.instaurada_em ?? agora,
-      })
-      .eq("id", data.denuncia_id);
-    if (updErr) throw new Error(updErr.message);
+    // O recebimento não mexe na prescrição: o contador só começa com a Portaria.
+    if (!atual.instaurada_em) {
+      const { error: updErr } = await context.supabase
+        .from("denuncias")
+        .update({ instaurada_em: agora })
+        .eq("id", data.denuncia_id);
+      if (updErr) throw new Error(updErr.message);
+    }
 
     await context.supabase.from("movimentos").insert({
       denuncia_id: data.denuncia_id,
       especie: "despacho",
-      teor: `RECEBIMENTO — interrompe a prescrição. ${data.teor}`,
-      interrompe: true,
+      teor: `RECEBIMENTO. ${data.teor}`,
+      interrompe: false,
       ...p,
     });
     return { ok: true };
@@ -675,6 +673,33 @@ export const retificarDenunciado = createServerFn({ method: "POST" })
     }
 
     return { changed: true };
+  });
+
+/** Exclui o denunciado do polo passivo (motivo obrigatório; fica na linha do tempo). */
+export const excluirDenunciado = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        policial_id: z.string().uuid(),
+        motivo: z.string().trim().min(5, "Informe o motivo da exclusão.").max(2000),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await (context.supabase as any).rpc("excluir_denunciado", {
+      _policial_id: data.policial_id,
+      _motivo: data.motivo,
+    });
+    if (error) {
+      if (error.code === "PGRST202" || /excluir_denunciado/.test(error.message ?? "")) {
+        throw new Error(
+          "A exclusão de denunciado ainda não foi instalada no banco deste site (falta rodar o script SQL).",
+        );
+      }
+      throw new Error(error.message);
+    }
+    return { ok: true };
   });
 
 export const adicionarDenunciado = createServerFn({ method: "POST" })

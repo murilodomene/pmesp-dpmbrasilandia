@@ -14,6 +14,7 @@ import { RelogioPrescricao } from "@/components/RelogioPrescricao";
 import {
   calcularPrescricao,
   calcularDecursoPrazo,
+  chaveUrgencia,
   isEncerrado,
   type DenunciaStatus,
 } from "@/lib/prescricao";
@@ -30,6 +31,7 @@ import {
   
   retificarDenunciado,
   adicionarDenunciado,
+  excluirDenunciado,
   CARGOS_POLICIAIS,
   lavrarPortaria,
   alternarPublicacaoIpc,
@@ -208,9 +210,9 @@ function Corregedoria() {
       .filter((d) => tramitacao.includes(d.status as DenunciaStatus))
       .slice()
       .sort((a, b) => {
-        const pa = calcularPrescricao({ termo_inicial: a.termo_inicial, acrescimos_dias: a.acrescimos_dias, status: a.status as DenunciaStatus });
-        const pb = calcularPrescricao({ termo_inicial: b.termo_inicial, acrescimos_dias: b.acrescimos_dias, status: b.status as DenunciaStatus });
-        return pa.diasRestantes - pb.diasRestantes;
+        const pa = calcularPrescricao({ prescricao_inicio: a.prescricao_inicio, acrescimos_dias: a.acrescimos_dias, status: a.status as DenunciaStatus });
+        const pb = calcularPrescricao({ prescricao_inicio: b.prescricao_inicio, acrescimos_dias: b.acrescimos_dias, status: b.status as DenunciaStatus });
+        return chaveUrgencia(pa) - chaveUrgencia(pb);
       });
     return {
       tramitacao: tram,
@@ -386,6 +388,7 @@ interface ItemKanban {
   ocorrencia_tipo: string | null;
   unidade: string | null;
   termo_inicial: string;
+  prescricao_inicio?: string | null;
   acrescimos_dias: number;
   concluido_em?: string | null;
   updated_at?: string | null;
@@ -459,7 +462,7 @@ function LinhaProcesso({
   onSelect: (id: string) => void;
 }) {
   const prescr = calcularPrescricao({
-    termo_inicial: d.termo_inicial,
+    prescricao_inicio: d.prescricao_inicio,
     acrescimos_dias: d.acrescimos_dias,
     status: d.status as DenunciaStatus,
   });
@@ -475,7 +478,11 @@ function LinhaProcesso({
         : prescr.nivel === "warn"
           ? "text-clock-warn"
           : "text-clock-safe";
-    prazoCell = (
+    prazoCell = prescr.aguardandoPortaria ? (
+      <span className="text-xs text-muted-foreground" title="O contador de prescrição começa com a lavratura da Portaria">
+        Aguarda Portaria
+      </span>
+    ) : (
       <span className={`tabular ${cls}`}>
         {prescr.prescrita
           ? `Prescrita há ${Math.abs(prescr.diasRestantes)}d`
@@ -489,7 +496,7 @@ function LinhaProcesso({
       </span>
     );
   } else if (modo === "suspenso") {
-    prazoCell = <span className="text-xs text-muted-foreground">Relógio suspenso</span>;
+    prazoCell = <span className="text-xs text-muted-foreground">Contador suspenso</span>;
   }
 
   return (
@@ -551,6 +558,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
     | { kind: "prorrogar" }
     | { kind: "oitiva" }
     | { kind: "retificar"; policial: { id: string; nome: string; rg_funcional: string | null; unidade: string | null; cargo: string | null } }
+    | { kind: "excluirDenunciado"; policial: { id: string; nome: string; rg_funcional: string | null; unidade: string | null } }
     | { kind: "excluir" }
     | { kind: "cancelarMov"; movimento_id: string; resumo: string }
     | { kind: "excluirMov"; movimento_id: string; resumo: string }
@@ -932,7 +940,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
             </Link>
           )}
           <RelogioPrescricao
-            termo_inicial={denuncia.termo_inicial}
+            prescricao_inicio={(denuncia as { prescricao_inicio?: string | null }).prescricao_inicio ?? null}
             acrescimos_dias={denuncia.acrescimos_dias}
             status={status}
             interrupcoes_count={denuncia.interrupcoes_count}
@@ -949,7 +957,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 : `Não lavrad${isApfd ? "o" : "a"}`}
             </span>
             <span className="text-[11px] text-muted-foreground">
-              {portariaMov ? "Prescrição interrompida" : "Lavrar interrompe a prescrição"}
+              {portariaMov ? "Contador de prescrição iniciado" : "Lavrar inicia o contador (15 dias)"}
             </span>
           </div>
         </div>
@@ -967,7 +975,7 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
             if (portariaMov) {
               if (
                 !window.confirm(
-                  isApfd ? "Já existe um APFD lavrado. Lavrar outro irá interromper o prazo novamente. Deseja prosseguir?" : "Já existe uma portaria lavrada. Lavrar outra irá interromper o prazo novamente. Deseja prosseguir?",
+                  isApfd ? "Já existe um APFD lavrado. Lavrar outro reinicia o contador de prescrição (15 dias). Deseja prosseguir?" : "Já existe uma portaria lavrada. Lavrar outra reinicia o contador de prescrição (15 dias). Deseja prosseguir?",
                 )
               )
                 return;
@@ -1128,8 +1136,18 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                 ? new Date(denuncia.instaurada_em).toLocaleDateString("pt-BR")
                 : "Não instaurada"}
             </CapaLinha>
-            <CapaLinha k="Termo inicial" ultima>
-              <span className="tabular">{new Date(denuncia.termo_inicial).toLocaleDateString("pt-BR")}</span>
+            <CapaLinha k="Prescrição" ultima>
+              {(denuncia as { prescricao_inicio?: string | null }).prescricao_inicio ? (
+                <span>
+                  contador desde{" "}
+                  <span className="tabular">
+                    {new Date((denuncia as { prescricao_inicio: string }).prescricao_inicio).toLocaleDateString("pt-BR")}
+                  </span>{" "}
+                  <span className="text-muted-foreground">(Portaria)</span>
+                </span>
+              ) : (
+                <span className="text-muted-foreground">aguardando a lavratura da Portaria</span>
+              )}
             </CapaLinha>
           </dl>
           <div className="text-sm">
@@ -1188,6 +1206,27 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
                         className="rounded-md border border-border p-1 text-muted-foreground hover:bg-surface-2 hover:text-foreground"
                       >
                         <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                    {podeRetificar && (
+                      <button
+                        type="button"
+                        title="Excluir do polo passivo"
+                        aria-label={`Excluir ${p.nome} do polo passivo`}
+                        onClick={() =>
+                          setDialog({
+                            kind: "excluirDenunciado",
+                            policial: {
+                              id: p.id,
+                              nome: p.nome,
+                              rg_funcional: p.rg_funcional ?? null,
+                              unidade: p.unidade ?? null,
+                            },
+                          })
+                        }
+                        className="rounded-md border border-border p-1 text-muted-foreground hover:border-destructive/50 hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     )}
                     {podeRetificar && (
@@ -2145,6 +2184,14 @@ function Autuacao({ id, cargo, onDeleted }: { id: string; cargo: string | null; 
           onClose={() => setDialog(null)}
         />
       )}
+      {dialog?.kind === "excluirDenunciado" && (
+        <ExcluirDenunciadoDialog
+          denunciaId={id}
+          policial={dialog.policial}
+          ultimo={policiais.length <= 1}
+          onClose={() => setDialog(null)}
+        />
+      )}
       {dialog?.kind === "excluir" && (
         <ExcluirDenunciaDialog
           protocolo={(denuncia.numero_procedimento ?? denuncia.numero_protocolo)}
@@ -2791,7 +2838,7 @@ function PortariaDialog({
     <Modal title={isApfdDoc ? "Auto de Prisão em Flagrante Delito" : "Portaria Inaugural"} onClose={onClose} size="3xl">
       <div className="mb-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs">
         Ao confirmar, {isApfdDoc ? "o APFD é lançado" : "a portaria é lançada"} na linha do tempo, a data de instauração é
-        preenchida e a <strong>prescrição é interrompida</strong> (relógio reinicia em 15 dias).
+        preenchida e <strong>começa o contador de prescrição</strong> (15 dias a partir de agora).
       </div>
 
       <div className="grid gap-3 rounded-md border border-border/60 p-3 md:grid-cols-2">
@@ -3468,6 +3515,80 @@ function OitivaDialog({ id, onClose }: { id: string; onClose: () => void }) {
           className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
           Juntar
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+function ExcluirDenunciadoDialog({
+  denunciaId,
+  policial,
+  ultimo,
+  onClose,
+}: {
+  denunciaId: string;
+  policial: { id: string; nome: string; rg_funcional: string | null; unidade: string | null };
+  ultimo: boolean;
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const fn = useServerFn(excluirDenunciado);
+  const [motivo, setMotivo] = useState("");
+  const m = useMutation({
+    mutationFn: () => fn({ data: { policial_id: policial.id, motivo: motivo.trim() } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["denuncia", denunciaId] });
+      qc.invalidateQueries({ queryKey: ["denuncias"] });
+      toast.success(`${policial.nome} excluído do polo passivo.`);
+      onClose();
+    },
+  });
+  return (
+    <Modal title="Excluir do polo passivo" onClose={onClose}>
+      <div className="rounded-md border border-border bg-surface-2/40 p-3 text-sm">
+        <div className="font-medium">{policial.nome}</div>
+        <div className="text-xs text-muted-foreground">
+          {policial.rg_funcional ?? "sem matrícula"}
+          {policial.unidade ? ` · ${policial.unidade}` : ""}
+        </div>
+      </div>
+      <p className="mt-3 text-sm text-muted-foreground">
+        O denunciado deixa de figurar no polo passivo deste processo. A exclusão, com o motivo, fica
+        registrada na linha do tempo (retificação).
+      </p>
+      {ultimo && (
+        <div className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs">
+          Este é o único denunciado: o processo ficará sem ninguém no polo passivo até que outro
+          seja incluído.
+        </div>
+      )}
+      <label className="mt-3 grid gap-1.5">
+        <span className="text-xs uppercase tracking-wider text-muted-foreground">Motivo (obrigatório)</span>
+        <textarea
+          rows={3}
+          className="input"
+          autoFocus
+          value={motivo}
+          placeholder="Ex.: autoria não confirmada; incluído por engano; desmembramento…"
+          onChange={(e) => setMotivo(e.target.value)}
+        />
+      </label>
+      {m.isError && (
+        <div className="mt-3 rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive-foreground">
+          {(m.error as Error)?.message || "Não foi possível excluir o denunciado."}
+        </div>
+      )}
+      <div className="mt-4 flex justify-end gap-2">
+        <button onClick={onClose} className="rounded-md border border-border px-4 py-2 text-sm">
+          Cancelar
+        </button>
+        <button
+          onClick={() => m.mutate()}
+          disabled={motivo.trim().length < 5 || m.isPending}
+          className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground disabled:opacity-50"
+        >
+          {m.isPending ? "Excluindo..." : "Excluir do polo passivo"}
         </button>
       </div>
     </Modal>

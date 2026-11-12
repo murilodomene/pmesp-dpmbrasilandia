@@ -211,6 +211,8 @@ export type Database = {
           numero_protocolo: string
           obs_denunciante: string | null
           obs_internas: string | null
+
+          prescricao_inicio: string | null
           ocorrencia_data: string | null
           ocorrencia_hora: string | null
           ocorrencia_local: string | null
@@ -243,6 +245,8 @@ export type Database = {
           numero_protocolo?: string
           obs_denunciante?: string | null
           obs_internas?: string | null
+
+          prescricao_inicio?: string | null
           ocorrencia_data?: string | null
           ocorrencia_hora?: string | null
           ocorrencia_local?: string | null
@@ -275,6 +279,8 @@ export type Database = {
           numero_protocolo?: string
           obs_denunciante?: string | null
           obs_internas?: string | null
+
+          prescricao_inicio?: string | null
           ocorrencia_data?: string | null
           ocorrencia_hora?: string | null
           ocorrencia_local?: string | null

@@ -1,13 +1,18 @@
 /**
  * Núcleo de prescrição — puro, sem estado, sem I/O.
  *
- * Regra invariante: os dias restantes NUNCA são armazenados. São sempre
- * derivados de `15 + acréscimos − dias corridos desde o termo inicial`.
+ * Contador de prescrição: só começa com a lavratura da Portaria (ou do APFD),
+ * com prazo de 15 dias. Antes disso o processo fica "Aguardando Portaria".
+ * A data de início fica em `denuncias.prescricao_inicio`, mantida pelo banco
+ * (gatilho na tabela movimentos): Portaria nova reinicia o contador e
+ * Portaria cancelada volta à anterior.
  *
- * - Interrupção: redefine termo_inicial e zera acréscimos (feito no servidor).
+ * Regra invariante: os dias restantes NUNCA são armazenados. São sempre
+ * derivados de `15 + acréscimos − dias corridos desde a Portaria`.
+ *
  * - Prorrogação: soma 30 dias aos acréscimos (feito no servidor).
  * - Suspensão: status "Aguardando Decurso do Prazo", "Trânsito em Julgado" e
- *   "Arquivada" param o relógio de 15 dias. O prazo de 7 dias de recurso
+ *   "Arquivada" param o contador de 15 dias. O prazo de 7 dias de recurso
  *   é um timer separado (ver `calcularDecursoPrazo`).
  */
 
@@ -32,7 +37,8 @@ export type DenunciaStatus =
   | "concluida";
 
 export interface PrescricaoInput {
-  termo_inicial: string | Date;
+  /** Data da Portaria/APFD em vigor; sem ela o contador não começou. */
+  prescricao_inicio: string | Date | null | undefined;
   acrescimos_dias: number;
   status: DenunciaStatus;
   agora?: Date;
@@ -42,9 +48,11 @@ export interface PrescricaoOut {
   diasRestantes: number;
   suspenso: boolean;
   prescrita: boolean;
+  /** Portaria ainda não lavrada: o contador não começou. */
+  aguardandoPortaria: boolean;
   diasCorridos: number;
   totalPrazo: number;
-  nivel: "safe" | "warn" | "danger" | "expired";
+  nivel: "safe" | "warn" | "danger" | "expired" | "idle";
 }
 
 const STATUS_SUSPENSOS: DenunciaStatus[] = [
@@ -60,13 +68,24 @@ export function isEncerrado(status: DenunciaStatus): boolean {
 
 export function calcularPrescricao(input: PrescricaoInput): PrescricaoOut {
   const agora = input.agora ?? new Date();
-  const termo =
-    input.termo_inicial instanceof Date
-      ? input.termo_inicial
-      : new Date(input.termo_inicial);
-
   const suspenso = isEncerrado(input.status);
   const totalPrazo = PRAZO_BASE + (input.acrescimos_dias || 0);
+  if (!input.prescricao_inicio) {
+    return {
+      diasRestantes: totalPrazo,
+      suspenso,
+      prescrita: false,
+      aguardandoPortaria: !suspenso,
+      diasCorridos: 0,
+      totalPrazo,
+      nivel: suspenso ? "safe" : "idle",
+    };
+  }
+  const termo =
+    input.prescricao_inicio instanceof Date
+      ? input.prescricao_inicio
+      : new Date(input.prescricao_inicio);
+
   const diasCorridos = Math.floor((agora.getTime() - termo.getTime()) / MS_DIA);
   const diasRestantes = totalPrazo - diasCorridos;
   const prescrita = !suspenso && diasRestantes < 0;
@@ -78,11 +97,19 @@ export function calcularPrescricao(input: PrescricaoInput): PrescricaoOut {
   else if (diasRestantes <= 7) nivel = "warn";
   else nivel = "safe";
 
-  return { diasRestantes, suspenso, prescrita, diasCorridos, totalPrazo, nivel };
+  return { diasRestantes, suspenso, prescrita, aguardandoPortaria: false, diasCorridos, totalPrazo, nivel };
+}
+
+/** Ordenação por urgência: os que aguardam Portaria vão depois dos que correm. */
+export function chaveUrgencia(p: PrescricaoOut): number {
+  if (p.suspenso) return Number.MAX_SAFE_INTEGER;
+  if (p.aguardandoPortaria) return Number.MAX_SAFE_INTEGER - 1;
+  return p.diasRestantes;
 }
 
 export function formatarDiasRestantes(p: PrescricaoOut): string {
-  if (p.suspenso) return "Relógio suspenso";
+  if (p.suspenso) return "Contador suspenso";
+  if (p.aguardandoPortaria) return "Aguardando Portaria";
   if (p.prescrita) return `Prescrita há ${Math.abs(p.diasRestantes)} d`;
   if (p.diasRestantes === 0) return "Prescreve hoje";
   if (p.diasRestantes === 1) return "1 dia restante";

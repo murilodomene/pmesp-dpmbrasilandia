@@ -1262,7 +1262,7 @@ function MinutaDetalhe({
             <AlertDialogDescription>
               {rotulo} será lançado no {procedimento} como evento nº {proximoEventoLabel}, assinado
               por você, com {escrivao} como Escrivão.
-              {ehPortaria && " A prescrição será interrompida (o relógio reinicia)."}
+              {ehPortaria && " O contador de prescrição começa (ou reinicia) com 15 dias."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
